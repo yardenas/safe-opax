@@ -1,3 +1,5 @@
+import pathlib
+import time
 import numpy as np
 import pytest
 from hydra import compose, initialize
@@ -44,10 +46,17 @@ def trainer(config):
         DummyAgent(dummy_env.action_space, config),
     ) as trainer:
         yield trainer
+    pathlib.Path(f"{trainer.state_writer.log_dir}/state.pkl").unlink()
 
 
 def test_epoch(trainer):
     trainer.train(1)
+    for _ in range(5):
+        if not pathlib.Path(f"{trainer.state_writer.log_dir}/state.pkl").exists():
+            time.sleep(1)
+        else:
+            break
+
     new_trainer = Trainer.from_pickle(
         trainer.config, f"{trainer.state_writer.log_dir}/state.pkl"
     )
