@@ -17,6 +17,8 @@ tqdm = "^4.66.2"
 gymnasium = "0.27.1"
 tabulate = "^0.9.0"
 tensorboardx = "^2.6.2.2"
+dm-env = "1.6"
+dm-control = "1.0.13"
 
 
 [[tool.poetry.source]]
