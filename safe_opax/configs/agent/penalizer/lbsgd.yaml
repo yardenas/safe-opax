@@ -1,0 +1,10 @@
+name: lbsgd
+m_0: 5e6
+m_1: 5e4
+eta: 0.1
+eta_rate: 8e-6
+
+
+
+
+
