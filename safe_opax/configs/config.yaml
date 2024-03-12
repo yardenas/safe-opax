@@ -1,7 +1,7 @@
 defaults:
   - _self_
   - agent: lambda
-  - environment: pendulum_direction
+  - environment: dm_cartpole
 
 hydra:
   run:

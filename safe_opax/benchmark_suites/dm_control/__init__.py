@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 import numpy as np
 from omegaconf import DictConfig
-from safe_opax.benchmark_suites import get_domain_and_task
+from safe_opax.benchmark_suites.utils import get_domain_and_task
 
 from safe_opax.rl.types import EnvironmentFactory
 

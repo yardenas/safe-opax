@@ -1,0 +1,2 @@
+dm_cartpole:
+  task: swingup

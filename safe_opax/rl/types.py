@@ -1,5 +1,4 @@
 from typing import (
-    TYPE_CHECKING,
     Callable,
     Protocol,
     Union,
@@ -12,10 +11,9 @@ from gymnasium.spaces import Box, Discrete
 from numpy import typing as npt
 from omegaconf import DictConfig
 
-if TYPE_CHECKING:
-    from safe_opax.rl.trajectory import TrajectoryData
+from safe_opax.rl.trajectory import TrajectoryData
 
-FloatArray = npt.NDArray[Union[np.float32, np.float64]]
+FloatArray = npt.NDArray[np.float32]
 
 EnvironmentFactory = Callable[[], Union[Env[Box, Box], Env[Box, Discrete]]]
 
