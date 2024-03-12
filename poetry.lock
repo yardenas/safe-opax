@@ -770,6 +770,20 @@ typing_extensions = ">=3.7.4.2"
 dev = ["black (==23.3.0)", "coverage[toml] (>=5.1)", "flit (>=3.5.1)", "isort (==5.11.5)", "mypy (>=1.4.1)", "pre-commit (>=1.15.2)", "pylint (>=3.0.0)", "pytest (>=7.4.2)", "pytest-asyncio (>=0.15.0)", "pytest-cov (>=4.1.0)", "types-pkg_resources (>=0.1.2)"]
 
 [[package]]
+name = "tabulate"
+version = "0.9.0"
+description = "Pretty-print tabular data"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "tabulate-0.9.0-py3-none-any.whl", hash = "sha256:024ca478df22e9340661486f85298cff5f6dcdba14f3813e8830015b9ed1948f"},
+    {file = "tabulate-0.9.0.tar.gz", hash = "sha256:0095b12bf5966de529c0feb1fa08671671b3368eec77d7ef7ab114be2c068b3c"},
+]
+
+[package.extras]
+widechars = ["wcwidth"]
+
+[[package]]
 name = "tomli"
 version = "2.0.1"
 description = "A lil' TOML parser"
@@ -860,4 +874,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10,<3.12"
-content-hash = "ad0b4060ff84ef01765ed1523fb9d1b90f3334c7e265d2d2053c97e1f009ccca"
+content-hash = "7c43e9fd87396cf6a01570d2924fc26a9fd1e8414718db4f0d2985257140fe39"
