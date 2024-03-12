@@ -4,7 +4,7 @@ import os
 from collections import defaultdict
 from queue import Queue
 from threading import Thread
-from typing import Any
+from typing import Any, Protocol
 
 import cloudpickle
 import numpy as np
@@ -19,23 +19,9 @@ log = logging.getLogger("logger")
 _SUMMARY_DEFAULT = "summary"
 
 
-class TrainingLogger:
-    def __init__(self, config: DictConfig):
-        self._writters = []
-        for writter in config.writters:
-            if writter == "wandb":
-                self._writters.append(WeightAndBiasesWritter(config))
-            elif writter == "jsonl":
-                self._writters.append(JsonlWritter(config.log_dir))
-            elif writter == "tensorboard":
-                self._writters.append(TensorboardXWritter(config.log_dir))
-            elif writter == "stderr":
-                self._writters.append(StdErrWritter())
-            else:
-                raise ValueError(f"Unknown writter: {writter}")
-
+class Writer(Protocol):
     def log(self, summary: dict[str, float], step: int):
-        self._writter.log(summary, step)
+        ...
 
     def log_video(
         self,
@@ -44,11 +30,41 @@ class TrainingLogger:
         name: str = "policy",
         fps: int | float = 30,
     ):
-        self._writter.log_video(images, step, name, fps)
+        ...
 
 
-class StdErrWritter:
-    def __init__(self, logger_name: str = _SUMMARY_DEFAULT) -> None:
+class TrainingLogger:
+    def __init__(self, config: DictConfig) -> None:
+        self._writers: list[Writer] = []
+        for writer in config.writers:
+            if writer == "wandb":
+                self._writers.append(WeightAndBiasesWriter(config))
+            elif writer == "jsonl":
+                self._writers.append(JsonlWriter(config.log_dir))
+            elif writer == "tensorboard":
+                self._writers.append(TensorboardXWriter(config.log_dir))
+            elif writer == "stderr":
+                self._writers.append(StdErrWriter())
+            else:
+                raise ValueError(f"Unknown writer: {writer}")
+
+    def log(self, summary: dict[str, float], step: int):
+        for writer in self._writers:
+            writer.log(summary, step)
+
+    def log_video(
+        self,
+        images: npt.ArrayLike,
+        step: int,
+        name: str = "policy",
+        fps: int | float = 30,
+    ):
+        for writer in self._writers:
+            writer.log_video(images, step, name, fps)
+
+
+class StdErrWriter:
+    def __init__(self, logger_name: str = _SUMMARY_DEFAULT):
         self._logger = logging.getLogger(logger_name)
 
     def log(self, summary: dict[str, float], step: int):
@@ -67,7 +83,7 @@ class StdErrWritter:
         pass
 
 
-class JsonlWritter:
+class JsonlWriter:
     def __init__(self, log_dir: str) -> None:
         self.log_dir = log_dir
 
@@ -75,12 +91,21 @@ class JsonlWritter:
         with open(os.path.join(self.log_dir, f"{_SUMMARY_DEFAULT}.jsonl"), "a") as file:
             file.write(json.dumps({"step": step, **summary}) + "\n")
 
+    def log_video(
+        self,
+        images: npt.ArrayLike,
+        step: int,
+        name: str = "policy",
+        fps: int | float = 30,
+    ):
+        pass
 
-class TensorboardXWritter:
+
+class TensorboardXWriter:
     def __init__(self, log_dir) -> None:
         import tensorboardX
 
-        self._writter = tensorboardX.FileWriter(log_dir)
+        self._writer = tensorboardX.FileWriter(log_dir)
 
     def log(self, summary: dict[str, float], step: int):
         for k, v in summary.items():
@@ -102,7 +127,7 @@ class TensorboardXWritter:
             self._writer.flush()
 
 
-class WeightAndBiasesWritter:
+class WeightAndBiasesWriter:
     def __init__(self, config: DictConfig):
         import wandb
 
@@ -126,7 +151,7 @@ class WeightAndBiasesWritter:
             {
                 "video": self._handle.Video(
                     np.array(images, copy=False).transpose([0, 1, 4, 2, 3]),
-                    fps=fps,
+                    fps=int(fps),
                     caption=name,
                 )
             },

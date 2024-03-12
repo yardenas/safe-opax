@@ -1,5 +1,4 @@
-from itertools import cycle, zip_longest
-from typing import Any, Iterable, Optional
+from typing import Any
 
 import equinox as eqx
 import jax
@@ -9,7 +8,6 @@ import optax
 from jaxtyping import PyTree
 
 from safe_opax.rl.trajectory import TrajectoryData
-from safe_opax.rl.types import FloatArray, TaskSampler
 
 
 class Learner:
@@ -52,20 +50,6 @@ def all_finite(tree):
 
 def update_if(pred, update, fallback):
     return jax.tree_map(lambda x, y: jax.lax.select(pred, x, y), update, fallback)
-
-
-# https://docs.python.org/3/library/itertools.html#itertools-recipes
-def grouper(iterable, n, *, incomplete="fill", fillvalue=None):
-    """Collect data into non-overlapping fixed-length chunks or blocks"""
-    # grouper('ABCDEFG', 3, fillvalue='x') --> ABC DEF Gxx
-    # grouper('ABCDEFG', 3, incomplete='ignore') --> ABC DEF
-    args = [iter(iterable)] * n
-    if incomplete == "fill":
-        return zip_longest(*args, fillvalue=fillvalue)
-    if incomplete == "ignore":
-        return zip(*args)
-    else:
-        raise ValueError("Expected fill or ignore")
 
 
 def inv_softplus(x):
@@ -136,33 +120,6 @@ def ensemble_predict(fn, in_axes=0):
         return ensemble_predict(fn)
 
     return vmap_ensemble
-
-
-def fix_task_sampling(sampler: TaskSampler, num_tasks: int) -> TaskSampler:
-    """
-    Takes a task sampler and makes sure that the same tasks are being sampled.
-    """
-    train_tasks = cycle(list(sampler(num_tasks, True)))
-    test_tasks = cycle(list(sampler(num_tasks, False)))
-
-    def sample(batch_size: int, train: Optional[bool] = False) -> Iterable[Any]:
-        train_tasks_it = iter(train_tasks)
-        test_tasks_it = iter(test_tasks)
-        for _ in range(batch_size):
-            yield next(train_tasks_it) if train else next(test_tasks_it)
-
-    return sample
-
-
-def contextualize(
-    observation: jax.Array | FloatArray, context: jax.Array | FloatArray
-) -> jax.Array:
-    if observation.ndim > 1 and context.ndim == 1:
-        context = jnp.repeat(context[None], observation.shape[0], 0)
-        observation = jnp.concatenate([observation, context], -1)
-    else:
-        observation = jnp.concatenate([observation, context], -1)
-    return observation
 
 
 class Count:

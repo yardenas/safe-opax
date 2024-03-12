@@ -7,9 +7,4 @@ rwrl_cartpole:
   constraints:
     - slider_pos_constraint
   perturb_spec:
-    enable: True
-    period: 1
-    scheduler: uniform
-    param: pole_length
-    min: 0.75
-    max: 1.25
+    enable: False

@@ -6,7 +6,7 @@ import cloudpickle
 import numpy as np
 from omegaconf import DictConfig
 
-from safe_opax.rl import acting, agents, episodic_async_env
+from safe_opax.rl import acting, episodic_async_env
 from safe_opax.rl import logging as rllogging
 from safe_opax.rl.types import Agent, EnvironmentFactory
 
@@ -18,7 +18,7 @@ class Trainer:
         self,
         config: DictConfig,
         make_env: EnvironmentFactory,
-        agent: Optional[Agent] = None,
+        agent: Agent,
         start_epoch: int = 0,
         step: int = 0,
         seeds: Optional[List[int]] = None,
@@ -35,7 +35,7 @@ class Trainer:
 
     def __enter__(self):
         log_path = os.getcwd()
-        self.logger = rllogging.TrainingLogger(log_path)
+        self.logger = rllogging.TrainingLogger(self.config)
         self.state_writer = rllogging.StateWriter(log_path)
         self.env = episodic_async_env.EpisodicAsync(
             self.make_env,
@@ -46,15 +46,6 @@ class Trainer:
         if self.seeds is None:
             self.seeds = self.config.training.seed
         self.env.reset(seed=self.seeds)
-        if self.agent is None:
-            self.agent = agents.make(
-                self.env.observation_space,
-                self.env.action_space,
-                self.config,
-                self.logger,
-            )
-        else:
-            self.agent.logger = self.logger
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -69,13 +60,11 @@ class Trainer:
         for epoch in range(epoch, epochs or self.config.training.epochs):
             _LOG.info(f"Training epoch #{epoch}")
             self._run_training_epoch(
-                train=True,
                 episodes_per_task=self.config.training.episodes_per_task,
                 prefix="train",
             )
             self.epoch = epoch + 1
             state_writer.write(self.state)
-        logger.flush()
 
     def _run_training_epoch(
         self,
