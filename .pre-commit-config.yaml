@@ -26,3 +26,4 @@ repos:
         args: ["--config-file=./pyproject.toml"]
         additional_dependencies:
           - "numpy"
+          - "types-tabulate"

@@ -131,9 +131,7 @@ class WeightAndBiasesWriter:
     def __init__(self, config: DictConfig):
         import wandb
 
-        wandb.init(
-            project="safe-opax", resume=True, group=config.hydra.job.override_dirname
-        )
+        wandb.init(project="safe-opax", resume=True, group=config.wandb_group)
         wandb.config = omegaconf.OmegaConf.to_container(config)
         self._handle = wandb
 

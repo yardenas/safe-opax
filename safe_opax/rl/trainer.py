@@ -52,7 +52,6 @@ class Trainer:
         assert self.logger is not None and self.state_writer is not None
         self.state_writer.write(self.state)
         self.state_writer.close()
-        self.logger.close()
 
     def train(self, epochs: Optional[int] = None) -> None:
         epoch, logger, state_writer = self.epoch, self.logger, self.state_writer
@@ -60,7 +59,7 @@ class Trainer:
         for epoch in range(epoch, epochs or self.config.training.epochs):
             _LOG.info(f"Training epoch #{epoch}")
             self._run_training_epoch(
-                episodes_per_task=self.config.training.episodes_per_task,
+                episodes_per_epoch=self.config.training.episodes_per_epoch,
                 prefix="train",
             )
             self.epoch = epoch + 1
@@ -68,7 +67,7 @@ class Trainer:
 
     def _run_training_epoch(
         self,
-        episodes_per_task: int,
+        episodes_per_epoch: int,
         prefix: str,
     ) -> None:
         agent, env, logger = self.agent, self.env, self.logger
@@ -76,7 +75,7 @@ class Trainer:
         summary, step = acting.epoch(
             agent,
             env,
-            episodes_per_task,
+            episodes_per_epoch,
             True,
             self.step,
         )

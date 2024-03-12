@@ -14,6 +14,7 @@ hydra:
       override_dirname:
         exclude_keys:
           - log_dir
+          - seed
     chdir: true
 
 log_dir: outputs
@@ -22,6 +23,8 @@ writers:
   - wandb
   - jsonl
   - stderr
+
+wandb_group: ${hydra.job.override_dirname}
 
 training:
   safe: True
