@@ -7,21 +7,13 @@ from safe_opax.rl.trajectory import Trajectory, TrajectoryData, Transition
 from safe_opax.rl.types import Agent
 
 
-def log_results(
+def _summarize_episodes(
     trajectory: TrajectoryData,
-    step: int,
-    prefix: str,
 ) -> tuple[float, float]:
     reward = float(trajectory.reward.sum(1).mean())
     cost = float(trajectory.cost.sum(1).mean())
-    # logger.log(
-    #     {
-    #         f"{prefix}/episode_reward_mean": reward,
-    #         f"{prefix}/episode_cost_mean": cost,
-    #     },
-    #     step,
-    # )
     return reward, cost
+
 
 
 def interact(
@@ -60,11 +52,7 @@ def interact(
                 step += int(np.prod(np_trajectory.reward.shape))
                 if train:
                     agent.observe(np_trajectory)
-                reward, cost = log_results(
-                    np_trajectory,
-                    step,
-                    "train" if train else "evaluate",
-                )
+                reward, cost = _summarize_episodes(np_trajectory)
                 pbar.set_postfix({"reward": reward, "cost": cost})
                 if render:
                     render_episodes = max(render_episodes - 1, 0)

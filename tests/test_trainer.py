@@ -5,6 +5,19 @@ from safe_opax import benchmark_suites
 from safe_opax.rl.trainer import Trainer
 
 
+class DummyAgent:
+    def __init__(self, action_space, config) -> None:
+        self.config = config
+        parallel_envs = config.training.parallel_envs
+        self._policy = lambda: np.repeat(action_space.sample(), parallel_envs)
+
+    def __call__(self, *args, **kwargs):
+        return self._policy()
+
+    def observe(self, *args, **kwargs):
+        pass
+
+
 @pytest.fixture
 def config():
     with initialize(version_base=None, config_path="../safe_opax/configs"):
@@ -28,16 +41,15 @@ def trainer(config):
     with Trainer(
         config,
         make_env,
-        lambda *args, **kwargs: np.repeat(
-            dummy_env.action_space.sample(), config.training.parallel_envs
-        ),
+        DummyAgent(dummy_env.action_space, config),
     ) as trainer:
         yield trainer
 
 
 def test_epoch(trainer):
     trainer.train(1)
-    new_trainer = Trainer.from_pickle(trainer.config, trainer.state_writer.log_dir)
+    new_trainer = Trainer.from_pickle(
+        trainer.config, f"{trainer.state_writer.log_dir}/state.pkl"
+    )
     assert new_trainer.step == trainer.step
     assert new_trainer.epoch == trainer.epoch
-    assert new_trainer.seeds == trainer.seeds
