@@ -181,6 +181,8 @@ class DMCWrapper:
     def reset(self, *, seed=None, options=None):
         """Resets environment and returns flattened initial state."""
         time_step = self.env.reset()
+        if seed is not None:
+            self.seed(seed)
         observation = self._filter_observation(time_step.observation)
         return observation, {}
 

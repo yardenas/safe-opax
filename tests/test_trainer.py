@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 from hydra import compose, initialize
 from safe_opax import benchmark_suites
-from safe_opax.rl import acting
 from safe_opax.rl.trainer import Trainer
 
 
@@ -62,11 +61,8 @@ def test_epoch(trainer):
     )
     assert new_trainer.step == trainer.step
     assert new_trainer.epoch == trainer.epoch
+    assert (new_trainer.seeds.key == trainer.seeds.key).all()
     with new_trainer as new_trainer:
-        new_trainer_summary, _ = acting.epoch(
-            new_trainer.agent, new_trainer.env, 1, False, new_trainer.step
-        )
-    old_trainer_summary, _ = acting.epoch(
-        trainer.agent, trainer.env, 1, False, trainer.step
-    )
+        new_trainer_summary = new_trainer._run_training_epoch(1, "train")
+    old_trainer_summary = trainer._run_training_epoch(1, "train")
     assert old_trainer_summary.metrics == new_trainer_summary.metrics

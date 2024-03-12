@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import List, Optional
+from typing import Optional
 
 import cloudpickle
 import numpy as np
@@ -8,7 +8,9 @@ from omegaconf import DictConfig
 
 from safe_opax.rl import acting, episodic_async_env
 from safe_opax.rl import logging as rllogging
+from safe_opax.rl.epoch_summary import EpochSummary
 from safe_opax.rl.types import Agent, EnvironmentFactory
+from safe_opax.rl.utils import PRNGSequence
 
 _LOG = logging.getLogger(__name__)
 
@@ -21,7 +23,7 @@ class Trainer:
         agent: Agent,
         start_epoch: int = 0,
         step: int = 0,
-        seeds: Optional[List[int]] = None,
+        seeds: PRNGSequence | None = None,
     ):
         self.config = config
         self.agent = agent
@@ -44,8 +46,7 @@ class Trainer:
             self.config.training.action_repeat,
         )
         if self.seeds is None:
-            self.seeds = self.config.training.seed
-        self.env.reset(seed=self.seeds)
+            self.seeds = PRNGSequence(self.config.training.seed)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -69,9 +70,15 @@ class Trainer:
         self,
         episodes_per_epoch: int,
         prefix: str,
-    ) -> None:
-        agent, env, logger = self.agent, self.env, self.logger
-        assert env is not None and agent is not None and logger is not None
+    ) -> EpochSummary:
+        agent, env, logger, seeds = self.agent, self.env, self.logger, self.seeds
+        assert (
+            env is not None
+            and agent is not None
+            and logger is not None
+            and seeds is not None
+        )
+        env.reset(seed=int(next(seeds)[0].item()))
         summary, step = acting.epoch(
             agent,
             env,
@@ -89,32 +96,20 @@ class Trainer:
             self.step,
         )
         self.step = step
-
-    def get_env_random_state(self):
-        assert self.env is not None
-        rs = [
-            state.get_state()[1]
-            for state in self.env.get_attr("rs")
-            if state is not None
-        ]
-        if not rs:
-            rs = [
-                _infer_and_extract_state(state)
-                for state in self.env.get_attr("np_random")
-            ]
-        return rs
+        next(seeds)
+        return summary
 
     @classmethod
     def from_pickle(cls, config: DictConfig, state_path: str) -> "Trainer":
         with open(state_path, "rb") as f:
-            make_env, env_rs, agent, epoch, step = cloudpickle.load(f).values()
+            make_env, seeds, agent, epoch, step = cloudpickle.load(f).values()
         assert agent.config == config, "Loaded different hyperparameters."
         _LOG.info(f"Resuming from step {step}")
         return cls(
             config=agent.config,
             make_env=make_env,
             start_epoch=epoch,
-            seeds=env_rs,
+            seeds=seeds,
             agent=agent,
             step=step,
         )
@@ -123,7 +118,7 @@ class Trainer:
     def state(self):
         return {
             "make_env": self.make_env,
-            "env_rs": self.get_env_random_state(),
+            "seeds": self.seeds,
             "agent": self.agent,
             "epoch": self.epoch,
             "step": self.step,
