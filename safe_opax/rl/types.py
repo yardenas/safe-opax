@@ -13,7 +13,7 @@ from omegaconf import DictConfig
 
 from safe_opax.rl.trajectory import TrajectoryData
 
-FloatArray = npt.NDArray[np.float32]
+FloatArray = npt.NDArray[Union[np.float32, np.float64]]
 
 EnvironmentFactory = Callable[[], Union[Env[Box, Box], Env[Box, Discrete]]]
 
