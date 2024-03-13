@@ -1,0 +1,8 @@
+# @package _global_
+
+training:
+  epochs: 10
+  eval_every: 2
+  time_limit: 100
+  adaptation_budget: 5
+  reward_scale: 0.05

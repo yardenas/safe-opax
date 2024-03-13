@@ -1,0 +1,41 @@
+defaults:
+  - _self_
+  - agent: lambda
+  - environment: dm_cartpole
+
+hydra:
+  run:
+    dir: ${log_dir}/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  sweep:
+    dir: ${log_dir}/${hydra.job.name}
+    subdir: ${hydra.job.override_dirname}
+  job:
+    config:
+      override_dirname:
+        exclude_keys:
+          - log_dir
+          - seed
+    chdir: true
+
+log_dir: outputs
+
+writers:
+  - wandb
+  - jsonl
+  - stderr
+
+wandb_group: ${hydra.job.override_dirname}
+
+training:
+  safe: True
+  safety_budget: 100
+  seed: 0
+  time_limit: 1000
+  episodes_per_epoch: 10
+  eval_episodes: 10
+  epochs: 200
+  action_repeat: 1
+  render_episodes: 1
+  precision: 32
+  parallel_envs: 20
+  scale_reward: 1.
