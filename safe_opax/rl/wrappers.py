@@ -22,14 +22,3 @@ class ActionRepeat(Wrapper):
         info["steps"] = current_step
         info["cost"] = total_cost
         return obs, total_reward, terminal, truncated, info
-
-
-class MetaEnv(Wrapper):
-    def __init__(self, env, alter_env_fn):
-        self.env = env
-        self.alter_env_fn = alter_env_fn
-
-    def reset(self, *, seed=None, options=None):
-        if options is not None and "task" in options:
-            self.alter_env_fn(self.env, options["task"])
-        return super().reset(seed=seed, options=options)
