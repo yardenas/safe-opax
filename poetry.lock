@@ -209,6 +209,17 @@ files = [
 ]
 
 [[package]]
+name = "decorator"
+version = "5.1.1"
+description = "Decorators for Humans"
+optional = false
+python-versions = ">=3.5"
+files = [
+    {file = "decorator-5.1.1-py3-none-any.whl", hash = "sha256:b8c3f85900b9dc423225913c5aace94729fe1fa9763b38939a95226f02d37186"},
+    {file = "decorator-5.1.1.tar.gz", hash = "sha256:637996211036b6385ef91435e4fae22989472f9d571faba8927ba8253acbc330"},
+]
+
+[[package]]
 name = "distlib"
 version = "0.3.8"
 description = "Distribution utilities"
@@ -218,6 +229,25 @@ files = [
     {file = "distlib-0.3.8-py2.py3-none-any.whl", hash = "sha256:034db59a0b96f8ca18035f36290806a9a6e6bd9d1ff91e45a7f172eb17e51784"},
     {file = "distlib-0.3.8.tar.gz", hash = "sha256:1530ea13e350031b6312d8580ddb6b27a104275a31106523b8f123787f494f64"},
 ]
+
+[[package]]
+name = "distrax"
+version = "0.1.5"
+description = "Distrax: Probability distributions in JAX."
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "distrax-0.1.5-py3-none-any.whl", hash = "sha256:5020f4b53a9a480d019c12e44292fbacb7de857cce478bc594dacf29519c61b7"},
+    {file = "distrax-0.1.5.tar.gz", hash = "sha256:ec41522d389af69efedc8d475a7e6d8f229429c00f2140dcd641feacf7e21948"},
+]
+
+[package.dependencies]
+absl-py = ">=0.9.0"
+chex = ">=0.1.8"
+jax = ">=0.1.55"
+jaxlib = ">=0.1.67"
+numpy = ">=1.23.0"
+tensorflow-probability = ">=0.15.0"
 
 [[package]]
 name = "dm-control"
@@ -463,6 +493,17 @@ sftp = ["paramiko"]
 smb = ["smbprotocol"]
 ssh = ["paramiko"]
 tqdm = ["tqdm"]
+
+[[package]]
+name = "gast"
+version = "0.5.4"
+description = "Python AST that abstracts the underlying Python version"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+files = [
+    {file = "gast-0.5.4-py3-none-any.whl", hash = "sha256:6fc4fa5fa10b72fb8aab4ae58bcb023058386e67b6fa2e3e34cec5c769360316"},
+    {file = "gast-0.5.4.tar.gz", hash = "sha256:9c270fe5f4b130969b54174de7db4e764b09b4f7f67ccfc32480e29f78348d97"},
+]
 
 [[package]]
 name = "gitdb"
@@ -1639,6 +1680,30 @@ packaging = "*"
 protobuf = ">=3.20"
 
 [[package]]
+name = "tensorflow-probability"
+version = "0.24.0"
+description = "Probabilistic modeling and statistical inference in TensorFlow"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "tensorflow_probability-0.24.0-py2.py3-none-any.whl", hash = "sha256:8c1774683e38359dbcaf3697e79b7e6a4e69b9c7b3679e78ee18f43e59e5759b"},
+]
+
+[package.dependencies]
+absl-py = "*"
+cloudpickle = ">=1.3"
+decorator = "*"
+dm-tree = "*"
+gast = ">=0.3.2"
+numpy = ">=1.13.3"
+six = ">=1.10.0"
+
+[package.extras]
+jax = ["jax", "jaxlib"]
+tf = ["tensorflow (>=2.16)", "tf-keras (>=2.16)"]
+tfds = ["tensorflow-datasets (>=2.2.0)"]
+
+[[package]]
 name = "tomli"
 version = "2.0.1"
 description = "A lil' TOML parser"
@@ -1810,4 +1875,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10,<3.12"
-content-hash = "29804976354289394eb926faf9845f2d65cd04deac600d2ca0d5f965eca61885"
+content-hash = "2f6bc1ade611842ecf8402b8f2e083e682de24db5618c299f2c76bc9a63f9b22"
