@@ -51,9 +51,13 @@ def trainer(config):
 
 def test_epoch(trainer):
     trainer.train(1)
-    for _ in range(5):
+    wait_count = 10
+    while wait_count > 0:
         if not pathlib.Path(f"{trainer.state_writer.log_dir}/state.pkl").exists():
             time.sleep(1)
+            wait_count -= 1
+            if wait_count == 0:
+                pytest.fail("state file was not written")
         else:
             break
     new_trainer = Trainer.from_pickle(
