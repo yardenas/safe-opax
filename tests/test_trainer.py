@@ -53,8 +53,8 @@ def test_epoch(trainer):
     trainer.train(1)
     wait_count = 10
     while wait_count > 0:
+        time.sleep(0.5)
         if not pathlib.Path(f"{trainer.state_writer.log_dir}/state.pkl").exists():
-            time.sleep(1)
             wait_count -= 1
             if wait_count == 0:
                 pytest.fail("state file was not written")
