@@ -48,7 +48,7 @@ class SafeModelBasedActorCritic:
         safety_discount: float,
         lambda_: float,
         safety_budget: float,
-        key: jax.random.KeyArray,
+        key: jax.Array,
         penalizer: Penalizer,
     ):
         actor_key, critic_key, safety_critic_key = jax.random.split(key, 3)
@@ -79,7 +79,7 @@ class SafeModelBasedActorCritic:
         self,
         model: Model,
         initial_states: jax.Array,
-        key: jax.random.KeyArray,
+        key: jax.Array,
     ) -> dict[str, float]:
         actor_critic_fn = partial(self.update_fn, model.sample)
         results: SafeActorCriticStepResults = actor_critic_fn(
@@ -159,7 +159,7 @@ def actor_loss_fn(
     rollout_fn: RolloutFn,
     horizon: int,
     initial_states: jax.Array,
-    key: jax.random.KeyArray,
+    key: jax.Array,
     discount: float,
     lambda_: float,
 ) -> tuple[jax.Array, tuple[Prediction, jax.Array]]:
@@ -186,7 +186,7 @@ def evaluate_actor(
     rollout_fn: RolloutFn,
     horizon: int,
     initial_states: jax.Array,
-    key: jax.random.KeyArray,
+    key: jax.Array,
     discount: float,
     safety_discount: float,
     lambda_: float,
@@ -224,7 +224,7 @@ def safe_update_actor_critic(
     actor_learner: Learner,
     critic_learner: Learner,
     safety_critic_learner: Learner,
-    key: jax.random.KeyArray,
+    key: jax.Array,
     discount: float,
     safety_discount: float,
     lambda_: float,
@@ -299,7 +299,7 @@ def vanilla_safe_update_actor_critic(
     actor_learner: Learner,
     critic_learner: Learner,
     safety_critic_learner: Learner,
-    key: jax.random.KeyArray,
+    key: jax.Array,
     discount: float,
     safety_discount: float,
     lambda_: float,

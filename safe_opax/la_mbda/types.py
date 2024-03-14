@@ -26,7 +26,7 @@ class Model(Protocol):
         self,
         horizon: int,
         initial_state: jax.Array,
-        key: jax.random.KeyArray,
+        key: jax.Array,
         policy: Policy,
     ) -> Prediction:
         ...
@@ -36,7 +36,7 @@ class Actor(Protocol):
     def act(
         self,
         state: FloatArray,
-        key: Optional[jax.random.KeyArray] = None,
+        key: Optional[jax.Array] = None,
         deterministic: bool = False,
     ) -> FloatArray:
         ...
@@ -47,7 +47,7 @@ class RolloutFn(Protocol):
         self,
         horizon: int,
         initial_state: jax.Array,
-        key: jax.random.KeyArray,
+        key: jax.Array,
         policy: Policy,
     ) -> Prediction:
         ...

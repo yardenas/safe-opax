@@ -20,7 +20,7 @@ class ContinuousActor(eqx.Module):
         hidden_size: int,
         init_stddev: float,
         *,
-        key: jax.random.KeyArray,
+        key: jax.Array,
     ):
         self.net = eqx.nn.MLP(
             state_dim,
@@ -44,7 +44,7 @@ class ContinuousActor(eqx.Module):
     def act(
         self,
         observation: Any,
-        key: jax.random.KeyArray | None = None,
+        key: jax.Array | None = None,
         deterministic: bool = False,
     ) -> jax.Array:
         if deterministic:
@@ -67,7 +67,7 @@ class Critic(eqx.Module):
         state_dim: int,
         hidden_size: int,
         *,
-        key: jax.random.KeyArray,
+        key: jax.Array,
     ):
         self.net = eqx.nn.MLP(
             state_dim, 1, hidden_size, n_layers, key=key, activation=jnn.elu

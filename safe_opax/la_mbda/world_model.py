@@ -21,7 +21,7 @@ class Encoder(eqx.Module):
         depth: int,
         kernels: list[int],
         *,
-        key: jax.random.KeyArray,
+        key: jax.Array,
     ):
         keys = jax.random.split(key, len(kernels))
         in_channels = 3
@@ -55,7 +55,7 @@ class Decoder(eqx.Module):
         kernels: list[int],
         output_shape: tuple[int],
         *,
-        key: jax.random.KeyArray,
+        key: jax.Array,
     ):
         linear_key, *keys = jax.random.split(key, len(kernels) + 1)
         in_channels = 32 * depth
@@ -134,7 +134,7 @@ class WorldModel(eqx.Module):
         self,
         features: Features,
         actions: jax.Array,
-        key: jax.random.KeyArray,
+        key: jax.Array,
         init_state: State | None = None,
     ) -> InferenceResult:
         obs_embeddings = jnn.elu(jax.vmap(self.encoder)(features.observation))
@@ -162,7 +162,7 @@ class WorldModel(eqx.Module):
         state: State,
         observation: jax.Array,
         action: jax.Array,
-        key: jax.random.KeyArray,
+        key: jax.Array,
     ) -> State:
         obs_embeddings = jnn.elu(self.encoder(observation))
         state, *_ = self.cell.filter(state, obs_embeddings, action, key)
@@ -172,7 +172,7 @@ class WorldModel(eqx.Module):
         self,
         horizon: int,
         state: State | jax.Array,
-        key: jax.random.KeyArray,
+        key: jax.Array,
         policy: Policy,
     ) -> Prediction:
         def f(carry, inputs):
@@ -188,7 +188,7 @@ class WorldModel(eqx.Module):
 
         callable_policy = False
         if isinstance(policy, jax.Array):
-            inputs: tuple[jax.Array, jax.random.KeyArray] | jax.random.KeyArray = (
+            inputs: tuple[jax.Array, jax.Array] | jax.Array = (
                 policy,
                 jax.random.split(key, policy.shape[0]),
             )
@@ -216,7 +216,7 @@ def variational_step(
     model: WorldModel,
     learner: Learner,
     opt_state: OptState,
-    key: jax.random.KeyArray,
+    key: jax.Array,
     beta: float = 1.0,
     free_nats: float = 0.0,
 ):

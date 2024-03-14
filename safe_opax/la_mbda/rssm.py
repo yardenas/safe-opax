@@ -57,7 +57,7 @@ class Prior(eqx.Module):
         stochastic_size: int,
         hidden_size: int,
         action_dim: int,
-        key: jax.random.KeyArray,
+        key: jax.Array,
     ):
         encoder_key, cell_key, decoder1_key, decoder2_key = jax.random.split(key, 4)
         self.encoder = eqx.nn.Linear(
@@ -92,7 +92,7 @@ class Posterior(eqx.Module):
         stochastic_size: int,
         hidden_size: int,
         embedding_size: int,
-        key: jax.random.KeyArray,
+        key: jax.Array,
     ):
         encoder_key, decoder_key = jax.random.split(key)
         self.encoder = eqx.nn.Linear(
@@ -122,7 +122,7 @@ class RSSM(eqx.Module):
         hidden_size: int,
         embedding_size: int,
         action_dim: int,
-        key: jax.random.KeyArray,
+        key: jax.Array,
     ):
         prior_key, posterior_key = jax.random.split(key)
         self.prior = Prior(
@@ -143,7 +143,7 @@ class RSSM(eqx.Module):
         self.stochastic_size = stochastic_size
 
     def predict(
-        self, prev_state: State, action: jax.Array, key: jax.random.KeyArray
+        self, prev_state: State, action: jax.Array, key: jax.Array
     ) -> State:
         prior, deterministic = self.prior(prev_state, action)
         stochastic = dtx.Normal(*prior).sample(seed=key)
@@ -154,7 +154,7 @@ class RSSM(eqx.Module):
         prev_state: State,
         embeddings: jax.Array,
         action: jax.Array,
-        key: jax.random.KeyArray,
+        key: jax.Array,
     ) -> tuple[State, ShiftScale, ShiftScale]:
         prior, deterministic = self.prior(prev_state, action)
         state = State(prev_state.stochastic, deterministic)
