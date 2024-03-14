@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-from collections import defaultdict
 from queue import Queue
 from threading import Thread
 from typing import Any, Protocol
@@ -12,7 +11,6 @@ from numpy import typing as npt
 from omegaconf import DictConfig
 import omegaconf
 from tabulate import tabulate
-from safe_opax.rl import metrics as m
 
 log = logging.getLogger("logger")
 
@@ -186,25 +184,3 @@ class StateWriter:
         self.queue.join()
         if self._thread.is_alive():
             self._thread.join()
-
-
-class MetricsMonitor:
-    def __init__(self):
-        self.metrics = defaultdict(m.MetricsAccumulator)
-
-    def __getitem__(self, item: str):
-        return self.metrics[item]
-
-    def __setitem__(self, key: str, value: float):
-        self.metrics[key].update_state(value)
-
-    def __str__(self) -> str:
-        table = []
-        for k, v in self.metrics.items():
-            metrics = v.result
-            table.append([k, metrics.mean, metrics.std, metrics.min, metrics.max])
-        return tabulate(
-            table,
-            headers=["Metric", "Mean", "Std", "Min", "Max"],
-            tablefmt="orgtbl",
-        )
