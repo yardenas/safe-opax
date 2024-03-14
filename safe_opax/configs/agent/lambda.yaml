@@ -5,18 +5,13 @@ name: lambda
 replay_buffer:
   batch_size: 32
   sequence_length: 64
-  num_shots: 4
   capacity: 1000
 model:
-  num_context_layers: 2
-  hidden_size: 128
-  intermediate_size: 512
-  num_heads: 2
-  context_size: 64
-  stochastic_size: 64
-  deterministic_size: 128
+  hidden_size: 200
+  stochastic_size: 60
+  deterministic_size: 200
 actor:
-  n_layers: 4
+  n_layers: 3
   hidden_size: 400
   init_stddev: 5.
 critic:
@@ -44,8 +39,6 @@ lambda_: 0.97
 plan_horizon: 15
 update_steps: 20
 train_every: 4
-beta_context: 0.1
 beta_model: 0.0001
-free_nats_context: 2.
 free_nats_model: 1.5
 safety_slack: 1.

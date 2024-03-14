@@ -119,7 +119,7 @@ class LaMBDA:
         )
         self.prng = PRNGSequence(config.training.seed)
         self.model = WorldModel(
-            state_dim=np.prod(observation_space.shape),
+            image_shape=observation_space.shape,
             action_dim=np.prod(action_space.shape),
             key=next(self.prng),
             **config.agent.model,

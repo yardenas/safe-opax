@@ -4,7 +4,6 @@ import jax.nn as jnn
 import jax.numpy as jnp
 import equinox as eqx
 import distrax as dtx
-from omegaconf import DictConfig
 from optax import OptState, l2_loss
 
 from safe_opax.common.learner import Learner
@@ -18,11 +17,11 @@ class Encoder(eqx.Module):
 
     def __init__(
         self,
-        depth: int,
-        kernels: list[int],
         *,
         key: jax.Array,
     ):
+        kernels = [4, 4, 4, 4]
+        depth = 32
         keys = jax.random.split(key, len(kernels))
         in_channels = 3
         for i, (key, kernel) in enumerate(zip(keys, kernels)):
@@ -47,16 +46,16 @@ class Encoder(eqx.Module):
 class Decoder(eqx.Module):
     linear: eqx.nn.Linear
     cnn_layers: list[eqx.nn.ConvTranspose2d]
-    output_shape: tuple[int] = eqx.static_field()
+    output_shape: tuple[int, int, int] = eqx.static_field()
 
     def __init__(
         self,
-        depth: int,
-        kernels: list[int],
-        output_shape: tuple[int],
+        output_shape: tuple[int, int, int],
         *,
         key: jax.Array,
     ):
+        kernels = [5, 5, 6, 6]
+        depth = 32
         linear_key, *keys = jax.random.split(key, len(kernels) + 1)
         in_channels = 32 * depth
         self.linear = eqx.nn.Linear(1024, in_channels, linear_key)
@@ -67,9 +66,8 @@ class Decoder(eqx.Module):
                     eqx.nn.ConvTranspose2d(in_channels, out_channels, kernel, 2)
                 )
             else:
-                self.cnn_layers.append(
-                    eqx.nn.ConvTranspose2d(3, 3, kernel, 2, output_shape=output_shape)
-                )
+                # FIXME (yarden): in and out channels are off
+                self.cnn_layers.append(eqx.nn.ConvTranspose2d(3, 3, kernel, 2))
             in_channels = out_channels
         self.output_shape = output_shape
 
@@ -97,13 +95,11 @@ class WorldModel(eqx.Module):
 
     def __init__(
         self,
-        state_dim: int,
+        image_shape: tuple[int, int, int],
         action_dim: int,
         deterministic_size: int,
         stochastic_size: int,
         hidden_size: int,
-        encoder_config: DictConfig,
-        image_decoder_config: DictConfig,
         *,
         key,
     ):
@@ -121,12 +117,13 @@ class WorldModel(eqx.Module):
             action_dim,
             cell_key,
         )
-        self.encoder = Encoder(**encoder_config, key=encoder_key)
-        self.image_decoder = Decoder(**image_decoder_config, key=image_decoder_key)
+        self.encoder = Encoder(key=encoder_key)
+        self.image_decoder = Decoder(image_shape, key=image_decoder_key)
         # 1 + 1 = cost + reward
-        self.decoder = eqx.nn.Linear(
+        # TODO (yarden): should have more layers
+        self.reward_cost_decoder = eqx.nn.Linear(
             deterministic_size + stochastic_size,
-            state_dim + 1 + 1,
+            1 + 1,
             key=reward_cost_decoder_key,
         )
 
