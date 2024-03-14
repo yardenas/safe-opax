@@ -16,7 +16,7 @@ def main(cfg):
         f"\n{OmegaConf.to_yaml(cfg)}"
     )
     state_path = get_state_path()
-    if should_resume():
+    if should_resume(state_path):
         _LOG.info(f"Resuming experiment from: {state_path}")
         trainer = load_state(cfg, state_path)
     else:
