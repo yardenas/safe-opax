@@ -1,8 +1,10 @@
+from typing import NamedTuple
 import jax
 import jax.nn as jnn
 import jax.numpy as jnp
 import equinox as eqx
 import distrax as dtx
+from omegaconf import DictConfig
 from optax import OptState, l2_loss
 
 from safe_opax.common.learner import Learner
@@ -10,10 +12,88 @@ from safe_opax.la_mbda.rssm import RSSM, Features, ShiftScale, State
 from safe_opax.la_mbda.types import Prediction
 from safe_opax.rl.types import Policy
 
+
+class Encoder(eqx.Module):
+    cnn_layers: list[eqx.nn.Conv2d]
+
+    def __init__(
+        self,
+        depth: int,
+        kernels: list[int],
+        *,
+        key: jax.random.KeyArray,
+    ):
+        keys = jax.random.split(key, len(kernels))
+        in_channels = 3
+        for i, (key, kernel) in enumerate(zip(keys, kernels)):
+            out_channels = 2**i * depth
+            self.cnn_layers.append(
+                eqx.nn.Conv2d(
+                    in_channels=in_channels,
+                    out_channels=out_channels,
+                    kernel_shape=kernel,
+                    stride=2,
+                )
+            )
+            in_channels = out_channels
+
+    def __call__(self, observation: jax.Array) -> jax.Array:
+        x = observation
+        for layer in self.cnn_layers:
+            x = jnn.relu(layer(x))
+        return x
+
+
+class Decoder(eqx.Module):
+    linear: eqx.nn.Linear
+    cnn_layers: list[eqx.nn.ConvTranspose2d]
+    output_shape: tuple[int] = eqx.static_field()
+
+    def __init__(
+        self,
+        depth: int,
+        kernels: list[int],
+        output_shape: tuple[int],
+        *,
+        key: jax.random.KeyArray,
+    ):
+        linear_key, *keys = jax.random.split(key, len(kernels) + 1)
+        in_channels = 32 * depth
+        self.linear = eqx.nn.Linear(1024, in_channels, linear_key)
+        for i, (key, kernel) in enumerate(zip(keys, kernels)):
+            if i != len(kernels) - 1:
+                out_channels = 2 ** (len(kernels) - i - 2) * depth
+                self.cnn_layers.append(
+                    eqx.nn.ConvTranspose2d(in_channels, out_channels, kernel, 2)
+                )
+            else:
+                self.cnn_layers.append(
+                    eqx.nn.ConvTranspose2d(3, 3, kernel, 2, output_shape=output_shape)
+                )
+            in_channels = out_channels
+        self.output_shape = output_shape
+
+    def __call__(self, flat_state: jax.Array) -> jax.Array:
+        x = self.linear(flat_state)
+        for layer in self.cnn_layers:
+            x = jnn.relu(layer(x))
+        output = x.reshape(self.output_shape)
+        return output
+
+
+class InferenceResult(NamedTuple):
+    state: State
+    image: jax.Array
+    reward_cost: jax.Array
+    posteriors: ShiftScale
+    priors: ShiftScale
+
+
 class WorldModel(eqx.Module):
     cell: RSSM
-    encoder: eqx.nn.Linear
-    decoder: eqx.nn.Linear
+    encoder: Encoder
+    image_decoder: Decoder
+    reward_cost_decoder: eqx.nn.Linear
 
     def __init__(
         self,
@@ -22,10 +102,17 @@ class WorldModel(eqx.Module):
         deterministic_size: int,
         stochastic_size: int,
         hidden_size: int,
+        encoder_config: DictConfig,
+        image_decoder_config: DictConfig,
         *,
         key,
     ):
-        cell_key, encoder_key, decoder_key = jax.random.split(key, 3)
+        (
+            cell_key,
+            encoder_key,
+            image_decoder_key,
+            reward_cost_decoder_key,
+        ) = jax.random.split(key, 4)
         self.cell = RSSM(
             deterministic_size,
             stochastic_size,
@@ -34,10 +121,13 @@ class WorldModel(eqx.Module):
             action_dim,
             cell_key,
         )
-        self.encoder = eqx.nn.Linear(state_dim, hidden_size, key=encoder_key)
+        self.encoder = Encoder(**encoder_config, key=encoder_key)
+        self.image_decoder = Decoder(**image_decoder_config, key=image_decoder_key)
         # 1 + 1 = cost + reward
         self.decoder = eqx.nn.Linear(
-            deterministic_size + stochastic_size, state_dim + 1 + 1, key=decoder_key
+            deterministic_size + stochastic_size,
+            state_dim + 1 + 1,
+            key=reward_cost_decoder_key,
         )
 
     def __call__(
@@ -46,7 +136,7 @@ class WorldModel(eqx.Module):
         actions: jax.Array,
         key: jax.random.KeyArray,
         init_state: State | None = None,
-    ) -> tuple[State, jax.Array, ShiftScale, ShiftScale]:
+    ) -> InferenceResult:
         obs_embeddings = jnn.elu(jax.vmap(self.encoder)(features.observation))
 
         def fn(carry, inputs):
@@ -63,10 +153,11 @@ class WorldModel(eqx.Module):
             init_state if init_state is not None else self.cell.init,
             (obs_embeddings, actions, keys),
         )
-        outs = jax.vmap(self.decoder)(states.flatten())
-        return states, outs, posteriors, priors
+        reward_cost = jax.vmap(self.decoder)(states.flatten())
+        image = jax.vmap(self.image_decoder)(states.flatten())
+        return InferenceResult(states, image, reward_cost, posteriors, priors)
 
-    def step(
+    def infer_state(
         self,
         state: State,
         observation: jax.Array,
@@ -116,6 +207,7 @@ class WorldModel(eqx.Module):
         reward, cost = out[:, -2], out[:, -1]
         out = Prediction(state.flatten(), reward, cost)
         return out
+
 
 @eqx.filter_jit
 def variational_step(

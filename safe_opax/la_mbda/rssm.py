@@ -7,7 +7,6 @@ import jax.nn as jnn
 import jax.numpy as jnp
 
 
-
 class State(NamedTuple):
     stochastic: jax.Array
     deterministic: jax.Array
