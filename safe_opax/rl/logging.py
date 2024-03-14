@@ -9,6 +9,7 @@ import cloudpickle
 import numpy as np
 from numpy import typing as npt
 from omegaconf import DictConfig
+from omegaconf.errors import InterpolationKeyError
 import omegaconf
 from tabulate import tabulate
 
@@ -129,7 +130,11 @@ class WeightAndBiasesWriter:
     def __init__(self, config: DictConfig):
         import wandb
 
-        wandb.init(project="safe-opax", resume=True, group=config.wandb_group)
+        try:
+            group = config.wandb_group
+        except InterpolationKeyError:
+            group = None
+        wandb.init(project="safe-opax", resume=True, group=group)
         wandb.config = omegaconf.OmegaConf.to_container(config)
         self._handle = wandb
 
