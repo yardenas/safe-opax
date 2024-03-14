@@ -11,7 +11,7 @@ from gymnasium.spaces import Box, Discrete
 from numpy import typing as npt
 from omegaconf import DictConfig
 
-from safe_opax.rl.trajectory import Transition
+from safe_opax.rl.trajectory import TrajectoryData
 
 FloatArray = npt.NDArray[Union[np.float32, np.float64]]
 
@@ -26,5 +26,5 @@ class Agent(Protocol):
     def __call__(self, observation: FloatArray, train: bool = False) -> FloatArray:
         ...
 
-    def observe(self, transition: Transition) -> None:
+    def observe(self, transition: TrajectoryData) -> None:
         ...

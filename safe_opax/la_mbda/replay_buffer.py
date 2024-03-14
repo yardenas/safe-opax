@@ -2,7 +2,7 @@ from typing import Iterator
 import numpy as np
 
 from tensorflow import data as tfd
-from safe_opax.rl.trajectory import TrajectoryData, Transition
+from safe_opax.rl.trajectory import TrajectoryData
 
 
 class ReplayBuffer:
@@ -15,12 +15,10 @@ class ReplayBuffer:
         capacity: int,
         batch_size: int,
         sequence_length: int,
-        precision: int,
     ):
-        self.idx = 0
         self.episode_id = 0
-        self.dtype = {16: np.float16, 32: np.float32}[precision]
-        self.obs_dtype = np.uint8 if len(observation_shape) == 3 else self.dtype
+        self.dtype = np.float32
+        self.obs_dtype = np.uint8
         self.observation = np.zeros(
             (
                 capacity,
@@ -57,26 +55,27 @@ class ReplayBuffer:
         self._generator = lambda: self._sample_batch(batch_size, sequence_length)
         self._dataset = _make_dataset(self._generator, example)
 
-    def add(self, transition: Transition):
+    def add(self, trajectory: TrajectoryData):
         capacity, episode_length = self.reward.shape
-        batch_size = min(transition.observation.shape[0], capacity)
+        batch_size = min(trajectory.observation.shape[0], capacity)
         # Discard data if batch size overflows capacity.
         end = min(self.episode_id + batch_size, capacity)
         episode_slice = slice(self.episode_id, end)
         for data, val in zip(
             (self.action, self.reward, self.cost),
-            (transition.action, transition.reward, transition.cost),
+            (trajectory.action, trajectory.reward, trajectory.cost),
         ):
-            data[episode_slice, self.idx] = val[:batch_size].astype(self.dtype)
-        observation = transition.observation[:batch_size].astype(self.obs_dtype)
-        self.observation[episode_slice, self.idx] = observation
-        if transition.last:
-            assert self.idx == episode_length - 1
-            next_obs = transition.next_observation[:batch_size].astype(self.obs_dtype)
-            self.observation[episode_slice, self.idx + 1] = next_obs
-            self.episode_id = (self.episode_id + batch_size) % capacity
-            self._valid_episodes = min(self._valid_episodes + batch_size, capacity)
-        self.idx = (self.idx + 1) % episode_length
+            data[episode_slice] = val[:batch_size].astype(self.dtype)
+        observation = np.concatenate(
+            [
+                trajectory.observation[:batch_size],
+                trajectory.next_observation[:batch_size, -1:],
+            ],
+            axis=1,
+        )
+        self.observation[episode_slice] = observation.astype(self.obs_dtype)
+        self.episode_id = (self.episode_id + batch_size) % capacity
+        self._valid_episodes = min(self._valid_episodes + batch_size, capacity)
 
     def _sample_batch(
         self,
