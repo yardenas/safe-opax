@@ -21,13 +21,11 @@ class PRNGSequence:
         return keys[1:]
 
 
-def add_to_buffer(buffer, trajectory, normalizer, reward_scale):
-    results = normalizer.result
-    normalize_fn = lambda x: normalize(x, results.mean, results.std)
+def add_to_buffer(buffer, trajectory, reward_scale):
     buffer.add(
         TrajectoryData(
-            normalize_fn(trajectory.observation),
-            normalize_fn(trajectory.next_observation),
+            trajectory.observation,
+            trajectory.next_observation,
             trajectory.action,
             trajectory.reward * reward_scale,
             trajectory.cost,

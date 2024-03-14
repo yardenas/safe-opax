@@ -1,14 +1,13 @@
 import logging
 import os
-from typing import Optional
+from typing import Callable, Optional
 
 import cloudpickle
-import numpy as np
 from omegaconf import DictConfig
 
 from safe_opax.rl import acting, episodic_async_env
-from safe_opax.rl import logging as rllogging
 from safe_opax.rl.epoch_summary import EpochSummary
+from safe_opax.rl.logging import StateWriter, TrainingLogger
 from safe_opax.rl.types import Agent, EnvironmentFactory
 from safe_opax.rl.utils import PRNGSequence
 
@@ -21,6 +20,8 @@ class Trainer:
         config: DictConfig,
         make_env: EnvironmentFactory,
         agent: Agent,
+        at_epoch: list[Callable[[EpochSummary, int, int, TrainingLogger], None]]
+        | None = None,
         start_epoch: int = 0,
         step: int = 0,
         seeds: PRNGSequence | None = None,
@@ -31,14 +32,15 @@ class Trainer:
         self.epoch = start_epoch
         self.step = step
         self.seeds = seeds
-        self.logger: Optional[rllogging.TrainingLogger] = None
-        self.state_writer: Optional[rllogging.StateWriter] = None
+        self.logger: Optional[TrainingLogger] = None
+        self.state_writer: Optional[StateWriter] = None
         self.env: Optional[episodic_async_env.EpisodicAsync] = None
+        self.at_epoch = at_epoch if at_epoch is not None else []
 
     def __enter__(self):
         log_path = os.getcwd()
-        self.logger = rllogging.TrainingLogger(self.config)
-        self.state_writer = rllogging.StateWriter(log_path)
+        self.logger = TrainingLogger(self.config)
+        self.state_writer = StateWriter(log_path)
         self.env = episodic_async_env.EpisodicAsync(
             self.make_env,
             self.config.training.parallel_envs,
@@ -59,10 +61,12 @@ class Trainer:
         assert logger is not None and state_writer is not None
         for epoch in range(epoch, epochs or self.config.training.epochs):
             _LOG.info(f"Training epoch #{epoch}")
-            self._run_training_epoch(
+            summary = self._run_training_epoch(
                 episodes_per_epoch=self.config.training.episodes_per_epoch,
                 prefix="train",
             )
+            for at_epoch in self.at_epoch:
+                at_epoch(summary, epoch, self.step, logger)
             self.epoch = epoch + 1
             state_writer.write(self.state)
 
@@ -123,10 +127,3 @@ class Trainer:
             "epoch": self.epoch,
             "step": self.step,
         }
-
-
-def _infer_and_extract_state(state):
-    if isinstance(state, np.random.RandomState):
-        return state.get_state()[1]
-    else:
-        return state.bit_generator.state["state"]["state"]

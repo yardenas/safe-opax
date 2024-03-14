@@ -190,17 +190,17 @@ class StateWriter:
 
 class MetricsMonitor:
     def __init__(self):
-        self._metrics = defaultdict(m.MetricsAccumulator)
+        self.metrics = defaultdict(m.MetricsAccumulator)
 
     def __getitem__(self, item: str):
-        return self._metrics[item]
+        return self.metrics[item]
 
     def __setitem__(self, key: str, value: float):
-        self._metrics[key].update_state(value)
+        self.metrics[key].update_state(value)
 
     def __str__(self) -> str:
         table = []
-        for k, v in self._metrics.items():
+        for k, v in self.metrics.items():
             metrics = v.result
             table.append([k, metrics.mean, metrics.std, metrics.min, metrics.max])
         return tabulate(
