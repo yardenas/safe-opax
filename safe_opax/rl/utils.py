@@ -4,8 +4,6 @@ import jax
 from safe_opax.rl.trajectory import TrajectoryData
 
 
-
-
 class PRNGSequence:
     def __init__(self, seed: int):
         self.key = jax.random.PRNGKey(seed)

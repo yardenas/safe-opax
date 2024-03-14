@@ -11,6 +11,11 @@ class Transition(NamedTuple):
     action: npt.NDArray[Any]
     reward: npt.NDArray[Any]
     cost: npt.NDArray[Any]
+    done: npt.NDArray[Any]
+
+    @property
+    def last(self) -> bool:
+        return bool(self.done.all())
 
 
 TrajectoryData = Transition
@@ -29,8 +34,10 @@ class Trajectory:
         # this magic is possible since transition is a named tuple.
         # This allows us make lists of observations, actions, rewards, etc.,
         # instead of list of transitions.
-        o, next_o, a, r, c = zip(*self.transitions)
+        o, next_o, a, r, c, d = zip(*self.transitions)
         # Stack on axis=1 to keep batch dimension first, and time axis second.
         stack = lambda x: np.stack(x, axis=1)
-        data = TrajectoryData(stack(o), stack(next_o), stack(a), stack(r), stack(c))
+        data = TrajectoryData(
+            stack(o), stack(next_o), stack(a), stack(r), stack(c), stack(d)
+        )
         return data
