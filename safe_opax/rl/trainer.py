@@ -5,6 +5,8 @@ from typing import Callable, Optional
 import cloudpickle
 from omegaconf import DictConfig
 
+from safe_opax import benchmark_suites
+from safe_opax.la_mbda.la_mbda import LaMBDA
 from safe_opax.rl import acting, episodic_async_env
 from safe_opax.rl.epoch_summary import EpochSummary
 from safe_opax.rl.logging import StateWriter, TrainingLogger
@@ -13,13 +15,38 @@ from safe_opax.rl.utils import PRNGSequence
 
 _LOG = logging.getLogger(__name__)
 
+_TRAINING_STATE = "state.pkl"
+
+
+def get_state_path() -> str:
+    log_path = os.getcwd()
+    state_path = os.path.join(log_path, _TRAINING_STATE)
+    return state_path
+
+
+def should_resume(state_path: str) -> bool:
+    return os.path.exists(state_path)
+
+
+def start_fresh(
+    cfg: DictConfig,
+    at_epoch: list[Callable[[EpochSummary, int, int, TrainingLogger], None]]
+    | None = None,
+) -> "Trainer":
+    make_env = benchmark_suites.make(cfg)
+    return Trainer(cfg, make_env, at_epoch=at_epoch)
+
+
+def load_state(cfg, state_path) -> "Trainer":
+    return Trainer.from_pickle(cfg, state_path)
+
 
 class Trainer:
     def __init__(
         self,
         config: DictConfig,
         make_env: EnvironmentFactory,
-        agent: Agent,
+        agent: Agent | None = None,
         at_epoch: list[Callable[[EpochSummary, int, int, TrainingLogger], None]]
         | None = None,
         start_epoch: int = 0,
@@ -27,20 +54,20 @@ class Trainer:
         seeds: PRNGSequence | None = None,
     ):
         self.config = config
-        self.agent = agent
         self.make_env = make_env
         self.epoch = start_epoch
         self.step = step
         self.seeds = seeds
-        self.logger: Optional[TrainingLogger] = None
-        self.state_writer: Optional[StateWriter] = None
-        self.env: Optional[episodic_async_env.EpisodicAsync] = None
+        self.logger: TrainingLogger | None = None
+        self.state_writer: StateWriter | None = None
+        self.env: episodic_async_env.EpisodicAsync | None = None
+        self.agent = agent
         self.at_epoch = at_epoch if at_epoch is not None else []
 
     def __enter__(self):
         log_path = os.getcwd()
         self.logger = TrainingLogger(self.config)
-        self.state_writer = StateWriter(log_path)
+        self.state_writer = StateWriter(log_path, _TRAINING_STATE)
         self.env = episodic_async_env.EpisodicAsync(
             self.make_env,
             self.config.training.parallel_envs,
@@ -49,6 +76,12 @@ class Trainer:
         )
         if self.seeds is None:
             self.seeds = PRNGSequence(self.config.training.seed)
+        if self.agent is None:
+            self.agent = LaMBDA(
+                self.env.observation_space,
+                self.env.action_space,
+                self.config,
+            )
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -106,7 +139,7 @@ class Trainer:
     @classmethod
     def from_pickle(cls, config: DictConfig, state_path: str) -> "Trainer":
         with open(state_path, "rb") as f:
-            make_env, seeds, agent, epoch, step = cloudpickle.load(f).values()
+            make_env, seeds, agent, epoch, step, at_epoch = cloudpickle.load(f).values()
         assert agent.config == config, "Loaded different hyperparameters."
         _LOG.info(f"Resuming from step {step}")
         return cls(
@@ -116,6 +149,7 @@ class Trainer:
             seeds=seeds,
             agent=agent,
             step=step,
+            at_epoch=at_epoch,
         )
 
     @property
@@ -126,4 +160,5 @@ class Trainer:
             "agent": self.agent,
             "epoch": self.epoch,
             "step": self.step,
+            "at_epoch": self.at_epoch,
         }

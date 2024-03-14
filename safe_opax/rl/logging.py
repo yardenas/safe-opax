@@ -156,8 +156,9 @@ class WeightAndBiasesWriter:
 
 
 class StateWriter:
-    def __init__(self, log_dir: str):
+    def __init__(self, log_dir: str, state_filename: str):
         self.log_dir = log_dir
+        self.state_filename = state_filename
         if not os.path.exists(log_dir):
             os.makedirs(log_dir, exist_ok=True)
         self.queue: Queue[bytes] = Queue(maxsize=5)
@@ -176,7 +177,7 @@ class StateWriter:
     def _worker(self):
         while not self.queue.empty():
             state_bytes = self.queue.get(timeout=1)
-            with open(os.path.join(self.log_dir, "state.pkl"), "wb") as f:
+            with open(os.path.join(self.log_dir, self.state_filename), "wb") as f:
                 f.write(state_bytes)
                 self.queue.task_done()
 

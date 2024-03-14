@@ -44,6 +44,7 @@ def trainer(config):
         config,
         make_env,
         DummyAgent(dummy_env.action_space, config),
+        at_epoch=[lambda *_: None],
     ) as trainer:
         yield trainer
     pathlib.Path(f"{trainer.state_writer.log_dir}/state.pkl").unlink()

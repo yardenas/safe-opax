@@ -50,7 +50,7 @@ class SafeModelBasedActorCritic:
         safety_budget: float,
         key: jax.random.KeyArray,
         penalizer: Penalizer,
-    ) -> None:
+    ):
         actor_key, critic_key, safety_critic_key = jax.random.split(key, 3)
         self.actor = ContinuousActor(
             state_dim=state_dim,
