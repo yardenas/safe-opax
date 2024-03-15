@@ -1,7 +1,11 @@
 # @package _global_
 
+writers:
+  - jsonl
+
 training:
   epochs: 10
   eval_every: 2
   time_limit: 1000
   adaptation_budget: 5
+  parallel_envs: 5

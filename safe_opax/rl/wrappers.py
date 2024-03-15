@@ -1,4 +1,8 @@
+import numpy as np
+from PIL import Image
+from gymnasium import ObservationWrapper
 from gymnasium.core import Wrapper
+from gymnasium.spaces import Box
 
 
 class ActionRepeat(Wrapper):
@@ -22,3 +26,20 @@ class ActionRepeat(Wrapper):
         info["steps"] = current_step
         info["cost"] = total_cost
         return obs, total_reward, terminal, truncated, info
+
+
+class RenderedObservation(ObservationWrapper):
+    def __init__(self, env, image_size, render_kwargs):
+        super(RenderedObservation, self).__init__(env)
+        self.observation_space = Box(0, 255, image_size + (3,), np.float32)
+        self._render_kwargs = render_kwargs
+        self.image_size = image_size
+
+    def observation(self, _):
+        image = self.env.render(**self._render_kwargs)
+        image = Image.fromarray(image)
+        if image.size != self.image_size:
+            image = image.resize(self.image_size, Image.BILINEAR)
+        image = np.array(image, copy=False)
+        image = np.clip(image, 0, 255).astype(np.float32)
+        return image

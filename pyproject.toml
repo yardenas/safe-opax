@@ -21,6 +21,7 @@ dm-control = "^1.0.16"
 dm-env = "^1.6"
 distrax = "^0.1.5"
 tensorflow = "^2.16.1"
+pillow = "^10.2.0"
 
 
 [[tool.poetry.source]]

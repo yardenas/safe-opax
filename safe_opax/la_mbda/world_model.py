@@ -24,14 +24,16 @@ class Encoder(eqx.Module):
         depth = 32
         keys = jax.random.split(key, len(kernels))
         in_channels = 3
+        self.cnn_layers = []
         for i, (key, kernel) in enumerate(zip(keys, kernels)):
             out_channels = 2**i * depth
             self.cnn_layers.append(
                 eqx.nn.Conv2d(
                     in_channels=in_channels,
                     out_channels=out_channels,
-                    kernel_shape=kernel,
+                    kernel_size=kernel,
                     stride=2,
+                    key=key,
                 )
             )
             in_channels = out_channels
@@ -58,16 +60,20 @@ class Decoder(eqx.Module):
         depth = 32
         linear_key, *keys = jax.random.split(key, len(kernels) + 1)
         in_channels = 32 * depth
-        self.linear = eqx.nn.Linear(1024, in_channels, linear_key)
+        self.linear = eqx.nn.Linear(1024, in_channels, key=linear_key)
+        self.cnn_layers = []
         for i, (key, kernel) in enumerate(zip(keys, kernels)):
             if i != len(kernels) - 1:
                 out_channels = 2 ** (len(kernels) - i - 2) * depth
                 self.cnn_layers.append(
-                    eqx.nn.ConvTranspose2d(in_channels, out_channels, kernel, 2)
+                    eqx.nn.ConvTranspose2d(
+                        in_channels, out_channels, kernel, 2, key=key
+                    )
                 )
             else:
-                # FIXME (yarden): in and out channels are off
-                self.cnn_layers.append(eqx.nn.ConvTranspose2d(3, 3, kernel, 2))
+                self.cnn_layers.append(
+                    eqx.nn.ConvTranspose2d(in_channels, 3, kernel, 2, key=key)
+                )
             in_channels = out_channels
         self.output_shape = output_shape
 

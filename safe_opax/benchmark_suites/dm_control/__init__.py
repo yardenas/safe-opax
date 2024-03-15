@@ -207,7 +207,6 @@ def make(cfg: DictConfig) -> EnvironmentFactory:
         domain_name, task_cfg = get_domain_and_task(cfg)
         env = DMCWrapper(domain_name, task_cfg.task)
         flat_env = FlattenObservation(env)  # type: ignore
-        flat_env.seed(cfg.training.seed)
         return flat_env
 
     return make_env

@@ -4,7 +4,7 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 import numpy as np
-from gymnasium import spaces
+from gymnasium.spaces import Box
 from omegaconf import DictConfig
 
 from safe_opax.common.learner import Learner
@@ -26,7 +26,7 @@ from safe_opax.rl.utils import Count, PRNGSequence, add_to_buffer
 def policy(actor, model, prev_state, observation, key):
     def per_env_policy(prev_state, observation, key):
         model_key, policy_key = jax.random.split(key)
-        current_rssm_state = model.step(
+        current_rssm_state = model.infer_state(
             prev_state.rssm_state, observation, prev_state.prev_action, model_key
         )
         action = actor.act(current_rssm_state.flatten(), policy_key)
@@ -102,8 +102,8 @@ def make_actor_critic(safe, state_dim, action_dim, cfg, key, belief=None):
 class LaMBDA:
     def __init__(
         self,
-        observation_space: spaces.Box,
-        action_space: spaces.Box,
+        observation_space: Box,
+        action_space: Box,
         config: DictConfig,
     ):
         self.config = config
