@@ -1,6 +1,6 @@
 defaults:
   - _self_
-  - agent: lambda
+  - agent: la_mbda
   - environment: dm_cartpole
 
 hydra:

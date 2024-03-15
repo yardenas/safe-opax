@@ -110,7 +110,8 @@ class ReplayBuffer:
             o = self.observation[episode_ids[:, None], timestep_ids]
             if self.obs_dtype == np.uint8:
                 o = preprocess(o).astype(self.dtype)
-            yield o, a, r, c
+            o, next_o = o[:, :-1], o[:, 1:]
+            yield o, next_o, a, r, c
 
     def sample(self, n_batches: int) -> Iterator[TrajectoryData]:
         if self.empty:
@@ -142,5 +143,5 @@ def _make_dataset(generator, example):
         generator,
         *zip(*tuple((v.dtype, v.shape) for v in example)),
     )
-    dataset = dataset.prefetch(10)
+    dataset = dataset.prefetch(tfd.AUTOTUNE)
     return dataset

@@ -39,6 +39,6 @@ lambda_: 0.97
 plan_horizon: 15
 update_steps: 20
 train_every: 4
-beta_model: 0.0001
-free_nats_model: 1.5
+beta: 2.0
+free_nats: 3.
 safety_slack: 1.

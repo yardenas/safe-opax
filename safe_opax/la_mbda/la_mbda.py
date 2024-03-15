@@ -198,15 +198,10 @@ class LaMBDA:
 def prepare_features(batch: TrajectoryData) -> tuple[rssm.Features, FloatArray]:
     reward = batch.reward[..., None]
     terminals = jnp.zeros_like(reward)
-    dones = jnp.zeros_like(reward)
-    dones = dones.at[:, -1::].set(1.0)
     features = rssm.Features(
         jnp.asarray(batch.next_observation),
         jnp.asarray(reward),
         jnp.asarray(batch.cost[..., None]),
         jnp.asarray(terminals),
-        jnp.asarray(dones),
     )
-    flat = lambda x: x.reshape(-1, *x.shape[2:])
-    features = jax.tree_map(flat, features)
-    return features, flat(batch.action)
+    return features, batch.action
