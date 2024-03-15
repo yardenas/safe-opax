@@ -11,6 +11,7 @@ from safe_opax.la_mbda.rssm import RSSM, Features, ShiftScale, State
 from safe_opax.la_mbda.types import Prediction
 from safe_opax.rl.types import Policy
 
+_EMBEDDING_SIZE = 1024
 
 class Encoder(eqx.Module):
     cnn_layers: list[eqx.nn.Conv2d]
@@ -42,6 +43,7 @@ class Encoder(eqx.Module):
         x = observation
         for layer in self.cnn_layers:
             x = jnn.relu(layer(x))
+        x = x.ravel()
         return x
 
 
@@ -60,7 +62,7 @@ class Decoder(eqx.Module):
         depth = 32
         linear_key, *keys = jax.random.split(key, len(kernels) + 1)
         in_channels = 32 * depth
-        self.linear = eqx.nn.Linear(1024, in_channels, key=linear_key)
+        self.linear = eqx.nn.Linear(_EMBEDDING_SIZE, in_channels, key=linear_key)
         self.cnn_layers = []
         for i, (key, kernel) in enumerate(zip(keys, kernels)):
             if i != len(kernels) - 1:
@@ -119,7 +121,7 @@ class WorldModel(eqx.Module):
             deterministic_size,
             stochastic_size,
             hidden_size,
-            hidden_size,
+            _EMBEDDING_SIZE,
             action_dim,
             cell_key,
         )
@@ -167,7 +169,7 @@ class WorldModel(eqx.Module):
         action: jax.Array,
         key: jax.Array,
     ) -> State:
-        obs_embeddings = jnn.elu(self.encoder(observation))
+        obs_embeddings = self.encoder(observation)
         state, *_ = self.cell.filter(state, obs_embeddings, action, key)
         return state
 
