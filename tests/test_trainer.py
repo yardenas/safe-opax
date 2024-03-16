@@ -19,6 +19,9 @@ class DummyAgent:
     def observe(self, *args, **kwargs):
         pass
 
+    def log(self, *args, **kwargs):
+        pass
+
 
 @pytest.fixture
 def config():
@@ -48,6 +51,7 @@ def trainer(config):
         at_epoch=[lambda *_: None],
     ) as trainer:
         yield trainer
+    assert trainer.state_writer is not None
     pathlib.Path(f"{trainer.state_writer.log_dir}/state.pkl").unlink()
 
 
@@ -67,6 +71,7 @@ def test_epoch(trainer):
     )
     assert new_trainer.step == trainer.step
     assert new_trainer.epoch == trainer.epoch
+    assert new_trainer.seeds is not None
     assert (new_trainer.seeds.key == trainer.seeds.key).all()
     with new_trainer as new_trainer:
         new_trainer_summary = new_trainer._run_training_epoch(1, "train")
