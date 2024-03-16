@@ -210,8 +210,8 @@ class WorldModel(eqx.Module):
             state,
             inputs,
         )
-        out = jax.vmap(self.decoder)(state.flatten())
-        reward, cost = out[:, -2], out[:, -1]
+        out = jax.vmap(self.reward_cost_decoder)(state.flatten())
+        reward, cost = out[..., 0], out[..., -1]
         out = Prediction(state.flatten(), reward, cost)
         return out
 
@@ -233,14 +233,19 @@ def variational_step(
         inference_result: InferenceResult = eqx.filter_vmap(infer_fn)(features, actions)
         y = features.observation, jnp.concatenate([features.reward, features.cost], -1)
         y_hat = inference_result.image, inference_result.reward_cost
-        reconstruction_loss = sum(*map(l2_loss, y_hat, y))
-        dynamics_kl_loss = kl_divergence(
-            inference_result.posteriors, inference_result.priors, free_nats, kl_mix
+        reconstruction_loss = sum(
+            map(
+                lambda predictions, targets: l2_loss(predictions, targets).mean(),
+                y_hat,
+                y,
+            )
         )
-        kl_loss = dynamics_kl_loss.mean()
+        kl_loss = kl_divergence(
+            inference_result.posteriors, inference_result.priors, free_nats, kl_mix
+        ).mean()
         aux = dict(
             reconstruction_loss=reconstruction_loss,
-            kl_loss=dynamics_kl_loss,
+            kl_loss=kl_loss,
             states=inference_result.state,
         )
         return reconstruction_loss + beta * kl_loss, aux

@@ -9,3 +9,9 @@ training:
   time_limit: 100
   adaptation_budget: 5
   parallel_envs: 5
+  
+agent:
+  update_steps: 2
+  replay_buffer:
+    batch_size: 4
+    sequence_length: 16

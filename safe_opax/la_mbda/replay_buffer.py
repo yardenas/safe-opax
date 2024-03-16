@@ -56,7 +56,7 @@ class ReplayBuffer:
         self._dataset = _make_dataset(self._generator, example)
 
     def add(self, trajectory: TrajectoryData):
-        capacity, episode_length = self.reward.shape
+        capacity, _ = self.reward.shape
         batch_size = min(trajectory.observation.shape[0], capacity)
         # Discard data if batch size overflows capacity.
         end = min(self.episode_id + batch_size, capacity)

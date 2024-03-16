@@ -72,7 +72,7 @@ class SafeModelBasedActorCritic:
         self.lambda_ = lambda_
         self.safety_discount = safety_discount
         self.safety_budget = safety_budget
-        self.update_fn = vanilla_safe_update_actor_critic
+        self.update_fn = batched_update_safe_actor_critic
         self.penalizer = penalizer
 
     def update(
@@ -210,8 +210,7 @@ def evaluate_actor(
     )
 
 
-@eqx.filter_jit
-def safe_update_actor_critic(
+def update_safe_actor_critic(
     rollout_fn: RolloutFn,
     horizon: int,
     initial_states: jax.Array,
@@ -286,7 +285,7 @@ def safe_update_actor_critic(
 
 
 @eqx.filter_jit
-def vanilla_safe_update_actor_critic(
+def batched_update_safe_actor_critic(
     rollout_fn: RolloutFn,
     horizon: int,
     initial_states: jax.Array,
@@ -308,7 +307,7 @@ def vanilla_safe_update_actor_critic(
     penalty_state: Any,
 ) -> SafeActorCriticStepResults:
     vmapped_rollout_fn = jax.vmap(rollout_fn, (None, 0, None, None))
-    return safe_update_actor_critic(
+    return update_safe_actor_critic(
         vmapped_rollout_fn,
         horizon,
         initial_states,
