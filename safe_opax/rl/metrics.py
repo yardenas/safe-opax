@@ -1,8 +1,10 @@
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Sequence
 
 import numpy as np
 import numpy.typing as npt
+from tabulate import tabulate
 
 
 @dataclass
@@ -15,6 +17,28 @@ class Metrics:
     @property
     def std(self) -> npt.NDArray[Any]:
         return np.sqrt(self.var)
+
+
+class MetricsMonitor:
+    def __init__(self):
+        self.metrics = defaultdict(MetricsAccumulator)
+
+    def __getitem__(self, item: str):
+        return self.metrics[item]
+
+    def __setitem__(self, key: str, value: float):
+        self.metrics[key].update_state(value)
+
+    def __str__(self) -> str:
+        table = []
+        for k, v in self.metrics.items():
+            metrics = v.result
+            table.append([k, metrics.mean, metrics.std, metrics.min, metrics.max])
+        return tabulate(
+            table,
+            headers=["Metric", "Mean", "Std", "Min", "Max"],
+            tablefmt="orgtbl",
+        )
 
 
 class MetricsAccumulator:

@@ -6,6 +6,7 @@ from omegaconf import DictConfig
 from safe_opax.benchmark_suites.utils import get_domain_and_task
 
 from safe_opax.rl.types import EnvironmentFactory
+from safe_opax.rl.wrappers import ImageObservation
 
 
 # From:
@@ -190,7 +191,7 @@ class DMCWrapper:
         self.env.task._random = np.random.RandomState(seed)
 
     def render(self, camera_id=None, **kwargs):
-        self.env.task.visualize_reward = True
+        self.env.task.visualize_reward = kwargs.get("visualize_reward", False)
         if camera_id is None:
             camera_id = -1
         return self.env.physics.render(camera_id=camera_id)
@@ -206,9 +207,18 @@ def make(cfg: DictConfig) -> EnvironmentFactory:
 
         domain_name, task_cfg = get_domain_and_task(cfg)
         env = DMCWrapper(domain_name, task_cfg.task)
-        flat_env = FlattenObservation(env)  # type: ignore
-        flat_env.seed(cfg.training.seed)
-        return flat_env
+        if task_cfg.image_observation.enabled:
+            env = ImageObservation(
+                env,
+                task_cfg.image_observation.image_size,
+                task_cfg.image_observation.image_format,
+                render_kwargs={
+                    "visualize_reward": task_cfg.image_observation.visualize_reward
+                },
+            )
+        else:
+            env = FlattenObservation(env)
+        return env
 
     return make_env
 

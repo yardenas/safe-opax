@@ -1,6 +1,6 @@
 defaults:
   - _self_
-  - agent: lambda
+  - agent: la_mbda
   - environment: dm_cartpole
 
 hydra:
@@ -27,7 +27,7 @@ writers:
 wandb_group: ${hydra.job.override_dirname}
 
 training:
-  safe: True
+  safe: true
   safety_budget: 100
   seed: 0
   time_limit: 1000

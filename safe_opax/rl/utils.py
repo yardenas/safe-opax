@@ -1,68 +1,7 @@
-from typing import Any
-
 import equinox as eqx
 import jax
-import jax.nn as jnn
-import jax.numpy as jnp
-import optax
-from jaxtyping import PyTree
 
 from safe_opax.rl.trajectory import TrajectoryData
-
-
-class Learner:
-    def __init__(
-        self, model: PyTree, optimizer_config: dict[str, Any], batched: bool = False
-    ):
-        self.optimizer = optax.chain(
-            optax.clip_by_global_norm(optimizer_config.get("clip", float("inf"))),
-            optax.scale_by_adam(eps=optimizer_config.get("eps", 1e-8)),
-            optax.scale(-optimizer_config.get("lr", 1e-3)),
-        )
-        if batched:
-            init_fn = eqx.filter_vmap(lambda model: self.optimizer.init(model))
-        else:
-            init_fn = self.optimizer.init
-        self.state = init_fn(eqx.filter(model, eqx.is_array))
-
-    def grad_step(
-        self, model: PyTree, grads: PyTree, state: optax.OptState
-    ) -> tuple[PyTree, optax.OptState]:
-        updates, new_opt_state = self.optimizer.update(grads, state)
-        all_ok = all_finite(updates)
-        updates = update_if(
-            all_ok, updates, jax.tree_map(lambda x: jnp.zeros_like(x), updates)
-        )
-        new_opt_state = update_if(all_ok, new_opt_state, state)
-        model = eqx.apply_updates(model, updates)
-        return model, new_opt_state
-
-
-def all_finite(tree):
-    leaves = jax.tree_util.tree_leaves(tree)
-    if not leaves:
-        return jnp.array(True)
-    else:
-        leaves = list(map(jnp.isfinite, leaves))
-        leaves = list(map(jnp.all, leaves))
-        return jnp.stack(list(leaves)).all()
-
-
-def update_if(pred, update, fallback):
-    return jax.tree_map(lambda x, y: jax.lax.select(pred, x, y), update, fallback)
-
-
-def inv_softplus(x):
-    return jnp.where(x < 20.0, jnp.log(jnp.exp(x) - 1.0), x)
-
-
-def clip_stddev(stddev, stddev_min, stddev_max, stddev_scale=1.0):
-    stddev = jnp.clip(
-        (stddev + inv_softplus(0.1)) * stddev_scale,
-        inv_softplus(stddev_min),
-        inv_softplus(stddev_max),
-    )
-    return jnn.softplus(stddev)
 
 
 class PRNGSequence:
@@ -82,13 +21,11 @@ class PRNGSequence:
         return keys[1:]
 
 
-def add_to_buffer(buffer, trajectory, normalizer, reward_scale):
-    results = normalizer.result
-    normalize_fn = lambda x: normalize(x, results.mean, results.std)
+def add_to_buffer(buffer, trajectory, reward_scale):
     buffer.add(
         TrajectoryData(
-            normalize_fn(trajectory.observation),
-            normalize_fn(trajectory.next_observation),
+            trajectory.observation,
+            trajectory.next_observation,
             trajectory.action,
             trajectory.reward * reward_scale,
             trajectory.cost,
@@ -96,11 +33,7 @@ def add_to_buffer(buffer, trajectory, normalizer, reward_scale):
     )
 
 
-def normalize(
-    observation,
-    mean,
-    std,
-):
+def normalize(observation, mean, std):
     diff = observation - mean
     return diff / (std + 1e-8)
 
@@ -131,14 +64,3 @@ class Count:
         bingo = (self.count + 1) == self.n
         self.count = (self.count + 1) % self.n
         return bingo
-
-
-def pytrees_unstack(pytree):
-    leaves, treedef = jax.tree_flatten(pytree)
-    n_trees = leaves[0].shape[0]
-    new_leaves = [[] for _ in range(n_trees)]
-    for leaf in leaves:
-        for i in range(n_trees):
-            new_leaves[i].append(leaf[i])
-    new_trees = [treedef.unflatten(leaf) for leaf in new_leaves]
-    return new_trees

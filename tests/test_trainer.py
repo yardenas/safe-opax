@@ -31,6 +31,7 @@ def config():
                 "training.parallel_envs=5",
                 "training.action_repeat=4",
                 "training.episodes_per_epoch=1",
+                "environment.dm_cartpole.image_observation.enabled=false",
             ],
         )
         return cfg
@@ -44,6 +45,7 @@ def trainer(config):
         config,
         make_env,
         DummyAgent(dummy_env.action_space, config),
+        at_epoch=[lambda *_: None],
     ) as trainer:
         yield trainer
     pathlib.Path(f"{trainer.state_writer.log_dir}/state.pkl").unlink()
@@ -51,9 +53,13 @@ def trainer(config):
 
 def test_epoch(trainer):
     trainer.train(1)
-    for _ in range(5):
+    wait_count = 10
+    while wait_count > 0:
+        time.sleep(0.5)
         if not pathlib.Path(f"{trainer.state_writer.log_dir}/state.pkl").exists():
-            time.sleep(1)
+            wait_count -= 1
+            if wait_count == 0:
+                pytest.fail("state file was not written")
         else:
             break
     new_trainer = Trainer.from_pickle(

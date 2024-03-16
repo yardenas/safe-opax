@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-from collections import defaultdict
 from queue import Queue
 from threading import Thread
 from typing import Any, Protocol
@@ -10,9 +9,9 @@ import cloudpickle
 import numpy as np
 from numpy import typing as npt
 from omegaconf import DictConfig
+from omegaconf.errors import InterpolationKeyError
 import omegaconf
 from tabulate import tabulate
-from safe_opax.rl import metrics as m
 
 log = logging.getLogger("logger")
 
@@ -131,7 +130,11 @@ class WeightAndBiasesWriter:
     def __init__(self, config: DictConfig):
         import wandb
 
-        wandb.init(project="safe-opax", resume=True, group=config.wandb_group)
+        try:
+            group = config.wandb_group
+        except InterpolationKeyError:
+            group = None
+        wandb.init(project="safe-opax", resume=True, group=group)
         wandb.config = omegaconf.OmegaConf.to_container(config)
         self._handle = wandb
 
@@ -158,8 +161,9 @@ class WeightAndBiasesWriter:
 
 
 class StateWriter:
-    def __init__(self, log_dir: str):
+    def __init__(self, log_dir: str, state_filename: str):
         self.log_dir = log_dir
+        self.state_filename = state_filename
         if not os.path.exists(log_dir):
             os.makedirs(log_dir, exist_ok=True)
         self.queue: Queue[bytes] = Queue(maxsize=5)
@@ -178,7 +182,7 @@ class StateWriter:
     def _worker(self):
         while not self.queue.empty():
             state_bytes = self.queue.get(timeout=1)
-            with open(os.path.join(self.log_dir, "state.pkl"), "wb") as f:
+            with open(os.path.join(self.log_dir, self.state_filename), "wb") as f:
                 f.write(state_bytes)
                 self.queue.task_done()
 
@@ -186,25 +190,3 @@ class StateWriter:
         self.queue.join()
         if self._thread.is_alive():
             self._thread.join()
-
-
-class MetricsMonitor:
-    def __init__(self):
-        self._metrics = defaultdict(m.MetricsAccumulator)
-
-    def __getitem__(self, item: str):
-        return self._metrics[item]
-
-    def __setitem__(self, key: str, value: float):
-        self._metrics[key].update_state(value)
-
-    def __str__(self) -> str:
-        table = []
-        for k, v in self._metrics.items():
-            metrics = v.result
-            table.append([k, metrics.mean, metrics.std, metrics.min, metrics.max])
-        return tabulate(
-            table,
-            headers=["Metric", "Mean", "Std", "Min", "Max"],
-            tablefmt="orgtbl",
-        )
