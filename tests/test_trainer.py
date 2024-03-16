@@ -31,6 +31,7 @@ def config():
                 "training.parallel_envs=5",
                 "training.action_repeat=4",
                 "training.episodes_per_epoch=1",
+                "environment.dm_cartpole.image_observation.enabled=false",
             ],
         )
         return cfg
