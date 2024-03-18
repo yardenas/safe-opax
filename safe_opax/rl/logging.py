@@ -104,7 +104,7 @@ class TensorboardXWriter:
     def __init__(self, log_dir) -> None:
         import tensorboardX
 
-        self._writer = tensorboardX.FileWriter(log_dir)
+        self._writer = tensorboardX.SummaryWriter(log_dir)
 
     def log(self, summary: dict[str, float], step: int):
         for k, v in summary.items():
