@@ -136,7 +136,7 @@ class WeightAndBiasesWriter:
             group = config.wandb_group
         except InterpolationKeyError:
             group = None
-        wandb.init(project="safe-opax", resume=True, group=group)
+        wandb.init(project="safe-opax", resume=True, group=group, notes=config.wandb_notes)
         wandb.config = omegaconf.OmegaConf.to_container(config)
         self._handle = wandb
 
