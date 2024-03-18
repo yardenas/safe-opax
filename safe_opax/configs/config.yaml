@@ -25,7 +25,7 @@ writers:
   - jsonl
   - stderr
 
-wandb_group: ${hydra:job.override_dirname}
+wandb_group: null
 wandb_notes: null
 jit: true
 
