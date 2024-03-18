@@ -35,13 +35,14 @@ class Writer(Protocol):
 class TrainingLogger:
     def __init__(self, config: DictConfig) -> None:
         self._writers: list[Writer] = []
+        log_path = os.getcwd()
         for writer in config.writers:
             if writer == "wandb":
                 self._writers.append(WeightAndBiasesWriter(config))
             elif writer == "jsonl":
-                self._writers.append(JsonlWriter(config.log_dir))
+                self._writers.append(JsonlWriter(log_path))
             elif writer == "tensorboard":
-                self._writers.append(TensorboardXWriter(config.log_dir))
+                self._writers.append(TensorboardXWriter(log_path))
             elif writer == "stderr":
                 self._writers.append(StdErrWriter())
             else:
