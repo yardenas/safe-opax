@@ -70,7 +70,8 @@ class StdErrWriter:
     def log(self, summary: dict[str, float], step: int):
         to_log = [[k, v] for k, v in summary.items()]
         self._logger.info(
-            tabulate(to_log, headers=["Metric", "Value"], tablefmt="orgtbl")
+            f"Step {step} summary:\n"
+            + tabulate(to_log, headers=["Metric", "Value"], tablefmt="orgtbl")
         )
 
     def log_video(
