@@ -117,7 +117,7 @@ class ReplayBuffer:
         if self.empty:
             return
         for batch in self._dataset.take(n_batches):
-            yield TrajectoryData(*map(lambda x: x.numpy(), batch))
+            yield TrajectoryData(*map(lambda x: x.numpy(), batch))  # type: ignore
 
     def __getstate__(self):
         state = self.__dict__.copy()

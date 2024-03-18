@@ -120,6 +120,7 @@ class LaMBDA:
         )
         self.prng = PRNGSequence(config.training.seed)
         action_shape = int(np.prod(action_space.shape))
+        assert len(observation_space.shape) == 3
         self.model = WorldModel(
             image_shape=observation_space.shape,
             action_dim=action_shape,

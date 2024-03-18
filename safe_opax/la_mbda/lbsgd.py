@@ -17,8 +17,8 @@ class LBSGDState(NamedTuple):
 
 
 def compute_lr(constraint, loss_grads, constraint_grads, m_0, m_1, eta):
-    constraint_grads, _ = jax.flatten_util.ravel_pytree(constraint_grads)
-    loss_grads, _ = jax.flatten_util.ravel_pytree(loss_grads)
+    constraint_grads, _ = jax.flatten_util.ravel_pytree(constraint_grads)  # type: ignore
+    loss_grads, _ = jax.flatten_util.ravel_pytree(loss_grads)  # type: ignore
     projection = constraint_grads.dot(loss_grads)
     lhs = (
         constraint
@@ -65,7 +65,7 @@ def lbsgd_update(
 
 def jacrev(f, has_aux=False):
     def jacfn(x):
-        y, vjp_fn, aux = eqx.filter_vjp(f, x, has_aux=has_aux)
+        y, vjp_fn, aux = eqx.filter_vjp(f, x, has_aux=has_aux)  # type: ignore
         (J,) = eqx.filter_vmap(vjp_fn, in_axes=0)(jnp.eye(len(y)))
         return J, aux
 
