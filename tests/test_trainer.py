@@ -20,7 +20,7 @@ class DummyAgent:
         pass
 
     def log(self, *args, **kwargs):
-        return {}
+        pass
 
 
 @pytest.fixture
