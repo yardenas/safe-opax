@@ -4,7 +4,7 @@ defaults:
 name: lambda
 replay_buffer:
   batch_size: 32
-  sequence_length: 64
+  sequence_length: 50
   capacity: 1000
 model:
   hidden_size: 200
