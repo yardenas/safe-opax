@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Callable, Optional
+from typing import Optional
 
 import cloudpickle
 from omegaconf import DictConfig
@@ -30,11 +30,9 @@ def should_resume(state_path: str) -> bool:
 
 def start_fresh(
     cfg: DictConfig,
-    at_epoch: list[Callable[[EpochSummary, int, int, TrainingLogger], None]]
-    | None = None,
 ) -> "Trainer":
     make_env = benchmark_suites.make(cfg)
-    return Trainer(cfg, make_env, at_epoch=at_epoch)
+    return Trainer(cfg, make_env)
 
 
 def load_state(cfg, state_path) -> "Trainer":
@@ -47,8 +45,6 @@ class Trainer:
         config: DictConfig,
         make_env: EnvironmentFactory,
         agent: Agent | None = None,
-        at_epoch: list[Callable[[EpochSummary, int, int, TrainingLogger], None]]
-        | None = None,
         start_epoch: int = 0,
         step: int = 0,
         seeds: PRNGSequence | None = None,
@@ -62,7 +58,6 @@ class Trainer:
         self.state_writer: StateWriter | None = None
         self.env: episodic_async_env.EpisodicAsync | None = None
         self.agent = agent
-        self.at_epoch = at_epoch if at_epoch is not None else []
 
     def __enter__(self):
         log_path = os.getcwd()
@@ -99,19 +94,20 @@ class Trainer:
         assert logger is not None and state_writer is not None and agent is not None
         for epoch in range(epoch, epochs or self.config.training.epochs):
             _LOG.info(f"Training epoch #{epoch}")
-            summary = self._run_training_epoch(
-                episodes_per_epoch=self.config.training.episodes_per_epoch,
-                prefix="train",
-            )
-            for at_epoch in self.at_epoch + [agent.log]:
-                at_epoch(summary, epoch, self.step, logger)
+            summary = self._run_training_epoch(self.config.training.episodes_per_epoch)
+            objective, cost_rate, feasibilty = summary.metrics
+            report = {
+                "train/objective": objective,
+                "train/cost_rate": cost_rate,
+                "train/feasibility": feasibilty,
+            } | agent.log(summary, epoch, self.step)
+            logger.log(report, self.step)
             self.epoch = epoch + 1
             state_writer.write(self.state)
 
     def _run_training_epoch(
         self,
         episodes_per_epoch: int,
-        prefix: str,
     ) -> EpochSummary:
         agent, env, logger, seeds = self.agent, self.env, self.logger, self.seeds
         assert (
@@ -128,15 +124,6 @@ class Trainer:
             True,
             self.step,
         )
-        objective, cost_rate, feasibilty = summary.metrics
-        logger.log(
-            {
-                f"{prefix}/objective": objective,
-                f"{prefix}/cost_rate": cost_rate,
-                f"{prefix}/feasibility": feasibilty,
-            },
-            self.step,
-        )
         self.step = step
         next(seeds)
         return summary
@@ -144,7 +131,7 @@ class Trainer:
     @classmethod
     def from_pickle(cls, config: DictConfig, state_path: str) -> "Trainer":
         with open(state_path, "rb") as f:
-            make_env, seeds, agent, epoch, step, at_epoch = cloudpickle.load(f).values()
+            make_env, seeds, agent, epoch, step = cloudpickle.load(f).values()
         assert agent.config == config, "Loaded different hyperparameters."
         _LOG.info(f"Resuming from step {step}")
         return cls(
@@ -154,7 +141,6 @@ class Trainer:
             seeds=seeds,
             agent=agent,
             step=step,
-            at_epoch=at_epoch,
         )
 
     @property
@@ -165,5 +151,4 @@ class Trainer:
             "agent": self.agent,
             "epoch": self.epoch,
             "step": self.step,
-            "at_epoch": self.at_epoch,
         }

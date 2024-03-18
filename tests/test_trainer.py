@@ -20,7 +20,7 @@ class DummyAgent:
         pass
 
     def log(self, *args, **kwargs):
-        pass
+        return {}
 
 
 @pytest.fixture
@@ -48,7 +48,6 @@ def trainer(config):
         config,
         make_env,
         DummyAgent(dummy_env.action_space, config),
-        at_epoch=[lambda *_: None],
     ) as trainer:
         yield trainer
     assert trainer.state_writer is not None
@@ -74,6 +73,6 @@ def test_epoch(trainer):
     assert new_trainer.seeds is not None
     assert (new_trainer.seeds.key == trainer.seeds.key).all()
     with new_trainer as new_trainer:
-        new_trainer_summary = new_trainer._run_training_epoch(1, "train")
+        new_trainer_summary = new_trainer._run_training_epoch(1)
     old_trainer_summary = trainer._run_training_epoch(1, "train")
     assert old_trainer_summary.metrics == new_trainer_summary.metrics
