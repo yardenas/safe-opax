@@ -128,9 +128,14 @@ class WeightAndBiasesWriter:
         import wandb
 
         group = config.wandb_group
-        wandb.config = omegaconf.OmegaConf.to_container(config, resolve=True)
+        config_dict = omegaconf.OmegaConf.to_container(config, resolve=True)
+        assert isinstance(config_dict, dict)
         wandb.init(
-            project="safe-opax", resume=True, notes=config.wandb_notes, group=group
+            project="safe-opax",
+            resume=True,
+            notes=config.wandb_notes,
+            group=group,
+            config=config_dict,
         )
         self._handle = wandb
 
