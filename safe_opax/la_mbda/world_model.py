@@ -42,8 +42,9 @@ class Encoder(eqx.Module):
 
     def __call__(self, observation: jax.Array) -> jax.Array:
         x = observation
-        for layer in self.cnn_layers:
+        for layer in self.cnn_layers[:-1]:
             x = jnn.relu(layer(x))
+        x = self.cnn_layers[-1](x)
         x = x.ravel()
         return x
 
@@ -84,8 +85,9 @@ class ImageDecoder(eqx.Module):
     def __call__(self, flat_state: jax.Array) -> jax.Array:
         x = self.linear(flat_state)
         x = x.reshape(_EMBEDDING_SIZE, 1, 1)
-        for layer in self.cnn_layers:
+        for layer in self.cnn_layers[:-1]:
             x = jnn.relu(layer(x))
+        x = self.cnn_layers[-1](x)
         output = x.reshape(self.output_shape)
         return output
 
