@@ -2,6 +2,7 @@ import logging
 
 import hydra
 from omegaconf import OmegaConf
+import jax
 
 from safe_opax.rl.trainer import get_state_path, load_state, should_resume, start_fresh
 
@@ -21,7 +22,7 @@ def main(cfg):
     else:
         _LOG.info("Starting a new experiment.")
         trainer = start_fresh(cfg)
-    with trainer:
+    with trainer, jax.disable_jit(not cfg.jit):
         trainer.train()
 
 

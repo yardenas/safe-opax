@@ -176,7 +176,7 @@ class LaMBDA:
                 self.metrics_monitor[k] = v
 
     def update_model(self, batch: TrajectoryData) -> jax.Array:
-        features, actions = prepare_features(batch)
+        features, actions = _prepare_features(batch)
         (self.model, self.model_learner.state), (loss, rest) = variational_step(
             features,
             actions,
@@ -206,7 +206,7 @@ class LaMBDA:
         logger.log(report, step)
 
 
-def prepare_features(batch: TrajectoryData) -> tuple[rssm.Features, jax.Array]:
+def _prepare_features(batch: TrajectoryData) -> tuple[rssm.Features, jax.Array]:
     reward = batch.reward[..., None]
     terminals = jnp.zeros_like(reward)
     features = rssm.Features(

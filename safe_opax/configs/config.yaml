@@ -25,6 +25,7 @@ writers:
   - stderr
 
 wandb_group: ${hydra.job.override_dirname}
+jit: true
 
 training:
   safe: true

@@ -1,5 +1,7 @@
 # @package _global_
 
+jit: false
+
 writers:
   - jsonl
   - tensorboard

@@ -107,10 +107,8 @@ class DMCWrapper:
         """
         from dm_control.suite.wrappers import action_scale
         from dm_env import specs
-
         assert isinstance(env.observation_spec(), OrderedDict)
         assert isinstance(env.action_spec(), specs.BoundedArray)
-
         env = action_scale.Wrapper(
             env,
             minimum=np.ones_like(env.action_spec().minimum) * -1,
@@ -119,15 +117,12 @@ class DMCWrapper:
         np.testing.assert_equal(env.action_spec().minimum, -1)
         np.testing.assert_equal(env.action_spec().maximum, 1)
         self.env = env
-
         # Can remove parts of observation by excluding keys here
         observation_keys = tuple(env.observation_spec().keys())
         self.observation_keys = tuple(
             key for key in observation_keys if key not in exclude_keys
         )
-
         observation_space = convert_dm_control_to_gym_space(self.env.observation_spec())
-
         self.observation_space = type(observation_space)(
             [
                 (name, copy.deepcopy(space))
@@ -135,9 +130,7 @@ class DMCWrapper:
                 if name in self.observation_keys
             ]
         )
-
         self.action_space = convert_dm_control_to_gym_space(self.env.action_spec())
-
         if len(self.action_space.shape) > 1:
             raise NotImplementedError(
                 "Shape of the action space ({}) is not flat, make sure to"
@@ -213,7 +206,8 @@ def make(cfg: DictConfig) -> EnvironmentFactory:
                 task_cfg.image_observation.image_size,
                 task_cfg.image_observation.image_format,
                 render_kwargs={
-                    "visualize_reward": task_cfg.image_observation.visualize_reward
+                    "visualize_reward": task_cfg.image_observation.visualize_reward,
+                    "camera_id": 0
                 },
             )
         else:

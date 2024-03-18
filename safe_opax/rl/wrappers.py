@@ -40,7 +40,7 @@ class ImageObservation(ObservationWrapper):
         self.image_size = image_size
         self.image_format = image_format
 
-    def observation(self, _):
+    def observation(self, observation):
         image = self.env.render(**self._render_kwargs)
         image = Image.fromarray(image)
         if image.size != self.image_size:
