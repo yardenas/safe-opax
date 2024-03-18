@@ -90,15 +90,20 @@ class Trainer:
         self.state_writer.close()
 
     def train(self, epochs: Optional[int] = None) -> None:
-        epoch, logger, state_writer = self.epoch, self.logger, self.state_writer
-        assert logger is not None and state_writer is not None
+        epoch, logger, state_writer, agent = (
+            self.epoch,
+            self.logger,
+            self.state_writer,
+            self.agent,
+        )
+        assert logger is not None and state_writer is not None and agent is not None
         for epoch in range(epoch, epochs or self.config.training.epochs):
             _LOG.info(f"Training epoch #{epoch}")
             summary = self._run_training_epoch(
                 episodes_per_epoch=self.config.training.episodes_per_epoch,
                 prefix="train",
             )
-            for at_epoch in self.at_epoch:
+            for at_epoch in self.at_epoch + [agent.log]:
                 at_epoch(summary, epoch, self.step, logger)
             self.epoch = epoch + 1
             state_writer.write(self.state)

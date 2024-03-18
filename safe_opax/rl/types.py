@@ -29,7 +29,7 @@ class Agent(Protocol):
     def __call__(self, observation: FloatArray, train: bool = False) -> FloatArray:
         ...
 
-    def observe(self, transition: TrajectoryData) -> None:
+    def observe(self, trajectory: TrajectoryData) -> None:
         ...
 
     def log(
