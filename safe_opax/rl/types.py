@@ -12,6 +12,7 @@ from numpy import typing as npt
 from omegaconf import DictConfig
 
 from safe_opax.rl.epoch_summary import EpochSummary
+from safe_opax.rl.logging import TrainingLogger
 from safe_opax.rl.trajectory import TrajectoryData
 
 FloatArray = npt.NDArray[Union[np.float32, np.float64]]
@@ -30,5 +31,5 @@ class Agent(Protocol):
     def observe(self, trajectory: TrajectoryData) -> None:
         ...
 
-    def log(self, summary: EpochSummary, epoch: int, step: int) -> dict[str, float]:
+    def log(self, summary: EpochSummary, epoch: int, step: int, logger: TrainingLogger) -> None:
         ...

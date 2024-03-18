@@ -95,13 +95,7 @@ class Trainer:
         for epoch in range(epoch, epochs or self.config.training.epochs):
             _LOG.info(f"Training epoch #{epoch}")
             summary = self._run_training_epoch(self.config.training.episodes_per_epoch)
-            objective, cost_rate, feasibilty = summary.metrics
-            report = {
-                "train/objective": objective,
-                "train/cost_rate": cost_rate,
-                "train/feasibility": feasibilty,
-            } | agent.log(summary, epoch, self.step)
-            logger.log(report, self.step)
+            agent.log(summary, epoch, self.step, logger)
             self.epoch = epoch + 1
             state_writer.write(self.state)
 
