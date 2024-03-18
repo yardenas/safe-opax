@@ -3,7 +3,6 @@ import logging
 import hydra
 from omegaconf import OmegaConf
 
-from safe_opax.la_mbda.la_mbda import LaMBDA
 from safe_opax.rl.trainer import get_state_path, load_state, should_resume, start_fresh
 
 _LOG = logging.getLogger(__name__)
@@ -21,7 +20,7 @@ def main(cfg):
         trainer = load_state(cfg, state_path)
     else:
         _LOG.info("Starting a new experiment.")
-        trainer = start_fresh(cfg, LaMBDA)
+        trainer = start_fresh(cfg)
     with trainer:
         trainer.train()
 
