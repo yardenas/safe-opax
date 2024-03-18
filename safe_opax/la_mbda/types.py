@@ -16,12 +16,6 @@ class Prediction(NamedTuple):
 
 
 class Model(Protocol):
-    def __call__(self, x: jax.Array) -> tuple[jax.Array, jax.Array]:
-        ...
-
-    def step(self, state: jax.Array, action: jax.Array) -> Prediction:
-        ...
-
     def sample(
         self,
         horizon: int,

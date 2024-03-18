@@ -200,7 +200,7 @@ class LaMBDA:
         )
 
 
-def prepare_features(batch: TrajectoryData) -> tuple[rssm.Features, FloatArray]:
+def prepare_features(batch: TrajectoryData) -> tuple[rssm.Features, jax.Array]:
     reward = batch.reward[..., None]
     terminals = jnp.zeros_like(reward)
     features = rssm.Features(
@@ -209,4 +209,5 @@ def prepare_features(batch: TrajectoryData) -> tuple[rssm.Features, FloatArray]:
         jnp.asarray(batch.cost[..., None]),
         jnp.asarray(terminals),
     )
-    return features, batch.action
+    actions = jnp.asarray(batch.action)
+    return features, actions

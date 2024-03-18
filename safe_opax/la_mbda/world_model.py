@@ -1,4 +1,4 @@
-from typing import NamedTuple
+from typing import NamedTuple, TypedDict
 import jax
 import jax.nn as jnn
 import jax.numpy as jnp
@@ -67,8 +67,8 @@ class ImageDecoder(eqx.Module):
         self.linear = eqx.nn.Linear(state_dim, in_channels, key=linear_key)
         self.cnn_layers = []
         for i, (key, kernel) in enumerate(zip(keys, kernels)):
+            out_channels = 2 ** (len(kernels) - i - 2) * depth
             if i != len(kernels) - 1:
-                out_channels = 2 ** (len(kernels) - i - 2) * depth
                 self.cnn_layers.append(
                     eqx.nn.ConvTranspose2d(
                         in_channels, out_channels, kernel, 2, key=key
@@ -178,13 +178,13 @@ class WorldModel(eqx.Module):
     def sample(
         self,
         horizon: int,
-        state: State | jax.Array,
+        initial_state: State | jax.Array,
         key: jax.Array,
         policy: Policy,
     ) -> Prediction:
         def f(carry, inputs):
             prev_state = carry
-            if callable_policy:
+            if callable(policy):
                 key = inputs
                 key, p_key = jax.random.split(key)
                 action = policy(jax.lax.stop_gradient(prev_state.flatten()), p_key)
@@ -193,7 +193,6 @@ class WorldModel(eqx.Module):
             state = self.cell.predict(prev_state, action, key)
             return state, state
 
-        callable_policy = False
         if isinstance(policy, jax.Array):
             inputs: tuple[jax.Array, jax.Array] | jax.Array = (
                 policy,
@@ -201,19 +200,24 @@ class WorldModel(eqx.Module):
             )
             assert policy.shape[0] <= horizon
         else:
-            callable_policy = True
             inputs = jax.random.split(key, horizon)
-        if isinstance(state, jax.Array):
-            state = State.from_flat(state, self.cell.stochastic_size)
-        _, state = jax.lax.scan(
+        if isinstance(initial_state, jax.Array):
+            initial_state = State.from_flat(initial_state, self.cell.stochastic_size)
+        _, initial_state = jax.lax.scan(
             f,
-            state,
+            initial_state,
             inputs,
         )
-        out = jax.vmap(self.reward_cost_decoder)(state.flatten())
+        out = jax.vmap(self.reward_cost_decoder)(initial_state.flatten())
         reward, cost = out[..., 0], out[..., -1]
-        out = Prediction(state.flatten(), reward, cost)
+        out = Prediction(initial_state.flatten(), reward, cost)
         return out
+
+
+class TrainingResults(TypedDict):
+    reconstruction_loss: jax.Array
+    kl_loss: jax.Array
+    states: State
 
 
 @eqx.filter_jit
@@ -227,7 +231,7 @@ def variational_step(
     beta: float = 1.0,
     free_nats: float = 0.0,
     kl_mix: float = 0.8,
-) -> tuple[tuple[WorldModel, OptState], tuple[jax.Array, dict[str, jax.Array]]]:
+) -> tuple[tuple[WorldModel, OptState], tuple[jax.Array, TrainingResults]]:
     def loss_fn(model):
         infer_fn = lambda features, actions: model(features, actions, key)
         inference_result: InferenceResult = eqx.filter_vmap(infer_fn)(features, actions)
@@ -243,7 +247,8 @@ def variational_step(
         kl_loss = kl_divergence(
             inference_result.posteriors, inference_result.priors, free_nats, kl_mix
         ).mean()
-        aux = dict(
+        assert isinstance(reconstruction_loss, jax.Array)
+        aux = TrainingResults(
             reconstruction_loss=reconstruction_loss,
             kl_loss=kl_loss,
             states=inference_result.state,

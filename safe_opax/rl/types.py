@@ -19,8 +19,7 @@ FloatArray = npt.NDArray[Union[np.float32, np.float64]]
 
 EnvironmentFactory = Callable[[], Union[Env[Box, Box], Env[Box, Discrete]]]
 
-
-Policy = Union[Callable[[jax.Array], jax.Array], jax.Array]
+Policy = Union[Callable[[jax.Array, jax.Array | None], jax.Array], jax.Array]
 
 
 class Agent(Protocol):

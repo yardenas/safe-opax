@@ -6,13 +6,15 @@ import numpy as np
 import numpy.typing as npt
 from tabulate import tabulate
 
+from safe_opax.rl.types import FloatArray
+
 
 @dataclass
 class Metrics:
-    mean: npt.ArrayLike
-    var: npt.ArrayLike
-    min: npt.ArrayLike
-    max: npt.ArrayLike
+    mean: FloatArray
+    var: FloatArray
+    min: FloatArray
+    max: FloatArray
 
     @property
     def std(self) -> npt.NDArray[Any]:
@@ -55,15 +57,15 @@ class MetricsAccumulator:
     def update_state(
         self, sample: float | npt.NDArray[Any], axis: int | Sequence[int] = 0
     ) -> None:
-        if isinstance(sample, float) or sample.ndim == 0:
+        if isinstance(sample, (float, int)) or sample.ndim == 0:
             sample = np.array(
                 [
                     sample,
                 ]
             )
-        if isinstance(axis, int) and not isinstance(sample, float):
+        if isinstance(axis, int):
             batch_count = sample.shape[axis]
-        elif isinstance(axis, Sequence) and not isinstance(sample, float):
+        elif isinstance(axis, Sequence):
             batch_count = int(np.prod([sample.shape[i] for i in axis]))
         else:
             batch_count = 1
