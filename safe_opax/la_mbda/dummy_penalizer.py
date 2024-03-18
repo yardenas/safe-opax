@@ -11,6 +11,8 @@ from safe_opax.la_mbda.safe_actor_critic import ActorEvaluation
 
 
 class DummyPenalizer:
+    state: None
+
     def __call__(
         self,
         evaluate: Callable[[ContinuousActor], ActorEvaluation],

@@ -84,7 +84,7 @@ class LBSGDPenalizer:
         evaluate: Callable[[ContinuousActor], ActorEvaluation],
         state: Any,
         actor: ContinuousActor,
-    ) -> tuple[PyTree, Any, ActorEvaluation, dict[str, float]]:
+    ) -> tuple[PyTree, Any, ActorEvaluation, dict[str, jax.Array]]:
         def evaluate_helper(actor):
             evaluation = evaluate(actor)
             outs = jnp.stack([evaluation.loss, evaluation.constraint])

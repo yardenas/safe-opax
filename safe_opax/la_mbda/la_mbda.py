@@ -118,9 +118,10 @@ class LaMBDA:
             capacity=config.agent.replay_buffer.capacity,
         )
         self.prng = PRNGSequence(config.training.seed)
+        action_shape = int(np.prod(action_space.shape))
         self.model = WorldModel(
             image_shape=observation_space.shape,
-            action_dim=np.prod(action_space.shape),
+            action_dim=action_shape,
             key=next(self.prng),
             **config.agent.model,
         )
@@ -128,12 +129,12 @@ class LaMBDA:
         self.actor_critic = make_actor_critic(
             config.training.safe,
             config.agent.model.stochastic_size + config.agent.model.deterministic_size,
-            np.prod(action_space.shape),
+            action_shape,
             config,
             next(self.prng),
         )
         self.state = AgentState.init(
-            config.training.parallel_envs, self.model.cell, np.prod(action_space.shape)
+            config.training.parallel_envs, self.model.cell, action_shape
         )
         self.should_train = Count(config.agent.train_every)
         self.metrics_monitor = MetricsMonitor()
@@ -192,7 +193,7 @@ class LaMBDA:
         return rest["states"].flatten()
 
     def log(self, *_, step: int, logger: TrainingLogger):
-        logger.log({k: v.mean() for k, v in self.metrics_monitor.metrics.items()}, step)
+        logger.log({k: float(v.result.mean) for k, v in self.metrics_monitor.metrics.items()}, step)
 
 
 def prepare_features(batch: TrajectoryData) -> tuple[rssm.Features, FloatArray]:

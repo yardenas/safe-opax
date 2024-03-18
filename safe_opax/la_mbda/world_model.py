@@ -227,7 +227,7 @@ def variational_step(
     beta: float = 1.0,
     free_nats: float = 0.0,
     kl_mix: float = 0.8,
-):
+) -> tuple[tuple[WorldModel, OptState], tuple[jax.Array, dict[str, jax.Array]]]:
     def loss_fn(model):
         infer_fn = lambda features, actions: model(features, actions, key)
         inference_result: InferenceResult = eqx.filter_vmap(infer_fn)(features, actions)
