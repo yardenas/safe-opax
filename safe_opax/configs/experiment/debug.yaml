@@ -2,6 +2,7 @@
 
 writers:
   - jsonl
+  - tensorboard
 
 training:
   epochs: 2
