@@ -32,7 +32,7 @@ class ContinuousActor(eqx.Module):
         )
         self.init_stddev = init_stddev
 
-    def __call__(self, state: jax.Array) -> trx.Normal:
+    def __call__(self, state: jax.Array) -> trx.Transformed:
         x = self.net(state)
         mu, stddev = jnp.split(x, 2, axis=-1)
         init_std = inv_softplus(self.init_stddev)
