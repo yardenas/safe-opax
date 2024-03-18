@@ -13,7 +13,6 @@ from omegaconf.errors import InterpolationKeyError
 import omegaconf
 from tabulate import tabulate
 
-log = logging.getLogger("logger")
 
 _SUMMARY_DEFAULT = "summary"
 
@@ -120,10 +119,7 @@ class TensorboardXWriter:
         fps: int | float = 30,
         flush: bool = False,
     ):
-        # (N, T, C, H, W)
-        self._writer.add_video(
-            name, np.array(images, copy=False).transpose([0, 1, 4, 2, 3]), step, fps=fps
-        )
+        self._writer.add_video(name, np.array(images, copy=False), step, fps=fps)
         if flush:
             self._writer.flush()
 
@@ -136,7 +132,9 @@ class WeightAndBiasesWriter:
             group = config.wandb_group
         except InterpolationKeyError:
             group = None
-        wandb.init(project="safe-opax", resume=True, group=group, notes=config.wandb_notes)
+        wandb.init(
+            project="safe-opax", resume=True, group=group, notes=config.wandb_notes
+        )
         wandb.config = omegaconf.OmegaConf.to_container(config)
         self._handle = wandb
 
@@ -153,7 +151,7 @@ class WeightAndBiasesWriter:
         self._handle.log(
             {
                 "video": self._handle.Video(
-                    np.array(images, copy=False).transpose([0, 1, 4, 2, 3]),
+                    np.array(images, copy=False),
                     fps=int(fps),
                     caption=name,
                 )

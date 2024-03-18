@@ -203,14 +203,14 @@ class WorldModel(eqx.Module):
             inputs = jax.random.split(key, horizon)
         if isinstance(initial_state, jax.Array):
             initial_state = State.from_flat(initial_state, self.cell.stochastic_size)
-        _, initial_state = jax.lax.scan(
+        _, trajectory = jax.lax.scan(
             f,
             initial_state,
             inputs,
         )
-        out = jax.vmap(self.reward_cost_decoder)(initial_state.flatten())
+        out = jax.vmap(self.reward_cost_decoder)(trajectory.flatten())
         reward, cost = out[..., 0], out[..., -1]
-        out = Prediction(initial_state.flatten(), reward, cost)
+        out = Prediction(trajectory.flatten(), reward, cost)
         return out
 
 
@@ -270,3 +270,28 @@ def kl_divergence(
     lhs = posterior_dist.kl_divergence(sg(prior_dist))
     rhs = sg(prior_dist).kl_divergence(posterior_dist)
     return (1.0 - mix) * jnp.maximum(lhs, free_nats) + mix * jnp.maximum(rhs, free_nats)
+
+
+@eqx.filter_jit
+def evaluate_model(
+    model: WorldModel, features: Features, actions: jax.Array, key: jax.Array
+) -> jax.Array:
+    observations = features.observation
+    length = min(observations.shape[1] + 1, 50)
+    conditioning_length = length // 5
+    key, subkey = jax.random.split(key)
+    features = jax.tree_map(lambda x: x[0, :conditioning_length], features)
+    inference_result = model(features, actions[0, :conditioning_length], subkey)
+    state = jax.tree_map(lambda x: x[-1], inference_result.state)
+    prediction = model.sample(
+        length - conditioning_length,
+        state,
+        key,
+        actions[0, conditioning_length:],
+    )
+    y_hat = jax.vmap(model.image_decoder)(prediction.next_state)
+    y = observations[0, conditioning_length:]
+    error = jnp.abs(y - y_hat) / 2.0
+    normalize = lambda image: ((image + 0.5) * 255).astype(jnp.uint8)
+    out = jnp.stack([normalize(x) for x in [y, y_hat, error]])
+    return out

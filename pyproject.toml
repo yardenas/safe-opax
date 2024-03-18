@@ -22,6 +22,7 @@ dm-env = "^1.6"
 distrax = "^0.1.5"
 tensorflow = "2.15"
 pillow = "^10.2.0"
+moviepy = "^1.0.3"
 
 
 [[tool.poetry.source]]

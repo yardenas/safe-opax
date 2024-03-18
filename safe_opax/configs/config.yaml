@@ -7,14 +7,15 @@ hydra:
   run:
     dir: ${log_dir}/${now:%Y-%m-%d}/${now:%H-%M-%S}
   sweep:
-    dir: ${log_dir}/${hydra.job.name}
+    dir: ${log_dir}/${hydra.job.override_dirname}/seed=${training.seed}
     subdir: ${hydra.job.override_dirname}
   job:
     config:
       override_dirname:
         exclude_keys:
           - log_dir
-          - seed
+          - training.seed
+          - wandb_notes
     chdir: true
 
 log_dir: outputs

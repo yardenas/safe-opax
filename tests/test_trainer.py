@@ -5,6 +5,7 @@ import pytest
 from hydra import compose, initialize
 from safe_opax import benchmark_suites
 from safe_opax.rl.trainer import Trainer
+from safe_opax.rl.types import Report
 
 
 class DummyAgent:
@@ -19,8 +20,8 @@ class DummyAgent:
     def observe(self, *args, **kwargs):
         pass
 
-    def log(self, *args, **kwargs):
-        pass
+    def report(self, *args, **kwargs) -> Report:
+        return Report(metrics={}, videos={})
 
 
 @pytest.fixture

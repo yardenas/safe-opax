@@ -14,12 +14,11 @@ from safe_opax.la_mbda.dummy_penalizer import DummyPenalizer
 from safe_opax.la_mbda.lbsgd import LBSGDPenalizer
 from safe_opax.la_mbda.replay_buffer import ReplayBuffer, preprocess
 from safe_opax.la_mbda.safe_actor_critic import SafeModelBasedActorCritic
-from safe_opax.la_mbda.world_model import WorldModel, variational_step
+from safe_opax.la_mbda.world_model import WorldModel, evaluate_model, variational_step
 from safe_opax.rl.epoch_summary import EpochSummary
-from safe_opax.rl.logging import TrainingLogger
 from safe_opax.rl.metrics import MetricsMonitor
 from safe_opax.rl.trajectory import TrajectoryData
-from safe_opax.rl.types import FloatArray
+from safe_opax.rl.types import FloatArray, Report
 from safe_opax.rl.utils import Count, PRNGSequence, add_to_buffer
 
 
@@ -194,16 +193,14 @@ class LaMBDA:
         self.metrics_monitor["agent/model/kl"] = float(rest["kl_loss"].mean())
         return rest["states"].flatten()
 
-    def log(
-        self, summary: EpochSummary, epoch: int, step: int, logger: TrainingLogger
-    ) -> None:
-        objective, cost_rate, feasibilty = summary.metrics
-        report = {
-            "train/objective": objective,
-            "train/cost_rate": cost_rate,
-            "train/feasibility": feasibilty,
-        } | {k: float(v.result.mean) for k, v in self.metrics_monitor.metrics.items()}
-        logger.log(report, step)
+    def report(self, summary: EpochSummary, epoch: int, step: int) -> Report:
+        metrics = {
+            k: float(v.result.mean) for k, v in self.metrics_monitor.metrics.items()
+        }
+        batch = next(self.replay_buffer.sample(1))
+        features, actions = _prepare_features(batch)
+        video = evaluate_model(self.model, features, actions, next(self.prng))
+        return Report(metrics=metrics, videos={"agent/model": video})
 
 
 def _prepare_features(batch: TrajectoryData) -> tuple[rssm.Features, jax.Array]:
