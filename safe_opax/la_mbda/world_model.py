@@ -270,7 +270,7 @@ def kl_divergence(
     prior_dist = dtx.MultivariateNormalDiag(*prior)
     posterior_dist = dtx.MultivariateNormalDiag(*posterior)
     lhs = posterior_dist.kl_divergence(sg(prior_dist))
-    rhs = sg(prior_dist).kl_divergence(posterior_dist)
+    rhs = sg(posterior_dist).kl_divergence(prior_dist)
     return (1.0 - mix) * jnp.maximum(lhs, free_nats) + mix * jnp.maximum(rhs, free_nats)
 
 
