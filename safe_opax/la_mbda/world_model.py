@@ -295,7 +295,7 @@ def evaluate_model(
     y_hat = inference_result.image
     # y = observations[0, conditioning_length:]
     y = observations[0]
-    error = jnp.abs(y - y_hat) / 2.0
+    error = jnp.abs(y - y_hat) / 2.0 - 0.5
     normalize = lambda image: ((image + 0.5) * 255).astype(jnp.uint8)
     out = jnp.stack([normalize(x) for x in [y, y_hat, error]])
     return out
