@@ -25,8 +25,11 @@ writers:
   - jsonl
   - stderr
 
-wandb_group: null
-wandb_notes: null
+wandb:
+  group: null
+  notes: null
+  name: null
+
 jit: true
 
 training:
