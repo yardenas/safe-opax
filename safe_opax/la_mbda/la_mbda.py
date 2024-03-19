@@ -139,6 +139,9 @@ class LaMBDA:
         )
         self.should_train = Count(config.agent.train_every)
         self.metrics_monitor = MetricsMonitor()
+        self._policy = lambda *_: np.repeat(
+            action_space.sample()[None], config.training.parallel_envs, 0
+        )
 
     def __call__(
         self,
@@ -147,13 +150,7 @@ class LaMBDA:
     ) -> FloatArray:
         if train and not self.replay_buffer.empty and self.should_train():
             self.update()
-        actions, self.state = policy(
-            self.actor_critic.actor,
-            self.model,
-            self.state,
-            observation,
-            next(self.prng),
-        )
+        actions = self._policy(observation)
         return np.asarray(actions)
 
     def observe(self, trajectory: TrajectoryData) -> None:
