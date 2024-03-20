@@ -43,7 +43,7 @@ class Encoder(eqx.Module):
     def __call__(self, observation: jax.Array) -> jax.Array:
         x = observation
         for layer in self.cnn_layers[:-1]:
-            x = jnn.relu(layer(x))
+            x = jnn.elu(layer(x))
         x = self.cnn_layers[-1](x)
         x = x.ravel()
         return x
@@ -86,7 +86,7 @@ class ImageDecoder(eqx.Module):
         x = self.linear(flat_state)
         x = x.reshape(_EMBEDDING_SIZE, 1, 1)
         for layer in self.cnn_layers[:-1]:
-            x = jnn.relu(layer(x))
+            x = jnn.elu(layer(x))
         x = self.cnn_layers[-1](x)
         output = x.reshape(self.output_shape)
         return output
@@ -136,7 +136,7 @@ class WorldModel(eqx.Module):
         # 1 + 1 = cost + reward
         # width = 400, layers = 2
         self.reward_cost_decoder = eqx.nn.MLP(
-            state_dim, 1 + 1, 400, 2, key=reward_cost_decoder_key
+            state_dim, 1 + 1, 400, 2, key=reward_cost_decoder_key, activation=jnn.elu
         )
 
     def __call__(
