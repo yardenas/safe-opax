@@ -4,7 +4,7 @@ import jax.nn as jnn
 import jax.numpy as jnp
 import equinox as eqx
 import distrax as dtx
-from optax import OptState, l2_loss
+from optax import OptState
 
 from safe_opax.common.learner import Learner
 from safe_opax.la_mbda.rssm import RSSM, Features, ShiftScale, State
@@ -239,9 +239,13 @@ def variational_step(
         inference_result: InferenceResult = eqx.filter_vmap(infer_fn)(features, actions)
         y = features.observation, jnp.concatenate([features.reward, features.cost], -1)
         y_hat = inference_result.image, inference_result.reward_cost
-        reconstruction_loss = sum(
+        reconstruction_loss = -sum(
             map(
-                lambda predictions, targets: l2_loss(predictions, targets).mean(),
+                lambda predictions, targets: dtx.Independent(
+                    dtx.Normal(targets, 1.0), targets.ndim - 2
+                )
+                .log_prob(predictions)
+                .mean(),
                 y_hat,
                 y,
             )
