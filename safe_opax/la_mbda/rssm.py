@@ -34,7 +34,7 @@ class Features(NamedTuple):
 
     def flatten(self):
         return jnp.concatenate(
-            [self.observation, self.reward, self.cost, self.terminal, self.done],
+            [self.observation, self.reward, self.cost, self.terminal],
             axis=-1,
         )
 
@@ -70,7 +70,7 @@ class Prior(eqx.Module):
 
     def __call__(
         self, prev_state: State, action: jax.Array
-    ) -> tuple[dtx.Normal, jax.Array]:
+    ) -> tuple[ShiftScale, jax.Array]:
         x = jnp.concatenate([prev_state.stochastic, action], -1)
         x = jnn.elu(self.encoder(x))
         hidden = self.cell(x, prev_state.deterministic)

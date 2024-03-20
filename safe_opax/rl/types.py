@@ -1,3 +1,4 @@
+from dataclasses import dataclass, field
 from typing import (
     Callable,
     Protocol,
@@ -12,7 +13,6 @@ from numpy import typing as npt
 from omegaconf import DictConfig
 
 from safe_opax.rl.epoch_summary import EpochSummary
-from safe_opax.rl.logging import TrainingLogger
 from safe_opax.rl.trajectory import TrajectoryData
 
 FloatArray = npt.NDArray[Union[np.float32, np.float64]]
@@ -20,6 +20,12 @@ FloatArray = npt.NDArray[Union[np.float32, np.float64]]
 EnvironmentFactory = Callable[[], Union[Env[Box, Box], Env[Box, Discrete]]]
 
 Policy = Union[Callable[[jax.Array, jax.Array | None], jax.Array], jax.Array]
+
+
+@dataclass
+class Report:
+    metrics: dict[str, float]
+    videos: dict[str, npt.ArrayLike] = field(default_factory=dict)
 
 
 class Agent(Protocol):
@@ -31,5 +37,5 @@ class Agent(Protocol):
     def observe(self, trajectory: TrajectoryData) -> None:
         ...
 
-    def log(self, summary: EpochSummary, epoch: int, step: int, logger: TrainingLogger) -> None:
+    def report(self, summary: EpochSummary, epoch: int, step: int) -> Report:
         ...
