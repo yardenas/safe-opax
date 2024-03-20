@@ -251,8 +251,8 @@ def variational_step(
             )
         )
         kl_loss = kl_divergence(
-            inference_result.posteriors, inference_result.priors, free_nats
-        ).mean()
+            inference_result.posteriors, inference_result.priors, free_nats, kl_mix
+        )
         assert isinstance(reconstruction_loss, jax.Array)
         aux = TrainingResults(
             reconstruction_loss=reconstruction_loss,
@@ -266,12 +266,16 @@ def variational_step(
     return (new_model, new_opt_state), (loss, rest)
 
 
+# https://github.com/danijar/dreamerv2/blob/259e3faa0e01099533e29b0efafdf240adeda4b5/common/nets.py#L130
 def kl_divergence(
-    posterior: ShiftScale, prior: ShiftScale, free_nats: float = 0.0
+    posterior: ShiftScale, prior: ShiftScale, free_nats: float, mix: float
 ) -> jax.Array:
+    sg = lambda x: jax.tree_map(jax.lax.stop_gradient, x)
     prior_dist = dtx.MultivariateNormalDiag(*prior)
     posterior_dist = dtx.MultivariateNormalDiag(*posterior)
-    return jnp.maximum(posterior_dist.kl_divergence(prior_dist), free_nats)
+    lhs = posterior_dist.kl_divergence(sg(prior_dist)).mean()
+    rhs = sg(posterior_dist).kl_divergence(prior_dist).mean()
+    return (1.0 - mix) * jnp.maximum(lhs, free_nats) + mix * jnp.maximum(rhs, free_nats)
 
 
 @eqx.filter_jit
