@@ -280,21 +280,19 @@ def evaluate_model(
 ) -> jax.Array:
     observations = features.observation
     length = min(observations.shape[1] + 1, 50)
-    conditioning_length = length
+    conditioning_length = length // 5
     key, subkey = jax.random.split(key)
     features = jax.tree_map(lambda x: x[0, :conditioning_length], features)
     inference_result = model(features, actions[0, :conditioning_length], subkey)
-    # state = jax.tree_map(lambda x: x[-1], inference_result.state)
-    # prediction = model.sample(
-    #     length - conditioning_length,
-    #     state,
-    #     key,
-    #     actions[0, conditioning_length:],
-    # )
-    # y_hat = jax.vmap(model.image_decoder)(prediction.next_state)
-    y_hat = inference_result.image
-    # y = observations[0, conditioning_length:]
-    y = observations[0]
+    state = jax.tree_map(lambda x: x[-1], inference_result.state)
+    prediction = model.sample(
+        length - conditioning_length,
+        state,
+        key,
+        actions[0, conditioning_length:],
+    )
+    y_hat = jax.vmap(model.image_decoder)(prediction.next_state)
+    y = observations[0, conditioning_length:]
     error = jnp.abs(y - y_hat) / 2.0 - 0.5
     normalize = lambda image: ((image + 0.5) * 255).astype(jnp.uint8)
     out = jnp.stack([normalize(x) for x in [y, y_hat, error]])
