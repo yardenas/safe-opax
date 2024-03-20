@@ -75,5 +75,5 @@ def test_epoch(trainer):
     assert (new_trainer.seeds.key == trainer.seeds.key).all()
     with new_trainer as new_trainer:
         new_trainer_summary = new_trainer._run_training_epoch(1)
-    old_trainer_summary = trainer._run_training_epoch(1, "train")
+    old_trainer_summary = trainer._run_training_epoch(1)
     assert old_trainer_summary.metrics == new_trainer_summary.metrics
