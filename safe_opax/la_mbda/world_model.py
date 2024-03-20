@@ -271,10 +271,9 @@ def kl_divergence(
     posterior: ShiftScale, prior: ShiftScale, free_nats: float, mix: float
 ) -> jax.Array:
     sg = lambda x: jax.tree_map(jax.lax.stop_gradient, x)
-    prior_dist = dtx.MultivariateNormalDiag(*prior)
-    posterior_dist = dtx.MultivariateNormalDiag(*posterior)
-    lhs = posterior_dist.kl_divergence(sg(prior_dist)).mean()
-    rhs = sg(posterior_dist).kl_divergence(prior_dist).mean()
+    mvn = lambda scale_shift: dtx.MultivariateNormalDiag(*scale_shift)
+    lhs = mvn(posterior).kl_divergence(mvn(sg(prior))).mean()
+    rhs = mvn(sg(posterior)).kl_divergence(mvn(prior)).mean()
     return (1.0 - mix) * jnp.maximum(lhs, free_nats) + mix * jnp.maximum(rhs, free_nats)
 
 
