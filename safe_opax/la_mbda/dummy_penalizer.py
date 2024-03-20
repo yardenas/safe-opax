@@ -1,5 +1,3 @@
-"""https://github.com/lasgroup/lbsgd-rl/blob/main/lbsgd_rl/"""
-
 from typing import Any, Callable
 
 import equinox as eqx
