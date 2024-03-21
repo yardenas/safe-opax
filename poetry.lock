@@ -2535,7 +2535,7 @@ dev = ["Pillow", "matplotlib", "pytest (>=4.4.0)"]
 type = "git"
 url = "git@github.com:lasgroup/safe-adaptation-gym.git"
 reference = "HEAD"
-resolved_reference = "90355c2d0a9d55efa93385714fca67f5ad551f04"
+resolved_reference = "860fdf6e74cc2714fff6e79ccd563e80961c37f0"
 
 [[package]]
 name = "scipy"
