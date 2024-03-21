@@ -1,5 +1,3 @@
-"""https://github.com/lasgroup/lbsgd-rl/blob/main/lbsgd_rl/"""
-
 from typing import Any, Callable
 
 import equinox as eqx
@@ -11,7 +9,8 @@ from safe_opax.la_mbda.safe_actor_critic import ActorEvaluation
 
 
 class DummyPenalizer:
-    state: None
+    def __init__(self) -> None:
+        self.state = None
 
     def __call__(
         self,

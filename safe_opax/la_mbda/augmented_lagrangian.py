@@ -53,8 +53,8 @@ class AugmentedLagrangianPenalizer:
     ) -> None:
         self.multiplier_factor = multiplier_factor
         self.state = AugmentedLagrangianState(
-            initial_lagrangian,
-            initial_multiplier,
+            jnp.asarray(initial_lagrangian),
+            jnp.asarray(initial_multiplier),
         )
 
     def __call__(
