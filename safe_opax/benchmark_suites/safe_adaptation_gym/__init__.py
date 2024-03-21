@@ -4,6 +4,7 @@ from gymnasium.wrappers.compatibility import EnvCompatibility
 from safe_opax.benchmark_suites.utils import get_domain_and_task
 
 from safe_opax.rl.types import EnvironmentFactory
+from safe_opax.rl.wrappers import ChannelFirst
 
 
 def make(cfg: DictConfig) -> EnvironmentFactory:
@@ -27,6 +28,11 @@ def make(cfg: DictConfig) -> EnvironmentFactory:
             rgb_observation=task_cfg.image_observation.enabled,
         )
         env = EnvCompatibility(env)
+        if (
+            task_cfg.image_observation.enabled
+            and task_cfg.image_observation.image_format == "channels_first"
+        ):
+            env = ChannelFirst(env)
         return env
 
     return make_env  # type: ignore

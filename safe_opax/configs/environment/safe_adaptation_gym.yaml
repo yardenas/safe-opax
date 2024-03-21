@@ -4,4 +4,3 @@ safe_adaptation_gym:
     enabled: true
     image_size: [64, 64]
     image_format: "channels_first"
-    visualize_reward: true 

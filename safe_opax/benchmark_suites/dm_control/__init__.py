@@ -197,8 +197,6 @@ class DMCWrapper:
 
 def make(cfg: DictConfig) -> EnvironmentFactory:
     def make_env():
-        from gymnasium.wrappers.flatten_observation import FlattenObservation
-
         domain_name, task_cfg = get_domain_and_task(cfg)
         env = DMCWrapper(domain_name, task_cfg.task)
         if task_cfg.image_observation.enabled:
@@ -212,6 +210,8 @@ def make(cfg: DictConfig) -> EnvironmentFactory:
                 },
             )
         else:
+            from gymnasium.wrappers.flatten_observation import FlattenObservation
+
             env = FlattenObservation(env)
         return env
 
