@@ -1,0 +1,6 @@
+safe_adaptation_gym:
+  image_observation:
+    enabled: true
+    image_size: [64, 64]
+    image_format: "channels_first"
+    visualize_reward: true 
