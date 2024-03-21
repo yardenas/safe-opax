@@ -107,6 +107,7 @@ class DMCWrapper:
         """
         from dm_control.suite.wrappers import action_scale
         from dm_env import specs
+
         assert isinstance(env.observation_spec(), OrderedDict)
         assert isinstance(env.action_spec(), specs.BoundedArray)
         env = action_scale.Wrapper(
@@ -207,7 +208,7 @@ def make(cfg: DictConfig) -> EnvironmentFactory:
                 task_cfg.image_observation.image_format,
                 render_kwargs={
                     "visualize_reward": task_cfg.image_observation.visualize_reward,
-                    "camera_id": 0
+                    "camera_id": 0,
                 },
             )
         else:
