@@ -5,6 +5,7 @@ import pytest
 from hydra import compose, initialize
 from safe_opax import benchmark_suites
 from safe_opax.rl.trainer import Trainer
+from safe_opax.rl.types import Report
 
 
 class DummyAgent:
@@ -19,8 +20,8 @@ class DummyAgent:
     def observe(self, *args, **kwargs):
         pass
 
-    def log(self, *args, **kwargs):
-        pass
+    def report(self, *args, **kwargs) -> Report:
+        return Report(metrics={}, videos={})
 
 
 @pytest.fixture
@@ -74,5 +75,5 @@ def test_epoch(trainer):
     assert (new_trainer.seeds.key == trainer.seeds.key).all()
     with new_trainer as new_trainer:
         new_trainer_summary = new_trainer._run_training_epoch(1)
-    old_trainer_summary = trainer._run_training_epoch(1, "train")
+    old_trainer_summary = trainer._run_training_epoch(1)
     assert old_trainer_summary.metrics == new_trainer_summary.metrics

@@ -4,7 +4,7 @@ import jax.nn as jnn
 import jax.numpy as jnp
 import equinox as eqx
 import distrax as dtx
-from optax import OptState, l2_loss
+from optax import OptState
 
 from safe_opax.common.learner import Learner
 from safe_opax.la_mbda.rssm import RSSM, Features, ShiftScale, State
@@ -42,8 +42,9 @@ class Encoder(eqx.Module):
 
     def __call__(self, observation: jax.Array) -> jax.Array:
         x = observation
-        for layer in self.cnn_layers:
-            x = jnn.relu(layer(x))
+        for layer in self.cnn_layers[:-1]:
+            x = jnn.elu(layer(x))
+        x = self.cnn_layers[-1](x)
         x = x.ravel()
         return x
 
@@ -84,8 +85,9 @@ class ImageDecoder(eqx.Module):
     def __call__(self, flat_state: jax.Array) -> jax.Array:
         x = self.linear(flat_state)
         x = x.reshape(_EMBEDDING_SIZE, 1, 1)
-        for layer in self.cnn_layers:
-            x = jnn.relu(layer(x))
+        for layer in self.cnn_layers[:-1]:
+            x = jnn.elu(layer(x))
+        x = self.cnn_layers[-1](x)
         output = x.reshape(self.output_shape)
         return output
 
@@ -134,7 +136,7 @@ class WorldModel(eqx.Module):
         # 1 + 1 = cost + reward
         # width = 400, layers = 2
         self.reward_cost_decoder = eqx.nn.MLP(
-            state_dim, 1 + 1, 400, 2, key=reward_cost_decoder_key
+            state_dim, 1 + 1, 400, 2, key=reward_cost_decoder_key, activation=jnn.elu
         )
 
     def __call__(
@@ -203,14 +205,14 @@ class WorldModel(eqx.Module):
             inputs = jax.random.split(key, horizon)
         if isinstance(initial_state, jax.Array):
             initial_state = State.from_flat(initial_state, self.cell.stochastic_size)
-        _, initial_state = jax.lax.scan(
+        _, trajectory = jax.lax.scan(
             f,
             initial_state,
             inputs,
         )
-        out = jax.vmap(self.reward_cost_decoder)(initial_state.flatten())
+        out = jax.vmap(self.reward_cost_decoder)(trajectory.flatten())
         reward, cost = out[..., 0], out[..., -1]
-        out = Prediction(initial_state.flatten(), reward, cost)
+        out = Prediction(trajectory.flatten(), reward, cost)
         return out
 
 
@@ -237,16 +239,20 @@ def variational_step(
         inference_result: InferenceResult = eqx.filter_vmap(infer_fn)(features, actions)
         y = features.observation, jnp.concatenate([features.reward, features.cost], -1)
         y_hat = inference_result.image, inference_result.reward_cost
-        reconstruction_loss = sum(
+        reconstruction_loss = -sum(
             map(
-                lambda predictions, targets: l2_loss(predictions, targets).mean(),
+                lambda predictions, targets: dtx.Independent(
+                    dtx.Normal(targets, 1.0), targets.ndim - 2
+                )
+                .log_prob(predictions)
+                .mean(),
                 y_hat,
                 y,
             )
         )
         kl_loss = kl_divergence(
             inference_result.posteriors, inference_result.priors, free_nats, kl_mix
-        ).mean()
+        )
         assert isinstance(reconstruction_loss, jax.Array)
         aux = TrainingResults(
             reconstruction_loss=reconstruction_loss,
@@ -265,8 +271,32 @@ def kl_divergence(
     posterior: ShiftScale, prior: ShiftScale, free_nats: float, mix: float
 ) -> jax.Array:
     sg = lambda x: jax.tree_map(jax.lax.stop_gradient, x)
-    prior_dist = dtx.MultivariateNormalDiag(*prior)
-    posterior_dist = dtx.MultivariateNormalDiag(*posterior)
-    lhs = posterior_dist.kl_divergence(sg(prior_dist))
-    rhs = sg(prior_dist).kl_divergence(posterior_dist)
+    mvn = lambda scale_shift: dtx.MultivariateNormalDiag(*scale_shift)
+    lhs = mvn(posterior).kl_divergence(mvn(sg(prior))).mean()
+    rhs = mvn(sg(posterior)).kl_divergence(mvn(prior)).mean()
     return (1.0 - mix) * jnp.maximum(lhs, free_nats) + mix * jnp.maximum(rhs, free_nats)
+
+
+@eqx.filter_jit
+def evaluate_model(
+    model: WorldModel, features: Features, actions: jax.Array, key: jax.Array
+) -> jax.Array:
+    observations = features.observation
+    length = min(observations.shape[1] + 1, 50)
+    conditioning_length = length // 5
+    key, subkey = jax.random.split(key)
+    features = jax.tree_map(lambda x: x[0, :conditioning_length], features)
+    inference_result = model(features, actions[0, :conditioning_length], subkey)
+    state = jax.tree_map(lambda x: x[-1], inference_result.state)
+    prediction = model.sample(
+        length - conditioning_length,
+        state,
+        key,
+        actions[0, conditioning_length:],
+    )
+    y_hat = jax.vmap(model.image_decoder)(prediction.next_state)
+    y = observations[0, conditioning_length:]
+    error = jnp.abs(y - y_hat) / 2.0 - 0.5
+    normalize = lambda image: ((image + 0.5) * 255).astype(jnp.uint8)
+    out = jnp.stack([normalize(x) for x in [y, y_hat, error]])
+    return out

@@ -11,3 +11,6 @@ mem_per_cpu: 5120
 account: ls_krausea
 additional_parameters: {"gpus": "rtx_2080_ti:1", "account": "ls_krausea"}
 array_parallelism: 256
+max_num_timeout: 100
+setup:
+  - '#SBATCH --requeue'
