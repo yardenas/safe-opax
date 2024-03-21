@@ -1,6 +1,7 @@
 import pytest
 
 from tests import make_test_config
+from gymnasium.wrappers.compatibility import EnvCompatibility
 
 from safe_adaptation_gym.safe_adaptation_gym import SafeAdaptationGym
 from safe_opax.benchmark_suites import make
@@ -19,6 +20,7 @@ def config():
 
 def test_make(config):
     env = make(config)()
-    assert isinstance(env, SafeAdaptationGym)
+    assert isinstance(env, EnvCompatibility)
+    assert isinstance(env.env, SafeAdaptationGym)
     outs = env.step(env.action_space.sample())  # type: ignore
-    assert len(outs) == 4
+    assert len(outs) == 5

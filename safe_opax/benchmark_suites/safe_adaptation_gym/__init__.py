@@ -1,5 +1,6 @@
 from omegaconf import DictConfig
 import numpy as np
+from gymnasium.wrappers.compatibility import EnvCompatibility
 from safe_opax.benchmark_suites.utils import get_domain_and_task
 
 from safe_opax.rl.types import EnvironmentFactory
@@ -25,6 +26,7 @@ def make(cfg: DictConfig) -> EnvironmentFactory:
             seed=cfg.training.seed,
             rgb_observation=task_cfg.image_observation.enabled,
         )
+        env = EnvCompatibility(env)
         return env
 
     return make_env  # type: ignore
