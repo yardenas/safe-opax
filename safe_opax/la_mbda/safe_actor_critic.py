@@ -8,6 +8,7 @@ from jaxtyping import PyTree
 from optax import OptState, l2_loss
 
 from safe_opax.common.learner import Learner
+from safe_opax.common.mixed_precision import apply_mixed_precision
 from safe_opax.la_mbda.actor_critic import ContinuousActor, Critic
 from safe_opax.la_mbda.types import Model, Prediction, RolloutFn
 
@@ -285,6 +286,10 @@ def update_safe_actor_critic(
 
 
 @eqx.filter_jit
+@apply_mixed_precision(
+    target_module_names=["critic", "safety_critic", "actor", "rollot_fn"],
+    target_input_names=["initial_states"],
+)
 def batched_update_safe_actor_critic(
     rollout_fn: RolloutFn,
     horizon: int,
