@@ -23,7 +23,7 @@ distrax = "^0.1.5"
 tensorflow = "2.15"
 pillow = "^10.2.0"
 moviepy = "^1.0.3"
-safe-adaptation-gym = {git = "git@github.com:lasgroup/safe-adaptation-gym.git"}
+safe-adaptation-gym = {git = "https://git@github.com/lasgroup/safe-adaptation-gym.git"}
 
 
 [[tool.poetry.source]]
