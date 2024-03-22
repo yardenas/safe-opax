@@ -29,7 +29,9 @@ class ActionRepeat(Wrapper):
 
 
 class ImageObservation(ObservationWrapper):
-    def __init__(self, env, image_size, image_format="channels_first", *, render_kwargs=None):
+    def __init__(
+        self, env, image_size, image_format="channels_first", *, render_kwargs=None
+    ):
         super(ImageObservation, self).__init__(env)
         assert image_format in ["channels_first", "channels_last"]
         size = image_size + (3,) if image_format == "chw" else (3,) + image_size
@@ -49,4 +51,19 @@ class ImageObservation(ObservationWrapper):
         if self.image_format == "channels_first":
             image = np.moveaxis(image, -1, 0)
         image = np.clip(image, 0, 255).astype(np.float32)
+        return image
+
+
+
+class ChannelFirst(ObservationWrapper):
+    def __init__(self, env):
+        super(ChannelFirst, self).__init__(env)
+        shape = self.unwrapped.observation_space.shape
+        assert isinstance(shape, tuple) and len(shape) == 3
+        self.observation_space = Box(
+            0, 255, (shape[2], shape[0], shape[1]), np.float32
+        )
+
+    def observation(self, observation):
+        image = np.moveaxis(observation, -1, 0)
         return image

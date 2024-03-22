@@ -2,10 +2,10 @@ import pathlib
 import time
 import numpy as np
 import pytest
-from hydra import compose, initialize
-from safe_opax import benchmark_suites
+from tests import make_test_config
 from safe_opax.rl.trainer import Trainer
 from safe_opax.rl.types import Report
+from safe_opax import benchmark_suites
 
 
 class DummyAgent:
@@ -26,19 +26,13 @@ class DummyAgent:
 
 @pytest.fixture
 def config():
-    with initialize(version_base=None, config_path="../safe_opax/configs"):
-        cfg = compose(
-            config_name="config",
-            overrides=[
-                "writers=[stderr]",
-                "training.time_limit=32",
-                "training.parallel_envs=5",
-                "training.action_repeat=4",
-                "training.episodes_per_epoch=1",
-                "environment.dm_cartpole.image_observation.enabled=false",
-            ],
-        )
-        return cfg
+    cfg = make_test_config(
+        [
+            "training.action_repeat=4",
+            "environment.dm_cartpole.image_observation.enabled=false",
+        ]
+    )
+    return cfg
 
 
 @pytest.fixture

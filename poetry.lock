@@ -860,6 +860,44 @@ files = [
 protobuf = ["grpcio-tools (>=1.62.1)"]
 
 [[package]]
+name = "gym"
+version = "0.26.2"
+description = "Gym: A universal API for reinforcement learning environments"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "gym-0.26.2.tar.gz", hash = "sha256:e0d882f4b54f0c65f203104c24ab8a38b039f1289986803c7d02cdbe214fbcc4"},
+]
+
+[package.dependencies]
+cloudpickle = ">=1.2.0"
+gym_notices = ">=0.0.4"
+numpy = ">=1.18.0"
+
+[package.extras]
+accept-rom-license = ["autorom[accept-rom-license] (>=0.4.2,<0.5.0)"]
+all = ["ale-py (>=0.8.0,<0.9.0)", "box2d-py (==2.3.5)", "imageio (>=2.14.1)", "lz4 (>=3.1.0)", "matplotlib (>=3.0)", "moviepy (>=1.0.0)", "mujoco (==2.2)", "mujoco_py (>=2.1,<2.2)", "opencv-python (>=3.0)", "pygame (==2.1.0)", "pytest (==7.0.1)", "swig (==4.*)"]
+atari = ["ale-py (>=0.8.0,<0.9.0)"]
+box2d = ["box2d-py (==2.3.5)", "pygame (==2.1.0)", "swig (==4.*)"]
+classic-control = ["pygame (==2.1.0)"]
+mujoco = ["imageio (>=2.14.1)", "mujoco (==2.2)"]
+mujoco-py = ["mujoco_py (>=2.1,<2.2)"]
+other = ["lz4 (>=3.1.0)", "matplotlib (>=3.0)", "moviepy (>=1.0.0)", "opencv-python (>=3.0)"]
+testing = ["box2d-py (==2.3.5)", "imageio (>=2.14.1)", "lz4 (>=3.1.0)", "matplotlib (>=3.0)", "moviepy (>=1.0.0)", "mujoco (==2.2)", "mujoco_py (>=2.1,<2.2)", "opencv-python (>=3.0)", "pygame (==2.1.0)", "pytest (==7.0.1)", "swig (==4.*)"]
+toy-text = ["pygame (==2.1.0)"]
+
+[[package]]
+name = "gym-notices"
+version = "0.0.8"
+description = "Notices for gym"
+optional = false
+python-versions = "*"
+files = [
+    {file = "gym-notices-0.0.8.tar.gz", hash = "sha256:ad25e200487cafa369728625fe064e88ada1346618526102659b4640f2b4b911"},
+    {file = "gym_notices-0.0.8-py3-none-any.whl", hash = "sha256:e5f82e00823a166747b4c2a07de63b6560b1acb880638547e0cabf825a01e463"},
+]
+
+[[package]]
 name = "gymnasium"
 version = "0.29.1"
 description = "A standard API for reinforcement learning and a diverse set of reference environments (formerly Gym)."
@@ -2274,6 +2312,66 @@ files = [
 diagrams = ["jinja2", "railroad-diagrams"]
 
 [[package]]
+name = "pyqt6"
+version = "6.6.1"
+description = "Python bindings for the Qt cross platform application toolkit"
+optional = false
+python-versions = ">=3.6.1"
+files = [
+    {file = "PyQt6-6.6.1-cp38-abi3-macosx_10_14_universal2.whl", hash = "sha256:6b43878d0bbbcf8b7de165d305ec0cb87113c8930c92de748a11c473a6db5085"},
+    {file = "PyQt6-6.6.1-cp38-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:5aa0e833cb5a79b93813f8181d9f145517dd5a46f4374544bcd1e93a8beec537"},
+    {file = "PyQt6-6.6.1-cp38-abi3-win_amd64.whl", hash = "sha256:03a656d5dc5ac31b6a9ad200f7f4f7ef49fa00ad7ce7a991b9bb691617141d12"},
+    {file = "PyQt6-6.6.1.tar.gz", hash = "sha256:9f158aa29d205142c56f0f35d07784b8df0be28378d20a97bcda8bd64ffd0379"},
+]
+
+[package.dependencies]
+PyQt6-Qt6 = ">=6.6.0"
+PyQt6-sip = ">=13.6,<14"
+
+[[package]]
+name = "pyqt6-qt6"
+version = "6.6.2"
+description = "The subset of a Qt installation needed by PyQt6."
+optional = false
+python-versions = "*"
+files = [
+    {file = "PyQt6_Qt6-6.6.2-py3-none-macosx_10_14_x86_64.whl", hash = "sha256:7ef446d3ffc678a8586ff6dc9f0d27caf4dff05dea02c353540d2f614386faf9"},
+    {file = "PyQt6_Qt6-6.6.2-py3-none-macosx_11_0_arm64.whl", hash = "sha256:b8363d88623342a72ac17da9127dc12f259bb3148796ea029762aa2d499778d9"},
+    {file = "PyQt6_Qt6-6.6.2-py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:8d7f674a4ec43ca00191e14945ca4129acbe37a2172ed9d08214ad58b170bc11"},
+    {file = "PyQt6_Qt6-6.6.2-py3-none-win_amd64.whl", hash = "sha256:5a41fe9d53b9e29e9ec5c23f3c5949dba160f90ca313ee8b96b8ffe6a5059387"},
+]
+
+[[package]]
+name = "pyqt6-sip"
+version = "13.6.0"
+description = "The sip module support for PyQt6"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "PyQt6_sip-13.6.0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:d6b5f699aaed0ac1fcd23e8fbca70d8a77965831b7c1ce474b81b1678817a49d"},
+    {file = "PyQt6_sip-13.6.0-cp310-cp310-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:8c282062125eea5baf830c6998587d98c50be7c3a817a057fb95fef647184012"},
+    {file = "PyQt6_sip-13.6.0-cp310-cp310-win32.whl", hash = "sha256:fa759b6339ff7e25f9afe2a6b651b775f0a36bcb3f5fa85e81a90d3b033c83f4"},
+    {file = "PyQt6_sip-13.6.0-cp310-cp310-win_amd64.whl", hash = "sha256:8f9df9f7ccd8a9f0f1d36948c686f03ce1a1281543a3e636b7b7d5e086e1a436"},
+    {file = "PyQt6_sip-13.6.0-cp311-cp311-macosx_10_9_universal2.whl", hash = "sha256:5b9c6b6f9cfccb48cbb78a59603145a698fb4ffd176764d7083e5bf47631d8df"},
+    {file = "PyQt6_sip-13.6.0-cp311-cp311-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:86a7b67c64436e32bffa9c28c9f21bf14a9faa54991520b12c3f6f435f24df7f"},
+    {file = "PyQt6_sip-13.6.0-cp311-cp311-win32.whl", hash = "sha256:58f68a48400e0b3d1ccb18090090299bad26e3aed7ccb7057c65887b79b8aeea"},
+    {file = "PyQt6_sip-13.6.0-cp311-cp311-win_amd64.whl", hash = "sha256:0dfd22cfedd87e96f9d51e0778ca2ba3dc0be83e424e9e0f98f6994d8d9c90f0"},
+    {file = "PyQt6_sip-13.6.0-cp312-cp312-macosx_10_9_universal2.whl", hash = "sha256:3bf03e130fbfd75c9c06e687b86ba375410c7a9e835e4e03285889e61dd4b0c4"},
+    {file = "PyQt6_sip-13.6.0-cp312-cp312-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:43fb8551796030aae3d66d6e35e277494071ec6172cd182c9569ab7db268a2f5"},
+    {file = "PyQt6_sip-13.6.0-cp312-cp312-win32.whl", hash = "sha256:13885361ca2cb2f5085d50359ba61b3fabd41b139fb58f37332acbe631ef2357"},
+    {file = "PyQt6_sip-13.6.0-cp312-cp312-win_amd64.whl", hash = "sha256:24441032a29791e82beb7dfd76878339058def0e97fdb7c1cea517f3a0e6e96b"},
+    {file = "PyQt6_sip-13.6.0-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:3075d8b325382750829e6cde6971c943352309d35768a4d4da0587459606d562"},
+    {file = "PyQt6_sip-13.6.0-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:a6ce80bc24618d8a41be8ca51ad9f10e8bc4296dd90ab2809573df30a23ae0e5"},
+    {file = "PyQt6_sip-13.6.0-cp38-cp38-win32.whl", hash = "sha256:fa7b10af7488efc5e53b41dd42c0f421bde6c2865a107af7ae259aff9d841da9"},
+    {file = "PyQt6_sip-13.6.0-cp38-cp38-win_amd64.whl", hash = "sha256:9adf672f9114687533a74d5c2d4c03a9a929ad5ad9c3e88098a7da1a440ab916"},
+    {file = "PyQt6_sip-13.6.0-cp39-cp39-macosx_10_9_universal2.whl", hash = "sha256:98bf954103b087162fa63b3a78f30b0b63da22fd6450b610ec1b851dbb798228"},
+    {file = "PyQt6_sip-13.6.0-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:39854dba35f8e5a4288da26ecb5f40b4c5ec1932efffb3f49d5ea435a7f37fb3"},
+    {file = "PyQt6_sip-13.6.0-cp39-cp39-win32.whl", hash = "sha256:747f6ca44af81777a2c696bd501bc4815a53ec6fc94d4e25830e10bc1391f8ab"},
+    {file = "PyQt6_sip-13.6.0-cp39-cp39-win_amd64.whl", hash = "sha256:33ea771fe777eb0d1a2c3ef35bcc3f7a286eb3ff09cd5b2fdd3d87d1f392d7e8"},
+    {file = "PyQt6_sip-13.6.0.tar.gz", hash = "sha256:2486e1588071943d4f6657ba09096dc9fffd2322ad2c30041e78ea3f037b5778"},
+]
+
+[[package]]
 name = "pytest"
 version = "7.4.4"
 description = "pytest: simple powerful testing with Python"
@@ -2474,6 +2572,30 @@ files = [
     {file = "ruff-0.1.15-py3-none-win_arm64.whl", hash = "sha256:9a933dfb1c14ec7a33cceb1e49ec4a16b51ce3c20fd42663198746efc0427360"},
     {file = "ruff-0.1.15.tar.gz", hash = "sha256:f6dfa8c1b21c913c326919056c390966648b680966febcb796cc9d1aaab8564e"},
 ]
+
+[[package]]
+name = "safe-adaptation-gym"
+version = "0.0.0"
+description = ""
+optional = false
+python-versions = ">3.8"
+files = []
+develop = false
+
+[package.dependencies]
+dm_control = ">=0.0.403778684"
+gym = ">=0.21.0"
+numpy = ">=1.22.1"
+xmltodict = ">=0.12.0"
+
+[package.extras]
+dev = ["Pillow", "matplotlib", "pytest (>=4.4.0)"]
+
+[package.source]
+type = "git"
+url = "https://git@github.com/lasgroup/safe-adaptation-gym.git"
+reference = "HEAD"
+resolved_reference = "860fdf6e74cc2714fff6e79ccd563e80961c37f0"
 
 [[package]]
 name = "scipy"
@@ -3214,6 +3336,17 @@ files = [
 ]
 
 [[package]]
+name = "xmltodict"
+version = "0.13.0"
+description = "Makes working with XML feel like you are working with JSON"
+optional = false
+python-versions = ">=3.4"
+files = [
+    {file = "xmltodict-0.13.0-py2.py3-none-any.whl", hash = "sha256:aa89e8fd76320154a40d19a0df04a4695fb9dc5ba977cbb68ab3e4eb225e7852"},
+    {file = "xmltodict-0.13.0.tar.gz", hash = "sha256:341595a488e3e01a85a9d8911d8912fd922ede5fecc4dce437eb4b6c8d037e56"},
+]
+
+[[package]]
 name = "zipp"
 version = "3.18.1"
 description = "Backport of pathlib-compatible object wrapper for zip files"
@@ -3231,4 +3364,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10,<3.12"
-content-hash = "988f06794906cff5a9872902cd9a1ea2df27666a0a028adacc38a38dea48d553"
+content-hash = "ef415716304427c6c65a254523e200bf13972b718d265b2dab0b969e7583d79b"
