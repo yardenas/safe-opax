@@ -3,7 +3,7 @@ import jax.numpy as jnp
 import jax
 import equinox as eqx
 from jmp import get_policy
-from safe_opax.common.mixed_precision import with_mixed_precision
+from safe_opax.common.mixed_precision import apply_mixed_precision
 
 
 @pytest.fixture
@@ -23,7 +23,7 @@ class MockModule(eqx.Module):
 
 
 def test_with_mixed_precision(policy):
-    @with_mixed_precision(policy=policy)
+    @apply_mixed_precision(policy=policy)
     def mock_function(input_array, module):
         assert input_array.dtype == policy.compute_dtype
         out = module(input_array)

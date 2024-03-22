@@ -4,6 +4,7 @@ import hydra
 from omegaconf import OmegaConf
 import jax
 
+from safe_opax.common.mixed_precision import mixed_precision
 from safe_opax.rl.trainer import get_state_path, load_state, should_resume, start_fresh
 
 _LOG = logging.getLogger(__name__)
@@ -22,7 +23,7 @@ def main(cfg):
     else:
         _LOG.info("Starting a new experiment.")
         trainer = start_fresh(cfg)
-    with trainer, jax.disable_jit(not cfg.jit):
+    with trainer, jax.disable_jit(not cfg.jit), mixed_precision(cfg.mixed_precision):
         trainer.train()
 
 

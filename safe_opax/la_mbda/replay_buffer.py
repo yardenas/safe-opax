@@ -2,6 +2,7 @@ from typing import Iterator
 import numpy as np
 
 from tensorflow import data as tfd
+from safe_opax.common.double_buffer import double_buffer
 from safe_opax.rl.trajectory import TrajectoryData
 
 
@@ -116,7 +117,7 @@ class ReplayBuffer:
     def sample(self, n_batches: int) -> Iterator[TrajectoryData]:
         if self.empty:
             return
-        for batch in self._dataset.take(n_batches):
+        for batch in double_buffer(self._dataset.take(n_batches)):
             yield TrajectoryData(*map(lambda x: x.numpy(), batch))  # type: ignore
 
     def __getstate__(self):
