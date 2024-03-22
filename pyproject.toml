@@ -24,6 +24,7 @@ tensorflow = "2.15"
 pillow = "^10.2.0"
 moviepy = "^1.0.3"
 safe-adaptation-gym = {git = "https://git@github.com/lasgroup/safe-adaptation-gym.git"}
+jmp = {git = "https://github.com/deepmind/jmp"}
 
 
 [[tool.poetry.source]]
