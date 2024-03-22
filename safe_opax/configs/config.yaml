@@ -15,7 +15,7 @@ hydra:
         exclude_keys:
           - log_dir
           - training.seed
-          - wandb_notes
+          - wandb
     chdir: true
 
 log_dir: outputs
