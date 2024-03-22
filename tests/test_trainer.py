@@ -5,6 +5,7 @@ import pytest
 from tests import make_test_config
 from safe_opax.rl.trainer import Trainer
 from safe_opax.rl.types import Report
+from safe_opax import benchmark_suites
 
 
 class DummyAgent:
@@ -27,11 +28,25 @@ class DummyAgent:
 def config():
     cfg = make_test_config(
         [
-            "action_repeat=4",
+            "training.action_repeat=4",
             "environment.dm_cartpole.image_observation.enabled=false",
         ]
     )
     return cfg
+
+
+@pytest.fixture
+def trainer(config):
+    make_env = benchmark_suites.make(config)
+    dummy_env = make_env()
+    with Trainer(
+        config,
+        make_env,
+        DummyAgent(dummy_env.action_space, config),
+    ) as trainer:
+        yield trainer
+    assert trainer.state_writer is not None
+    pathlib.Path(f"{trainer.state_writer.log_dir}/state.pkl").unlink()
 
 
 def test_epoch(trainer):

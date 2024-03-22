@@ -12,7 +12,7 @@ def make(cfg: DictConfig) -> EnvironmentFactory:
         from safe_opax.benchmark_suites.dm_control import make
 
         make_env = make(cfg)
-    if domain_name == "safe_adaptation_gym":
+    elif domain_name == "safe_adaptation_gym":
         from safe_opax.benchmark_suites.safe_adaptation_gym import make
 
         make_env = make(cfg)
