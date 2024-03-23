@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 from typing import Optional
 
 import cloudpickle
@@ -94,12 +95,15 @@ class Trainer:
         assert logger is not None and state_writer is not None and agent is not None
         for epoch in range(epoch, epochs or self.config.training.epochs):
             _LOG.info(f"Training epoch #{epoch}")
-            summary = self._run_training_epoch(self.config.training.episodes_per_epoch)
+            summary, wall_time, steps = self._run_training_epoch(
+                self.config.training.episodes_per_epoch
+            )
             objective, cost_rate, feasibilty = summary.metrics
             metrics = {
                 "train/objective": objective,
                 "train/cost_rate": cost_rate,
                 "train/feasibility": feasibilty,
+                "train/fps": steps / wall_time,
             }
             report = agent.report(summary, epoch, self.step)
             report.metrics.update(metrics)
@@ -112,7 +116,7 @@ class Trainer:
     def _run_training_epoch(
         self,
         episodes_per_epoch: int,
-    ) -> EpochSummary:
+    ) -> tuple[EpochSummary, float, int]:
         agent, env, logger, seeds = self.agent, self.env, self.logger, self.seeds
         assert (
             env is not None
@@ -120,6 +124,7 @@ class Trainer:
             and logger is not None
             and seeds is not None
         )
+        start_time = time.time()
         env.reset(seed=int(next(seeds)[0].item()))
         summary, step = acting.epoch(
             agent,
@@ -128,9 +133,12 @@ class Trainer:
             True,
             self.step,
         )
+        steps = step - self.step
         self.step = step
         next(seeds)
-        return summary
+        end_time = time.time()
+        wall_time = end_time - start_time
+        return summary, wall_time, steps
 
     @classmethod
     def from_pickle(cls, config: DictConfig, state_path: str) -> "Trainer":
