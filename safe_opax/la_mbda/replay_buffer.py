@@ -1,4 +1,5 @@
 from typing import Iterator
+import jax
 import numpy as np
 
 from tensorflow import data as tfd
@@ -117,7 +118,10 @@ class ReplayBuffer:
     def sample(self, n_batches: int) -> Iterator[TrajectoryData]:
         if self.empty:
             return
-        for batch in double_buffer(self._dataset.take(n_batches)):
+        iterator = self._dataset.take(n_batches)
+        if jax.default_backend() == "gpu":
+            iterator = double_buffer(iterator)
+        for batch in iterator:
             yield TrajectoryData(*map(lambda x: x.numpy(), batch))  # type: ignore
 
     def __getstate__(self):

@@ -15,6 +15,8 @@ from jmp import Policy, get_policy
 _POLICY_ENV_VAR_NAME = "MIXED_PRECISION_POLICY"
 _LOG = logging.getLogger(__name__)
 
+CastOutputPredicate = Callable[[Any], bool]
+
 
 def _get_policy_from_env():
     return get_policy(
@@ -31,6 +33,7 @@ def apply_mixed_precision(
     policy: Policy | None = None,
     target_module_names: list[str] | None = None,
     target_input_names: list[str] | None = None,
+    cast_output_predicate: CastOutputPredicate = lambda tree: tree,
 ):
     ...
 
@@ -42,6 +45,7 @@ def apply_mixed_precision(
     policy: Policy | None = None,
     target_module_names: list[str] | None = None,
     target_input_names: list[str] | None = None,
+    cast_output_predicate: CastOutputPredicate = lambda tree: tree,
 ):
     ...
 
@@ -52,16 +56,18 @@ def apply_mixed_precision(
     policy: Policy | None = None,
     target_module_names: list[str] | None = None,
     target_input_names: list[str] | None = None,
+    cast_output_predicate: CastOutputPredicate | None = None,
 ):
-    if policy is None:
-        _LOG.warning("Falling back to the default mixed precision policy.")
-        policy = _get_policy_from_env()
-
     def decorator(func):
         argspec = getfullargspec(func)
 
         @wraps(func)
         def wrapper(*args, **kwargs):
+            if policy is None:
+                _LOG.warning("Falling back to the default mixed precision policy.")
+                concrete_policy = _get_policy_from_env()
+            else:
+                concrete_policy = policy
             target_inputs, target_modules = _infer_targets(
                 target_input_names, target_module_names, args, kwargs, argspec
             )
@@ -84,13 +90,23 @@ def apply_mixed_precision(
             for i, arg in enumerate(args):
                 if argspec.args[i] in target_inputs + target_modules:
                     _validate_type(index=i, value=arg)
-                    args[i] = apply_dtype(arg, policy.compute_dtype)
+                    args[i] = apply_dtype(arg, concrete_policy.compute_dtype)
             for name, value in kwargs.items():
                 if name in target_inputs + target_modules:
                     _validate_type(name=name, value=value)
-                    kwargs[name] = apply_dtype(value, policy.compute_dtype)
+                    kwargs[name] = apply_dtype(value, concrete_policy.compute_dtype)
             outs = func(*args, **kwargs)
-            outs = apply_dtype(outs, policy.output_dtype)
+            if cast_output_predicate is None:
+                concrete_cast_output_predicate = lambda tree: jax.tree_map(
+                    lambda node: eqx.is_array(node)
+                    and node.dtype == concrete_policy.compute_dtype,
+                    tree,
+                )
+            else:
+                concrete_cast_output_predicate = cast_output_predicate
+            to_cast, keep = eqx.partition(outs, concrete_cast_output_predicate)
+            to_cast = apply_dtype(to_cast, concrete_policy.output_dtype)
+            outs = eqx.combine(to_cast, keep)
             return outs
 
         return wrapper
@@ -110,6 +126,10 @@ def _infer_targets(
             argspec.args[i] for i, arg in enumerate(func_args) if _all_is_array(arg)
         ] + [name for name, value in func_kwargs.items() if _all_is_array(value)]
     else:
+        if not set(target_input_names) <= set(argspec.args):
+            raise ValueError(
+                "target_input_names must be a subset of the function arguments."
+            )
         target_inputs = target_input_names
     if target_module_names is None:
         target_modules = [
@@ -120,6 +140,10 @@ def _infer_targets(
             name for name, value in func_kwargs.items() if isinstance(value, eqx.Module)
         ]
     else:
+        if not set(target_module_names) <= set(argspec.args):
+            raise ValueError(
+                "traget_module_names must be a subset of the function arguments."
+            )
         target_modules = target_module_names
     return target_inputs, target_modules
 

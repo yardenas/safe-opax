@@ -225,7 +225,8 @@ class TrainingResults(TypedDict):
 
 @eqx.filter_jit
 @apply_mixed_precision(
-    target_input_names=["features", "actions"], target_module_names=["model"]
+    target_input_names=["features", "actions"],
+    target_module_names=["model"],
 )
 def variational_step(
     features: Features,

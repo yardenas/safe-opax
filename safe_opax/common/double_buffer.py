@@ -26,8 +26,6 @@ def double_buffer(ds: Iterable[TrajectoryData]) -> Iterator[TrajectoryData]:
     Yields:
       Batches of sharded device arrays.
     """
-    if not jax.default_backend() == "gpu":
-        yield from ds
     batch = None
     devices = jax.local_devices()
     for next_batch in ds:

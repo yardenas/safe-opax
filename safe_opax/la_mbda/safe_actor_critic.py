@@ -287,7 +287,7 @@ def update_safe_actor_critic(
 
 @eqx.filter_jit
 @apply_mixed_precision(
-    target_module_names=["critic", "safety_critic", "actor", "rollot_fn"],
+    target_module_names=["critic", "safety_critic", "actor", "rollout_fn"],
     target_input_names=["initial_states"],
 )
 def batched_update_safe_actor_critic(

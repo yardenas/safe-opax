@@ -31,6 +31,7 @@ wandb:
   name: null
 
 jit: true
+mixed_precision: params=float32,compute=bfloat16,output=float32
 
 training:
   safe: true
