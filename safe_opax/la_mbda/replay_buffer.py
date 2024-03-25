@@ -119,10 +119,13 @@ class ReplayBuffer:
         if self.empty:
             return
         iterator = self._dataset.take(n_batches)
+        iterator = (
+            TrajectoryData(*map(lambda x: x.numpy(), batch))  # type: ignore
+            for batch in iterator
+        )
         if jax.default_backend() == "gpu":
             iterator = double_buffer(iterator)
-        for batch in iterator:
-            yield TrajectoryData(*map(lambda x: x.numpy(), batch))  # type: ignore
+        yield from iterator
 
     def __getstate__(self):
         state = self.__dict__.copy()
