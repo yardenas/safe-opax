@@ -12,7 +12,7 @@ from safe_opax.la_mbda import rssm
 from safe_opax.la_mbda.augmented_lagrangian import AugmentedLagrangianPenalizer
 from safe_opax.la_mbda.dummy_penalizer import DummyPenalizer
 from safe_opax.la_mbda.lbsgd import LBSGDPenalizer
-from safe_opax.la_mbda.replay_buffer import ReplayBuffer, preprocess
+from safe_opax.la_mbda.replay_buffer import ReplayBuffer
 from safe_opax.la_mbda.safe_actor_critic import SafeModelBasedActorCritic
 from safe_opax.la_mbda.world_model import WorldModel, evaluate_model, variational_step
 from safe_opax.rl.epoch_summary import EpochSummary
@@ -203,14 +203,19 @@ class LaMBDA:
         return Report(metrics=metrics, videos={"agent/model": video})
 
 
+@jax.jit
 def _prepare_features(batch: TrajectoryData) -> tuple[rssm.Features, jax.Array]:
     reward = batch.reward[..., None]
     terminals = jnp.zeros_like(reward)
     features = rssm.Features(
-        jnp.asarray(batch.next_observation),
+        jnp.asarray(preprocess(batch.next_observation)),
         jnp.asarray(reward),
         jnp.asarray(batch.cost[..., None]),
         jnp.asarray(terminals),
     )
     actions = jnp.asarray(batch.action)
     return features, actions
+
+
+def preprocess(image):
+    return image / 255.0 - 0.5

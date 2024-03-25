@@ -2,7 +2,6 @@ from typing import Iterator
 import jax
 import numpy as np
 
-from tensorflow import data as tfd
 from safe_opax.common.double_buffer import double_buffer
 from safe_opax.rl.trajectory import TrajectoryData
 
@@ -53,9 +52,8 @@ class ReplayBuffer:
         )
         self._valid_episodes = 0
         self.rs = np.random.RandomState(seed)
-        example = next(iter(self._sample_batch(batch_size, sequence_length, capacity)))
-        self._generator = lambda: self._sample_batch(batch_size, sequence_length)
-        self._dataset = _make_dataset(self._generator, example)
+        self.batch_size = batch_size
+        self.sequence_length = sequence_length
 
     def add(self, trajectory: TrajectoryData):
         capacity, _ = self.reward.shape
@@ -110,46 +108,22 @@ class ReplayBuffer:
                 )
             ]
             o = self.observation[episode_ids[:, None], timestep_ids]
-            if self.obs_dtype == np.uint8:
-                o = preprocess(o).astype(self.dtype)
             o, next_o = o[:, :-1], o[:, 1:]
             yield o, next_o, a, r, c
 
     def sample(self, n_batches: int) -> Iterator[TrajectoryData]:
         if self.empty:
             return
-        iterator = self._dataset.take(n_batches)
         iterator = (
-            TrajectoryData(*map(lambda x: x.numpy(), batch))  # type: ignore
-            for batch in iterator
+            TrajectoryData(
+                *next(self._sample_batch(self.batch_size, self.sequence_length))
+            )  # type: ignore
+            for _ in range(n_batches)
         )
         if jax.default_backend() == "gpu":
-            iterator = double_buffer(iterator)
+            iterator = double_buffer(iterator)  # type: ignore
         yield from iterator
-
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        del state["_dataset"]
-        return state
-
-    def __setstate__(self, state):
-        self.__dict__.update(state)
-        example = next(iter(self._generator()))
-        self._dataset = _make_dataset(self._generator, example)
 
     @property
     def empty(self):
         return self._valid_episodes == 0
-
-
-def preprocess(image):
-    return image / 255.0 - 0.5
-
-
-def _make_dataset(generator, example):
-    dataset = tfd.Dataset.from_generator(
-        generator,
-        *zip(*tuple((v.dtype, v.shape) for v in example)),
-    )
-    dataset = dataset.prefetch(tfd.AUTOTUNE)
-    return dataset
