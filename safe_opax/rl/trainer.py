@@ -107,6 +107,8 @@ class Trainer:
             }
             report = agent.report(summary, epoch, self.step)
             report.metrics.update(metrics)
+            if maybe_videos := summary.videos is not None:
+                report.videos.update({"train/video": maybe_videos})
             logger.log(report.metrics, self.step)
             for k, v in report.videos.items():
                 logger.log_video(v, self.step, k)
@@ -132,6 +134,7 @@ class Trainer:
             episodes_per_epoch,
             True,
             self.step,
+            self.config.training.render_episodes,
         )
         steps = step - self.step
         self.step = step

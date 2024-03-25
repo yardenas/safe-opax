@@ -41,7 +41,9 @@ class EpochSummary:
             for trajectory in trajectory_batch:
                 if len(trajectory.frames) > 0:
                     all_vids.append(trajectory.frames)
-        vids = np.asarray(all_vids)[-1].swapaxes(0, 1)
+        if len(all_vids) == 0:
+            return None
+        vids = np.asarray(all_vids)[-1].transpose(1, 0, -1, 2, 3)
         return vids
 
     def extend(self, samples: List[Trajectory]) -> None:
