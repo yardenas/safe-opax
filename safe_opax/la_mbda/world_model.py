@@ -184,7 +184,7 @@ class WorldModel(eqx.Module):
         initial_state: State | jax.Array,
         key: jax.Array,
         policy: Policy,
-    ) -> Prediction:
+    ) -> tuple[Prediction, ShiftScale]:
         def f(carry, inputs):
             prev_state = carry
             if callable(policy):
@@ -193,8 +193,8 @@ class WorldModel(eqx.Module):
                 action = policy(jax.lax.stop_gradient(prev_state.flatten()), p_key)
             else:
                 action, key = inputs
-            state = self.cell.predict(prev_state, action, key)
-            return state, state
+            state, prior = self.cell.predict(prev_state, action, key)
+            return state, (state, prior)
 
         if isinstance(policy, jax.Array):
             inputs: tuple[jax.Array, jax.Array] | jax.Array = (
@@ -206,7 +206,7 @@ class WorldModel(eqx.Module):
             inputs = jax.random.split(key, horizon)
         if isinstance(initial_state, jax.Array):
             initial_state = State.from_flat(initial_state, self.cell.stochastic_size)
-        _, trajectory = jax.lax.scan(
+        _, (trajectory, priors) = jax.lax.scan(
             f,
             initial_state,
             inputs,
@@ -214,7 +214,7 @@ class WorldModel(eqx.Module):
         out = jax.vmap(self.reward_cost_decoder)(trajectory.flatten())
         reward, cost = out[..., 0], out[..., -1]
         out = Prediction(trajectory.flatten(), reward, cost)
-        return out
+        return out, priors
 
 
 class TrainingResults(TypedDict):
@@ -293,7 +293,7 @@ def evaluate_model(
     features = jax.tree_map(lambda x: x[0, :conditioning_length], features)
     inference_result = model(features, actions[0, :conditioning_length], subkey)
     state = jax.tree_map(lambda x: x[-1], inference_result.state)
-    prediction = model.sample(
+    prediction, _ = model.sample(
         length - conditioning_length,
         state,
         key,

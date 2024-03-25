@@ -141,10 +141,12 @@ class RSSM(eqx.Module):
         self.deterministic_size = deterministic_size
         self.stochastic_size = stochastic_size
 
-    def predict(self, prev_state: State, action: jax.Array, key: jax.Array) -> State:
+    def predict(
+        self, prev_state: State, action: jax.Array, key: jax.Array
+    ) -> tuple[State, ShiftScale]:
         prior, deterministic = self.prior(prev_state, action)
         stochastic = dtx.Normal(*prior).sample(seed=key)
-        return State(stochastic, deterministic)
+        return State(stochastic, deterministic), prior
 
     def filter(
         self,
