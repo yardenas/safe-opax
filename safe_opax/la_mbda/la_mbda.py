@@ -43,8 +43,8 @@ class AgentState(NamedTuple):
     prev_action: jax.Array
 
     @classmethod
-    def init(cls, batch_size: int, cell: rssm.RSSM, action_dim: int) -> "AgentState":
-        rssm_state = cell.init
+    def init(cls, batch_size: int, cells: rssm.RSSM, action_dim: int) -> "AgentState":
+        rssm_state = cells.init
         rssm_state = jax.tree_map(
             lambda x: jnp.repeat(x[None], batch_size, 0), rssm_state
         )
@@ -135,7 +135,7 @@ class LaMBDA:
             next(self.prng),
         )
         self.state = AgentState.init(
-            config.training.parallel_envs, self.model.cell, action_shape
+            config.training.parallel_envs, self.model.cells, action_shape
         )
         self.should_train = Count(config.agent.train_every)
         self.metrics_monitor = MetricsMonitor()

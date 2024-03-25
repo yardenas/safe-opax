@@ -102,10 +102,11 @@ class InferenceResult(NamedTuple):
 
 
 class WorldModel(eqx.Module):
-    cell: RSSM
+    cells: RSSM
     encoder: Encoder
     image_decoder: ImageDecoder
     reward_cost_decoder: eqx.nn.MLP
+    ensemble_size: int = eqx.field(static=True)
 
     def __init__(
         self,
@@ -114,6 +115,7 @@ class WorldModel(eqx.Module):
         deterministic_size: int,
         stochastic_size: int,
         hidden_size: int,
+        ensemble_size: int,
         *,
         key,
     ):
@@ -123,14 +125,19 @@ class WorldModel(eqx.Module):
             image_decoder_key,
             reward_cost_decoder_key,
         ) = jax.random.split(key, 4)
-        self.cell = RSSM(
-            deterministic_size,
-            stochastic_size,
-            hidden_size,
-            _EMBEDDING_SIZE,
-            action_dim,
-            cell_key,
+        self.ensemble_size = ensemble_size
+        cell_keys = jax.random.split(cell_key, ensemble_size)
+        make_ensemble = jax.vmap(
+            lambda key: RSSM(
+                deterministic_size,
+                stochastic_size,
+                hidden_size,
+                _EMBEDDING_SIZE,
+                action_dim,
+                key,
+            )
         )
+        self.cells = make_ensemble(jnp.asarray(cell_keys))
         self.encoder = Encoder(key=encoder_key)
         state_dim = stochastic_size + deterministic_size
         self.image_decoder = ImageDecoder(state_dim, image_shape, key=image_decoder_key)
@@ -152,17 +159,18 @@ class WorldModel(eqx.Module):
         def fn(carry, inputs):
             prev_state = carry
             embedding, prev_action, key = inputs
-            state, posterior, prior = self.cell.filter(
-                prev_state, embedding, prev_action, key
+            state, posterior, prior = _ensemble_infer(
+                self.cells, prev_state, embedding, prev_action, key
             )
             return state, (state, posterior, prior)
 
         keys = jax.random.split(key, obs_embeddings.shape[0])
         _, (states, posteriors, priors) = jax.lax.scan(
             fn,
-            init_state if init_state is not None else self.cell.init,
+            init_state if init_state is not None else self.cells.init,
             (obs_embeddings, actions, keys),
         )
+        states = marginalize_prediction(states)
         reward_cost = jax.vmap(self.reward_cost_decoder)(states.flatten())
         image = jax.vmap(self.image_decoder)(states.flatten())
         return InferenceResult(states, image, reward_cost, posteriors, priors)
@@ -175,7 +183,8 @@ class WorldModel(eqx.Module):
         key: jax.Array,
     ) -> State:
         obs_embeddings = self.encoder(observation)
-        state, *_ = self.cell.filter(state, obs_embeddings, action, key)
+        state, *_ = _ensemble_infer(self.cells, state, obs_embeddings, action, key)
+        state = marginalize_prediction(state)
         return state
 
     def sample(
@@ -185,6 +194,11 @@ class WorldModel(eqx.Module):
         key: jax.Array,
         policy: Policy,
     ) -> tuple[Prediction, ShiftScale]:
+        predict_fn = eqx.filter_vmap(
+            lambda rssm, state, action, key: rssm.predict(state, action, key),
+            in_axes=(eqx.if_array(0), 0, None, None),
+        )
+
         def f(carry, inputs):
             prev_state = carry
             if callable(policy):
@@ -193,7 +207,7 @@ class WorldModel(eqx.Module):
                 action = policy(jax.lax.stop_gradient(prev_state.flatten()), p_key)
             else:
                 action, key = inputs
-            state, prior = self.cell.predict(prev_state, action, key)
+            state, prior = predict_fn(self.cells, prev_state, action, key)
             return state, (state, prior)
 
         if isinstance(policy, jax.Array):
@@ -205,10 +219,10 @@ class WorldModel(eqx.Module):
         else:
             inputs = jax.random.split(key, horizon)
         if isinstance(initial_state, jax.Array):
-            initial_state = State.from_flat(initial_state, self.cell.stochastic_size)
+            initial_state = State.from_flat(initial_state, self.cells.stochastic_size)
         _, (trajectory, priors) = jax.lax.scan(
             f,
-            initial_state,
+            jax.tree_map(lambda x: jnp.repeat(x, self.ensemble_size, 0), initial_state),
             inputs,
         )
         out = jax.vmap(self.reward_cost_decoder)(trajectory.flatten())
@@ -305,3 +319,17 @@ def evaluate_model(
     normalize = lambda image: ((image + 0.5) * 255).astype(jnp.uint8)
     out = jnp.stack([normalize(x) for x in [y, y_hat, error]])
     return out
+
+
+def marginalize_prediction(x):
+    return jax.tree_map(lambda x: x.mean(0), x)
+
+
+def _ensemble_infer(rssm, prev_state, embedding, prev_action, key):
+    filter_fn = eqx.filter_vmap(
+        lambda rssm, prev_state, embedding, prev_action, key: rssm.filter(
+            prev_state, embedding, prev_action, key
+        ),
+        in_axes=(eqx.if_array(0), 0, None, None, None),
+    )
+    return filter_fn(rssm, prev_state, embedding, prev_action, key)

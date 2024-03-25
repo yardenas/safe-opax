@@ -10,6 +10,7 @@ model:
   hidden_size: 200
   stochastic_size: 60
   deterministic_size: 200
+  ensemble_size: 5
 actor:
   n_layers: 4
   hidden_size: 400
