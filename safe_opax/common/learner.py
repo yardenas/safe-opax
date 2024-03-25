@@ -6,6 +6,8 @@ import jax.numpy as jnp
 import optax
 from jaxtyping import PyTree
 
+from safe_opax.common.mixed_precision import apply_dtype
+
 
 class Learner:
     def __init__(
@@ -25,6 +27,8 @@ class Learner:
     def grad_step(
         self, model: PyTree, grads: PyTree, state: optax.OptState
     ) -> tuple[PyTree, optax.OptState]:
+        # TODO (yarden): should retain the policy and use params dtype
+        grads = apply_dtype(grads, jnp.float32)
         updates, new_opt_state = self.optimizer.update(grads, state)
         all_ok = all_finite(updates)
         updates = update_if(

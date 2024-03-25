@@ -161,6 +161,14 @@ class RSSM(eqx.Module):
 
     @property
     def init(self) -> State:
+        dtype = self.dtype
         return State(
-            jnp.zeros(self.stochastic_size), jnp.zeros(self.deterministic_size)
+            jnp.zeros(self.stochastic_size, dtype),
+            jnp.zeros(self.deterministic_size, dtype),
         )
+
+    @property
+    def dtype(self):
+        dtype = self.prior.encoder.weight.dtype
+        assert all(dtype == x for x in jax.tree_flatten(self)[0] if eqx.is_array(x))
+        return dtype
