@@ -10,6 +10,7 @@ from safe_opax.common.learner import Learner
 from safe_opax.common.mixed_precision import apply_mixed_precision
 from safe_opax.la_mbda.rssm import RSSM, Features, ShiftScale, State
 from safe_opax.la_mbda.types import Prediction
+from safe_opax.la_mbda.utils import marginalize_prediction
 from safe_opax.rl.types import Policy
 
 _EMBEDDING_SIZE = 1024
@@ -331,10 +332,6 @@ def evaluate_model(
     normalize = lambda image: ((image + 0.5) * 255).astype(jnp.uint8)
     out = jnp.stack([normalize(x) for x in [y, y_hat, error]])
     return out
-
-
-def marginalize_prediction(x):
-    return jax.tree_map(lambda x: x.mean(0), x)
 
 
 def _init_rssm_state(cells):
