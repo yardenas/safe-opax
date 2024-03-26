@@ -8,7 +8,6 @@ from safe_opax.la_mbda.utils import marginalize_prediction
 class ObjectiveModel(NamedTuple):
     values: jax.Array
     trajectory: jax.Array
-    reward: jax.Array
 
 
 Sentiment = Callable[[ObjectiveModel], ObjectiveModel]

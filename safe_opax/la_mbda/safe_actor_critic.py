@@ -185,14 +185,10 @@ def evaluate_actor(
         bootstrap_safety_values, trajectories.cost, safety_discount, lambda_
     )
     reward_objective_model = sentiment.bayes(
-        sentiment.ObjectiveModel(
-            lambda_values, trajectories.next_state, trajectories.reward
-        )
+        sentiment.ObjectiveModel(lambda_values, trajectories.next_state)
     )
     cost_objective_model = sentiment.bayes(
-        sentiment.ObjectiveModel(
-            safety_lambda_values, trajectories.next_state, trajectories.cost
-        )
+        sentiment.ObjectiveModel(safety_lambda_values, trajectories.next_state)
     )
     loss = -reward_objective_model.values.mean()
     constraint = safety_budget - cost_objective_model.values.mean()
