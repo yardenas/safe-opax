@@ -44,7 +44,7 @@ class AgentState(NamedTuple):
 
     @classmethod
     def init(cls, batch_size: int, cells: rssm.RSSM, action_dim: int) -> "AgentState":
-        rssm_state = cells.init
+        rssm_state = cells.init()
         rssm_state = jax.tree_map(
             lambda x: jnp.repeat(x[None], batch_size, 0), rssm_state
         )
@@ -53,7 +53,7 @@ class AgentState(NamedTuple):
         return self
 
 
-def make_actor_critic(safe, state_dim, action_dim, cfg, key, belief=None):
+def make_actor_critic(safe, state_dim, action_dim, cfg, key):
     # Account for the the discount factor in the budget.
     episode_safety_budget = (
         (

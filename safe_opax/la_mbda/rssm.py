@@ -161,7 +161,6 @@ class RSSM(eqx.Module):
         stochastic = dtx.Normal(*posterior).sample(seed=key)
         return State(stochastic, deterministic), posterior, prior
 
-    @property
     def init(self) -> State:
         dtype = self.dtype
         return State(

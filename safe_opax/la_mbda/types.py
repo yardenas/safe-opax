@@ -44,7 +44,7 @@ class RolloutFn(Protocol):
         initial_state: jax.Array,
         key: jax.Array,
         policy: Policy,
-    ) -> Prediction:
+    ) -> tuple[Prediction, Any]:
         ...
 
 
