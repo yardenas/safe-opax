@@ -2,13 +2,12 @@ from typing import Callable, NamedTuple
 import jax
 import jax.numpy as jnp
 
-from safe_opax.la_mbda.rssm import State
 from safe_opax.la_mbda.utils import marginalize_prediction
 
 
 class ObjectiveModel(NamedTuple):
     values: jax.Array
-    trajectory: State
+    trajectory: jax.Array
     reward: jax.Array
 
 
@@ -16,7 +15,7 @@ Sentiment = Callable[[ObjectiveModel], ObjectiveModel]
 
 
 def bayes(model: ObjectiveModel) -> ObjectiveModel:
-    return marginalize_prediction(model)
+    return marginalize_prediction(model, 1)
 
 
 def _emprirical_estimate(

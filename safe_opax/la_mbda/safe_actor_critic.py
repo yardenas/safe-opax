@@ -9,15 +9,15 @@ from optax import OptState, l2_loss
 
 from safe_opax.common.learner import Learner
 from safe_opax.common.mixed_precision import apply_mixed_precision
+from safe_opax.la_mbda import sentiment
 from safe_opax.la_mbda.actor_critic import ContinuousActor, Critic
-from safe_opax.la_mbda.types import Model, Prediction, RolloutFn
+from safe_opax.la_mbda.types import Model, RolloutFn
 
 
 class ActorEvaluation(NamedTuple):
-    trajectories: Prediction
+    reward_objective_model: sentiment.ObjectiveModel
+    cost_objective_model: sentiment.ObjectiveModel
     loss: jax.Array
-    lambda_values: jax.Array
-    safety_lambda_values: jax.Array
     constraint: jax.Array
     safe: jax.Array
 
@@ -154,29 +154,10 @@ def compute_lambda_values(
     return discounted_cumsum(tds, lambda_ * discount)
 
 
-def actor_loss_fn(
-    actor: ContinuousActor,
-    critic: Critic,
-    rollout_fn: RolloutFn,
-    horizon: int,
-    initial_states: jax.Array,
-    key: jax.Array,
-    discount: float,
-    lambda_: float,
-) -> tuple[jax.Array, tuple[Prediction, jax.Array]]:
-    trajectories, _ = rollout_fn(horizon, initial_states, key, actor.act)
-    # vmap over batch and time axes.
-    bootstrap_values = jax.vmap(jax.vmap(critic))(trajectories.next_state)
-    lambda_values = eqx.filter_vmap(compute_lambda_values)(
-        bootstrap_values, trajectories.reward, discount, lambda_
-    )
-    return -lambda_values.mean(), (trajectories, lambda_values)
-
-
 def critic_loss_fn(
-    critic: Critic, trajectories: Prediction, lambda_values: jax.Array
+    critic: Critic, trajectories: jax.Array, lambda_values: jax.Array
 ) -> jax.Array:
-    values = jax.vmap(jax.vmap(critic))(trajectories.next_state)
+    values = jax.vmap(jax.vmap(critic))(trajectories)
     return l2_loss(values[:, :-1], lambda_values[:, 1:]).mean()
 
 
@@ -193,19 +174,32 @@ def evaluate_actor(
     lambda_: float,
     safety_budget: float,
 ) -> ActorEvaluation:
-    loss, (trajectories, lambda_values) = actor_loss_fn(
-        actor, critic, rollout_fn, horizon, initial_states, key, discount, lambda_
+    trajectories, _ = rollout_fn(horizon, initial_states, key, actor.act)
+    # vmap over batch, ensemble and time axes.
+    bootstrap_values = _nest_vmap(critic, 3)(trajectories.next_state)
+    lambda_values = _nest_vmap(compute_lambda_values, 2, eqx.filter_vmap)(
+        bootstrap_values, trajectories.reward, discount, lambda_
     )
-    bootstrap_safety_values = jax.vmap(jax.vmap(safety_critic))(trajectories.next_state)
-    safety_lambda_values = eqx.filter_vmap(compute_lambda_values)(
+    bootstrap_safety_values = _nest_vmap(safety_critic, 3)(trajectories.next_state)
+    safety_lambda_values = _nest_vmap(compute_lambda_values, 2, eqx.filter_vmap)(
         bootstrap_safety_values, trajectories.cost, safety_discount, lambda_
     )
-    constraint = safety_budget - safety_lambda_values.mean()
+    reward_objective_model = sentiment.bayes(
+        sentiment.ObjectiveModel(
+            lambda_values, trajectories.next_state, trajectories.reward
+        )
+    )
+    cost_objective_model = sentiment.bayes(
+        sentiment.ObjectiveModel(
+            safety_lambda_values, trajectories.next_state, trajectories.cost
+        )
+    )
+    loss = -reward_objective_model.values.mean()
+    constraint = safety_budget - cost_objective_model.values.mean()
     return ActorEvaluation(
-        trajectories,
+        reward_objective_model,
+        cost_objective_model,
         loss,
-        lambda_values,
-        safety_lambda_values,
         constraint,
         jnp.greater(constraint, 0.0),
     )
@@ -233,8 +227,8 @@ def update_safe_actor_critic(
     penalty_state: Any,
 ) -> SafeActorCriticStepResults:
     actor_grads, new_penalty_state, evaluation, metrics = penalty_fn(
-        lambda a: evaluate_actor(
-            a,
+        lambda actor: evaluate_actor(
+            actor,
             critic,
             safety_critic,
             rollout_fn,
@@ -253,15 +247,18 @@ def update_safe_actor_critic(
         actor, actor_grads, actor_learning_state
     )
     critic_loss, grads = eqx.filter_value_and_grad(critic_loss_fn)(
-        critic, evaluation.trajectories, evaluation.lambda_values
+        critic,
+        evaluation.reward_objective_model.trajectory,
+        evaluation.reward_objective_model.values,
     )
     new_critic, new_critic_state = critic_learner.grad_step(
         critic, grads, critic_learning_state
     )
-    scaled_safety = evaluation.safety_lambda_values
+    # TODO (yarden): figure out the scaling here?
+    scaled_safety = evaluation.cost_objective_model.values
     safety_critic_loss, grads = eqx.filter_value_and_grad(critic_loss_fn)(
         safety_critic,
-        evaluation.trajectories,
+        evaluation.cost_objective_model.trajectory,
         scaled_safety,
     )
     new_safety_critic, new_safety_critic_state = safety_critic_learner.grad_step(
@@ -333,3 +330,9 @@ def batched_update_safe_actor_critic(
         penalty_fn,
         penalty_state,
     )
+
+
+def _nest_vmap(f, count, vmap_fn=jax.vmap):
+    for _ in range(count):
+        f = vmap_fn(f)
+    return f
