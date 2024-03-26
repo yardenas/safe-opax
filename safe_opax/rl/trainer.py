@@ -107,7 +107,7 @@ class Trainer:
             }
             report = agent.report(summary, epoch, self.step)
             report.metrics.update(metrics)
-            if maybe_videos := summary.videos is not None:
+            if (maybe_videos := summary.videos) is not None:
                 report.videos.update({"train/video": maybe_videos})
             logger.log(report.metrics, self.step)
             for k, v in report.videos.items():
