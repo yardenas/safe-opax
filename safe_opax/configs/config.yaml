@@ -38,8 +38,7 @@ training:
   safety_budget: 25
   seed: 0
   time_limit: 1000
-  episodes_per_epoch: 10
-  eval_episodes: 10
+  episodes_per_epoch: 5
   epochs: 200
   action_repeat: 1
   render_episodes: 1
