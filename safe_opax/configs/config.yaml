@@ -28,7 +28,7 @@ writers:
 wandb:
   group: null
   notes: null
-  name: null
+  name: ${hydra.job.override_dirname}
 
 jit: true
 mixed_precision: params=float32,compute=bfloat16,output=float32
