@@ -43,5 +43,5 @@ training:
   action_repeat: 1
   render_episodes: 1
   precision: 32
-  parallel_envs: 1
+  parallel_envs: 10
   scale_reward: 1.

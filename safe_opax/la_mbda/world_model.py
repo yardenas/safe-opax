@@ -171,9 +171,8 @@ class WorldModel(eqx.Module):
             init_state if init_state is not None else _init_rssm_state(self.cells),
             (obs_embeddings, actions, keys),
         )
-        states, posteriors, priors = _ensemble_first((states, posteriors, priors))
         states, posteriors, priors = marginalize_prediction(
-            (states, posteriors, priors)
+            (states, posteriors, priors), 1
         )
         reward_cost = jax.vmap(self.reward_cost_decoder)(states.flatten())
         image = jax.vmap(self.image_decoder)(states.flatten())
