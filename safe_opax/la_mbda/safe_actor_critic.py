@@ -12,6 +12,7 @@ from safe_opax.common.mixed_precision import apply_mixed_precision
 from safe_opax.la_mbda import sentiment
 from safe_opax.la_mbda.actor_critic import ContinuousActor, Critic
 from safe_opax.la_mbda.types import Model, RolloutFn
+from safe_opax.rl.utils import nest_vmap
 
 
 class ActorEvaluation(NamedTuple):
@@ -157,7 +158,7 @@ def compute_lambda_values(
 def critic_loss_fn(
     critic: Critic, trajectories: jax.Array, lambda_values: jax.Array
 ) -> jax.Array:
-    values = _nest_vmap(critic, 2)(trajectories)
+    values = nest_vmap(critic, 2)(trajectories)
     return l2_loss(values[:, :-1], lambda_values[:, 1:]).mean()
 
 
@@ -176,12 +177,12 @@ def evaluate_actor(
 ) -> ActorEvaluation:
     trajectories, _ = rollout_fn(horizon, initial_states, key, actor.act)
     # vmap over batch, ensemble and time axes.
-    bootstrap_values = _nest_vmap(critic, 3)(trajectories.next_state)
-    lambda_values = _nest_vmap(compute_lambda_values, 2, eqx.filter_vmap)(
+    bootstrap_values = nest_vmap(critic, 3)(trajectories.next_state)
+    lambda_values = nest_vmap(compute_lambda_values, 2, eqx.filter_vmap)(
         bootstrap_values, trajectories.reward, discount, lambda_
     )
-    bootstrap_safety_values = _nest_vmap(safety_critic, 3)(trajectories.next_state)
-    safety_lambda_values = _nest_vmap(compute_lambda_values, 2, eqx.filter_vmap)(
+    bootstrap_safety_values = nest_vmap(safety_critic, 3)(trajectories.next_state)
+    safety_lambda_values = nest_vmap(compute_lambda_values, 2, eqx.filter_vmap)(
         bootstrap_safety_values, trajectories.cost, safety_discount, lambda_
     )
     reward_objective_model = sentiment.bayes(
@@ -326,9 +327,3 @@ def batched_update_safe_actor_critic(
         penalty_fn,
         penalty_state,
     )
-
-
-def _nest_vmap(f, count, vmap_fn=jax.vmap):
-    for _ in range(count):
-        f = vmap_fn(f)
-    return f

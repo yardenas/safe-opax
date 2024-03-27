@@ -64,3 +64,9 @@ class Count:
         bingo = (self.count + 1) == self.n
         self.count = (self.count + 1) % self.n
         return bingo
+
+
+def nest_vmap(f, count, vmap_fn=jax.vmap):
+    for _ in range(count):
+        f = vmap_fn(f)
+    return f

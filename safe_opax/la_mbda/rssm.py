@@ -21,6 +21,7 @@ class State(NamedTuple):
             [
                 stochastic_size,
             ],  # type: ignore
+            axis=-1,
         )
         self = cls(stochastic, deterministic)
         return self
