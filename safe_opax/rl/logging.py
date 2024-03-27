@@ -4,6 +4,7 @@ import os
 from queue import Queue
 from threading import Thread
 from typing import Any, Protocol
+from omegaconf.errors import InterpolationKeyError
 
 import cloudpickle
 import numpy as np
@@ -127,6 +128,11 @@ class WeightAndBiasesWriter:
     def __init__(self, config: DictConfig):
         import wandb
 
+        try:
+            name = config.wandb.name
+        except InterpolationKeyError:
+            name = None
+        config.wandb.name = name
         config_dict = omegaconf.OmegaConf.to_container(config, resolve=True)
         assert isinstance(config_dict, dict)
         wandb.init(project="safe-opax", resume=True, config=config_dict, **config.wandb)

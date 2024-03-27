@@ -1,7 +1,7 @@
 defaults:
   - _self_
   - agent: la_mbda
-  - environment: dm_cartpole
+  - environment: safe_adaptation_gym
 
 hydra:
   run:
@@ -28,14 +28,14 @@ writers:
 wandb:
   group: null
   notes: null
-  name: null
+  name: ${hydra.job.override_dirname}
 
 jit: true
-mixed_precision: params=float32,compute=bfloat16,output=float32
+mixed_precision: params=float32,compute=float16,output=float32
 
 training:
   safe: true
-  safety_budget: 100
+  safety_budget: 25
   seed: 0
   time_limit: 1000
   episodes_per_epoch: 10
@@ -44,5 +44,5 @@ training:
   action_repeat: 1
   render_episodes: 1
   precision: 32
-  parallel_envs: 20
+  parallel_envs: 1
   scale_reward: 1.
