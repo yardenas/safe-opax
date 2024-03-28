@@ -14,22 +14,44 @@ from safe_opax.la_mbda.dummy_penalizer import DummyPenalizer
 from safe_opax.la_mbda.lbsgd import LBSGDPenalizer
 from safe_opax.la_mbda.replay_buffer import ReplayBuffer
 from safe_opax.la_mbda.safe_actor_critic import SafeModelBasedActorCritic
+from safe_opax.la_mbda.utils import marginalize_prediction
 from safe_opax.la_mbda.world_model import WorldModel, evaluate_model, variational_step
 from safe_opax.rl.epoch_summary import EpochSummary
 from safe_opax.rl.metrics import MetricsMonitor
 from safe_opax.rl.trajectory import TrajectoryData
 from safe_opax.rl.types import FloatArray, Report
 from safe_opax.rl.utils import Count, PRNGSequence, add_to_buffer
+from safe_opax.la_mbda import cem
 
 
 @eqx.filter_jit
-def policy(actor, model, prev_state, observation, key):
+def policy(model, prev_state, observation, key):
+    config = cem.CEMConfig(num_particles=150, num_iters=10, num_elite=15, stop_cond=0.1)
+
+    def sample(
+        horizon,
+        initial_state,
+        key,
+        policy,
+    ):
+        outs, _ = model.sample(horizon, initial_state, key, policy)
+        return marginalize_prediction(outs)
+
     def per_env_policy(prev_state, observation, key):
         model_key, policy_key = jax.random.split(key)
         current_rssm_state = model.infer_state(
             prev_state.rssm_state, observation, prev_state.prev_action, model_key
         )
-        action = actor.act(current_rssm_state.flatten(), policy_key)
+        action = cem.policy(
+            jax.tree_map(
+                lambda x: jnp.repeat(x[None], 5, 0), current_rssm_state
+            ).flatten(),
+            sample,
+            15,
+            jnp.zeros((15, 2)),
+            policy_key,
+            config,
+        )[0]
         return action, AgentState(current_rssm_state, action)
 
     observation = preprocess(observation)
@@ -127,13 +149,6 @@ class LaMBDA:
             **config.agent.model,
         )
         self.model_learner = Learner(self.model, config.agent.model_optimizer)
-        self.actor_critic = make_actor_critic(
-            config.training.safe,
-            config.agent.model.stochastic_size + config.agent.model.deterministic_size,
-            action_shape,
-            config,
-            next(self.prng),
-        )
         self.state = AgentState.init(
             config.training.parallel_envs, self.model.cells, action_shape
         )
@@ -148,7 +163,6 @@ class LaMBDA:
         if train and not self.replay_buffer.empty and self.should_train():
             self.update()
         actions, self.state = policy(
-            self.actor_critic.actor,
             self.model,
             self.state,
             observation,
@@ -166,13 +180,7 @@ class LaMBDA:
 
     def update(self):
         for batch in self.replay_buffer.sample(self.config.agent.update_steps):
-            inferrered_rssm_states = self.update_model(batch)
-            initial_states = inferrered_rssm_states.reshape(
-                -1, *inferrered_rssm_states.shape[-2:]
-            )
-            outs = self.actor_critic.update(self.model, initial_states, next(self.prng))
-            for k, v in outs.items():
-                self.metrics_monitor[k] = v
+            self.update_model(batch)
 
     def update_model(self, batch: TrajectoryData) -> jax.Array:
         features, actions = _prepare_features(batch)
