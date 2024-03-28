@@ -323,8 +323,7 @@ def evaluate_model(
         key,
         actions[0, conditioning_length:],
     )
-    # FIXME (yarden): don't take only the first member of ensemble.
-    prediction = jax.tree_map(lambda x: x[0], prediction)
+    prediction = marginalize_prediction(prediction)
     y_hat = jax.vmap(model.image_decoder)(prediction.next_state)
     y = observations[0, conditioning_length:]
     error = jnp.abs(y - y_hat) / 2.0 - 0.5
