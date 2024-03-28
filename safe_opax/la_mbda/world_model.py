@@ -185,7 +185,9 @@ class WorldModel(eqx.Module):
     ) -> State:
         obs_embeddings = self.encoder(observation)
         state, *_ = _ensemble_infer(self.cells, state, obs_embeddings, action, key)
-        state = marginalize_prediction(state)
+        # FIXME (yarden): mememem
+        state = jax.tree_map(lambda x: x[0], state)
+        # state = marginalize_prediction(state)
         return state
 
     def sample(

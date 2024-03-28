@@ -185,6 +185,7 @@ def evaluate_actor(
     safety_lambda_values = nest_vmap(compute_lambda_values, 2, eqx.filter_vmap)(
         bootstrap_safety_values, trajectories.cost, safety_discount, lambda_
     )
+    # FIXME (yarden): no no no no.
     reward_objective_model = jax.tree_map(
         lambda x: x[:, 0],
         sentiment.ObjectiveModel(lambda_values, trajectories.next_state),
