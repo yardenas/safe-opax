@@ -185,21 +185,21 @@ def evaluate_actor(
     safety_lambda_values = nest_vmap(compute_lambda_values, 2, eqx.filter_vmap)(
         bootstrap_safety_values, trajectories.cost, safety_discount, lambda_
     )
-    # FIXME (yarden): no no no no.
-    reward_objective_model = jax.tree_map(
-        lambda x: x[:, 0],
-        sentiment.ObjectiveModel(lambda_values, trajectories.next_state),
-    )
-    cost_objective_model = jax.tree_map(
-        lambda x: x[:, 0],
-        sentiment.ObjectiveModel(safety_lambda_values, trajectories.next_state),
-    )
-    # reward_objective_model = sentiment.bayes(
-    #     sentiment.ObjectiveModel(lambda_values, trajectories.next_state)
+    # # FIXME (yarden): no no no no.
+    # reward_objective_model = jax.tree_map(
+    #     lambda x: x[:, 0],
+    #     sentiment.ObjectiveModel(lambda_values, trajectories.next_state),
     # )
-    # cost_objective_model = sentiment.bayes(
-    #     sentiment.ObjectiveModel(safety_lambda_values, trajectories.next_state)
+    # cost_objective_model = jax.tree_map(
+    #     lambda x: x[:, 0],
+    #     sentiment.ObjectiveModel(safety_lambda_values, trajectories.next_state),
     # )
+    reward_objective_model = sentiment.bayes(
+        sentiment.ObjectiveModel(lambda_values, trajectories.next_state)
+    )
+    cost_objective_model = sentiment.bayes(
+        sentiment.ObjectiveModel(safety_lambda_values, trajectories.next_state)
+    )
     loss = -reward_objective_model.values.mean()
     constraint = safety_budget - cost_objective_model.values.mean()
     return ActorEvaluation(
