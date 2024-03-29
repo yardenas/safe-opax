@@ -162,19 +162,18 @@ class WorldModel(eqx.Module):
             prev_state = carry
             embedding, prev_action, key = inputs
             state, posterior, prior = _ensemble_infer(
-                self.cells, prev_state, embedding, prev_action, key
+                self.cells, prev_state, embedding, prev_action, key, vmap_state=True
             )
-            state, posterior, prior = marginalize_prediction((state, posterior, prior))
             return state, (state, posterior, prior)
 
         keys = jax.random.split(key, obs_embeddings.shape[0])
         _, (states, posteriors, priors) = jax.lax.scan(
             fn,
-            init_state if init_state is not None else self.cells.init(),
+            init_state if init_state is not None else _init_rssm_state(self.cells),
             (obs_embeddings, actions, keys),
         )
-        reward_cost = jax.vmap(self.reward_cost_decoder)(states.flatten())
-        image = jax.vmap(self.image_decoder)(states.flatten())
+        reward_cost = nest_vmap(self.reward_cost_decoder, 2)(states.flatten())
+        image = nest_vmap(self.image_decoder, 2)(states.flatten())
         return InferenceResult(states, image, reward_cost, posteriors, priors)
 
     def infer_state(
@@ -186,7 +185,9 @@ class WorldModel(eqx.Module):
     ) -> State:
         obs_embeddings = self.encoder(observation)
         state, *_ = _ensemble_infer(self.cells, state, obs_embeddings, action, key)
-        state = marginalize_prediction(state)
+        # FIXME (yarden): mememem
+        state = jax.tree_map(lambda x: x[0], state)
+        # state = marginalize_prediction(state)
         return state
 
     def sample(
@@ -228,9 +229,9 @@ class WorldModel(eqx.Module):
             raise ValueError("policy must be callable or jax.Array")
         if isinstance(initial_state, jax.Array):
             initial_state = State.from_flat(initial_state, self.cells.stochastic_size)
-        initial_state = jax.tree_map(
-            lambda x: jnp.repeat(x[None], self.ensemble_size, 0), initial_state
-        )
+        # initial_state = jax.tree_map(
+        #     lambda x: jnp.repeat(x[None], self.ensemble_size, 0), initial_state
+        # )
         _, (trajectory, priors) = jax.lax.scan(f, initial_state, inputs)
         # vmap twice: once for the ensemble, and second time for the horizon
         out = nest_vmap(self.reward_cost_decoder, 2)(trajectory.flatten())
@@ -267,6 +268,7 @@ def variational_step(
         infer_fn = lambda features, actions: model(features, actions, key)
         inference_result: InferenceResult = eqx.filter_vmap(infer_fn)(features, actions)
         y = features.observation, jnp.concatenate([features.reward, features.cost], -1)
+        y = jax.tree_map(lambda x: jnp.expand_dims(x, 2), y)
         y_hat = inference_result.image, inference_result.reward_cost
         reconstruction_loss = -sum(
             map(

@@ -168,7 +168,7 @@ class LaMBDA:
         for batch in self.replay_buffer.sample(self.config.agent.update_steps):
             inferrered_rssm_states = self.update_model(batch)
             initial_states = inferrered_rssm_states.reshape(
-                -1, inferrered_rssm_states.shape[-1]
+                -1, *inferrered_rssm_states.shape[-2:]
             )
             outs = self.actor_critic.update(self.model, initial_states, next(self.prng))
             for k, v in outs.items():
