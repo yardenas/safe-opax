@@ -104,11 +104,10 @@ class InferenceResult(NamedTuple):
 
 
 class WorldModel(eqx.Module):
-    cells: RSSM
+    cell: RSSM
     encoder: Encoder
     image_decoder: ImageDecoder
     reward_cost_decoder: eqx.nn.MLP
-    ensemble_size: int = eqx.field(static=True)
 
     def __init__(
         self,
@@ -127,19 +126,15 @@ class WorldModel(eqx.Module):
             image_decoder_key,
             reward_cost_decoder_key,
         ) = jax.random.split(key, 4)
-        self.ensemble_size = ensemble_size
-        cell_keys = jax.random.split(cell_key, ensemble_size)
-        make_ensemble = jax.vmap(
-            lambda key: RSSM(
-                deterministic_size,
-                stochastic_size,
-                hidden_size,
-                _EMBEDDING_SIZE,
-                action_dim,
-                key,
-            )
+        self.cell = RSSM(
+            deterministic_size,
+            stochastic_size,
+            hidden_size,
+            _EMBEDDING_SIZE,
+            action_dim,
+            ensemble_size,
+            cell_key,
         )
-        self.cells = make_ensemble(jnp.asarray(cell_keys))
         self.encoder = Encoder(key=encoder_key)
         state_dim = stochastic_size + deterministic_size
         self.image_decoder = ImageDecoder(state_dim, image_shape, key=image_decoder_key)
@@ -161,19 +156,19 @@ class WorldModel(eqx.Module):
         def fn(carry, inputs):
             prev_state = carry
             embedding, prev_action, key = inputs
-            state, posterior, prior = _ensemble_infer(
-                self.cells, prev_state, embedding, prev_action, key, vmap_state=True
+            state, posterior, prior = self.cell.filter(
+                prev_state, embedding, prev_action, key
             )
             return state, (state, posterior, prior)
 
         keys = jax.random.split(key, obs_embeddings.shape[0])
         _, (states, posteriors, priors) = jax.lax.scan(
             fn,
-            init_state if init_state is not None else _init_rssm_state(self.cells),
+            init_state if init_state is not None else self.cell.init,
             (obs_embeddings, actions, keys),
         )
-        reward_cost = nest_vmap(self.reward_cost_decoder, 2)(states.flatten())
-        image = nest_vmap(self.image_decoder, 2)(states.flatten())
+        reward_cost = jax.vmap(self.reward_cost_decoder)(states.flatten())
+        image = jax.vmap(self.image_decoder)(states.flatten())
         return InferenceResult(states, image, reward_cost, posteriors, priors)
 
     def infer_state(
@@ -184,8 +179,7 @@ class WorldModel(eqx.Module):
         key: jax.Array,
     ) -> State:
         obs_embeddings = self.encoder(observation)
-        state, *_ = _ensemble_infer(self.cells, state, obs_embeddings, action, key)
-        state = marginalize_prediction(state)
+        state, *_ = self.cell.filter(state, obs_embeddings, action, key)
         return state
 
     def sample(
@@ -203,7 +197,7 @@ class WorldModel(eqx.Module):
                 action = policy(jax.lax.stop_gradient(prev_state.flatten()), p_key)
             else:
                 action, key = inputs
-            state, prior = predict_fn(self.cells, prev_state, action, key)
+            state, prior = self.cell.predict(prev_state, action, key)
             return state, (state, prior)
 
         if isinstance(policy, jax.Array):
@@ -212,24 +206,16 @@ class WorldModel(eqx.Module):
                 jax.random.split(key, policy.shape[0]),
             )
             assert policy.shape[0] <= horizon
-            predict_fn = eqx.filter_vmap(
-                lambda rssm, state, action, key: rssm.predict(state, action, key),
-                in_axes=(eqx.if_array(0), 0, None, None),
-            )
         elif callable(policy):
             policy = jax.vmap(policy, in_axes=(0, None))
             inputs = jax.random.split(key, horizon)
-            predict_fn = eqx.filter_vmap(
-                lambda rssm, state, action, key: rssm.predict(state, action, key),
-                in_axes=(eqx.if_array(0), 0, 0, None),
-            )
         else:
             raise ValueError("policy must be callable or jax.Array")
         if isinstance(initial_state, jax.Array):
-            initial_state = State.from_flat(initial_state, self.cells.stochastic_size)
-        # initial_state = jax.tree_map(
-        #     lambda x: jnp.repeat(x[None], self.ensemble_size, 0), initial_state
-        # )
+            initial_state = State.from_flat(initial_state, self.cell.stochastic_size)
+        initial_state = jax.tree_map(
+            lambda x: jnp.repeat(x[None], self.cell.ensemble_size, 0), initial_state
+        )
         _, (trajectory, priors) = jax.lax.scan(f, initial_state, inputs)
         # vmap twice: once for the ensemble, and second time for the horizon
         out = nest_vmap(self.reward_cost_decoder, 2)(trajectory.flatten())
@@ -266,7 +252,6 @@ def variational_step(
         infer_fn = lambda features, actions: model(features, actions, key)
         inference_result: InferenceResult = eqx.filter_vmap(infer_fn)(features, actions)
         y = features.observation, jnp.concatenate([features.reward, features.cost], -1)
-        y = jax.tree_map(lambda x: jnp.expand_dims(x, 2), y)
         y_hat = inference_result.image, inference_result.reward_cost
         reconstruction_loss = -sum(
             map(
@@ -332,20 +317,5 @@ def evaluate_model(
     return out
 
 
-def _init_rssm_state(cells):
-    return eqx.filter_vmap(lambda cells: cells.init())(cells)
-
-
 def _ensemble_first(x):
     return jax.tree_map(lambda x: x.swapaxes(0, 1), x)
-
-
-def _ensemble_infer(rssm, prev_state, embedding, prev_action, key, *, vmap_state=False):
-    prev_state_in_axis = 0 if vmap_state else None
-    filter_fn = eqx.filter_vmap(
-        lambda rssm, prev_state, embedding, prev_action, key: rssm.filter(
-            prev_state, embedding, prev_action, key
-        ),
-        in_axes=(eqx.if_array(0), prev_state_in_axis, None, None, None),
-    )
-    return filter_fn(rssm, prev_state, embedding, prev_action, key)

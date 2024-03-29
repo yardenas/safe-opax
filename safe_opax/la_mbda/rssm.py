@@ -6,6 +6,8 @@ import jax
 import jax.nn as jnn
 import jax.numpy as jnp
 
+from safe_opax.la_mbda.utils import marginalize_prediction
+
 
 class State(NamedTuple):
     stochastic: jax.Array
@@ -110,10 +112,11 @@ class Posterior(eqx.Module):
 
 
 class RSSM(eqx.Module):
-    prior: Prior
+    priors: Prior
     posterior: Posterior
-    deterministic_size: int = eqx.static_field()
-    stochastic_size: int = eqx.static_field()
+    deterministic_size: int = eqx.field(static=True)
+    stochastic_size: int = eqx.field(static=True)
+    ensemble_size: int = eqx.field(static=True)
 
     def __init__(
         self,
@@ -122,15 +125,22 @@ class RSSM(eqx.Module):
         hidden_size: int,
         embedding_size: int,
         action_dim: int,
+        ensemble_size: int,
         key: jax.Array,
     ):
+        self.ensemble_size = ensemble_size
         prior_key, posterior_key = jax.random.split(key)
-        self.prior = Prior(
-            deterministic_size,
-            stochastic_size,
-            hidden_size,
-            action_dim,
-            prior_key,
+        make_priors = eqx.filter_vmap(
+            lambda key: Prior(
+                deterministic_size,
+                stochastic_size,
+                hidden_size,
+                action_dim,
+                key,
+            )
+        )
+        self.priors = make_priors(
+            jnp.asarray(jax.random.split(prior_key, ensemble_size))
         )
         self.posterior = Posterior(
             deterministic_size,
@@ -145,8 +155,10 @@ class RSSM(eqx.Module):
     def predict(
         self, prev_state: State, action: jax.Array, key: jax.Array
     ) -> tuple[State, ShiftScale]:
-        prior, deterministic = self.prior(prev_state, action)
-        stochastic = dtx.Normal(*prior).sample(seed=key)
+        prior, deterministic = _priors_predict(
+            self.priors, prev_state, action, vmap_state=True
+        )
+        stochastic = dtx.Independent(dtx.Normal(*prior)).sample(seed=key)
         return State(stochastic, deterministic), prior
 
     def filter(
@@ -156,12 +168,15 @@ class RSSM(eqx.Module):
         action: jax.Array,
         key: jax.Array,
     ) -> tuple[State, ShiftScale, ShiftScale]:
-        prior, deterministic = self.prior(prev_state, action)
+        outs = _priors_predict(self.priors, prev_state, action)
+        outs = marginalize_prediction(outs)
+        prior, deterministic = outs
         state = State(prev_state.stochastic, deterministic)
         posterior = self.posterior(state, embeddings)
         stochastic = dtx.Normal(*posterior).sample(seed=key)
         return State(stochastic, deterministic), posterior, prior
 
+    @property
     def init(self) -> State:
         dtype = self.dtype
         return State(
@@ -171,6 +186,17 @@ class RSSM(eqx.Module):
 
     @property
     def dtype(self):
-        dtype = self.prior.encoder.weight.dtype
+        dtype = self.priors.encoder.weight.dtype
         assert all(dtype == x for x in jax.tree_flatten(self)[0] if eqx.is_array(x))
         return dtype
+
+
+def _priors_predict(
+    priors: RSSM, prev_state: State, action: jax.Array, *, vmap_state: bool = False
+):
+    prev_state_in_axis = 0 if vmap_state else None
+    priors_fn = eqx.filter_vmap(
+        lambda prior, prev_state: prior(prev_state, action),
+        in_axes=(eqx.if_array(0), prev_state_in_axis),
+    )
+    return priors_fn(priors, prev_state)

@@ -43,8 +43,8 @@ class AgentState(NamedTuple):
     prev_action: jax.Array
 
     @classmethod
-    def init(cls, batch_size: int, cells: rssm.RSSM, action_dim: int) -> "AgentState":
-        rssm_state = cells.init()
+    def init(cls, batch_size: int, cell: rssm.RSSM, action_dim: int) -> "AgentState":
+        rssm_state = cell.init
         rssm_state = jax.tree_map(
             lambda x: jnp.repeat(x[None], batch_size, 0), rssm_state
         )
@@ -135,10 +135,13 @@ class LaMBDA:
             next(self.prng),
         )
         self.state = AgentState.init(
-            config.training.parallel_envs, self.model.cells, action_shape
+            config.training.parallel_envs, self.model.cell, action_shape
         )
         self.should_train = Count(config.agent.train_every)
         self.metrics_monitor = MetricsMonitor()
+        self._policy = lambda: np.repeat(
+            action_space.sample()[None], config.training.parallel_envs, 0
+        )
 
     def __call__(
         self,
@@ -147,13 +150,14 @@ class LaMBDA:
     ) -> FloatArray:
         if train and not self.replay_buffer.empty and self.should_train():
             self.update()
-        actions, self.state = policy(
-            self.actor_critic.actor,
-            self.model,
-            self.state,
-            observation,
-            next(self.prng),
-        )
+        # actions, self.state = policy(
+        #     self.actor_critic.actor,
+        #     self.model,
+        #     self.state,
+        #     observation,
+        #     next(self.prng),
+        # )
+        actions = self._policy()
         return np.asarray(actions)
 
     def observe(self, trajectory: TrajectoryData) -> None:
@@ -166,13 +170,14 @@ class LaMBDA:
 
     def update(self):
         for batch in self.replay_buffer.sample(self.config.agent.update_steps):
-            inferrered_rssm_states = self.update_model(batch)
-            initial_states = inferrered_rssm_states.reshape(
-                -1, *inferrered_rssm_states.shape[-2:]
-            )
-            outs = self.actor_critic.update(self.model, initial_states, next(self.prng))
-            for k, v in outs.items():
-                self.metrics_monitor[k] = v
+            self.update_model(batch)
+            # inferrered_rssm_states = self.update_model(batch)
+            # initial_states = inferrered_rssm_states.reshape(
+            #     -1, *inferrered_rssm_states.shape[-2:]
+            # )
+            # outs = self.actor_critic.update(self.model, initial_states, next(self.prng))
+            # for k, v in outs.items():
+            #     self.metrics_monitor[k] = v
 
     def update_model(self, batch: TrajectoryData) -> jax.Array:
         features, actions = _prepare_features(batch)
