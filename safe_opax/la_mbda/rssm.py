@@ -168,9 +168,8 @@ class RSSM(eqx.Module):
         action: jax.Array,
         key: jax.Array,
     ) -> tuple[State, ShiftScale, ShiftScale]:
-        outs = _priors_predict(self.priors, prev_state, action)
-        outs = marginalize_prediction(outs)
-        prior, deterministic = outs
+        priors = jax.tree_map(lambda x: x[0], self.priors, is_leaf=eqx.is_array)
+        prior, deterministic = priors(prev_state, action)
         state = State(prev_state.stochastic, deterministic)
         posterior = self.posterior(state, embeddings)
         stochastic = dtx.Normal(*posterior).sample(seed=key)
