@@ -139,9 +139,6 @@ class LaMBDA:
         )
         self.should_train = Count(config.agent.train_every)
         self.metrics_monitor = MetricsMonitor()
-        self._policy = lambda: np.repeat(
-            action_space.sample()[None], config.training.parallel_envs, 0
-        )
 
     def __call__(
         self,
@@ -150,14 +147,13 @@ class LaMBDA:
     ) -> FloatArray:
         if train and not self.replay_buffer.empty and self.should_train():
             self.update()
-        # actions, self.state = policy(
-        #     self.actor_critic.actor,
-        #     self.model,
-        #     self.state,
-        #     observation,
-        #     next(self.prng),
-        # )
-        actions = self._policy()
+        actions, self.state = policy(
+            self.actor_critic.actor,
+            self.model,
+            self.state,
+            observation,
+            next(self.prng),
+        )
         return np.asarray(actions)
 
     def observe(self, trajectory: TrajectoryData) -> None:
@@ -170,14 +166,13 @@ class LaMBDA:
 
     def update(self):
         for batch in self.replay_buffer.sample(self.config.agent.update_steps):
-            self.update_model(batch)
-            # inferrered_rssm_states = self.update_model(batch)
-            # initial_states = inferrered_rssm_states.reshape(
-            #     -1, *inferrered_rssm_states.shape[-2:]
-            # )
-            # outs = self.actor_critic.update(self.model, initial_states, next(self.prng))
-            # for k, v in outs.items():
-            #     self.metrics_monitor[k] = v
+            inferrered_rssm_states = self.update_model(batch)
+            initial_states = inferrered_rssm_states.reshape(
+                -1, inferrered_rssm_states.shape[-1]
+            )
+            outs = self.actor_critic.update(self.model, initial_states, next(self.prng))
+            for k, v in outs.items():
+                self.metrics_monitor[k] = v
 
     def update_model(self, batch: TrajectoryData) -> jax.Array:
         features, actions = _prepare_features(batch)
