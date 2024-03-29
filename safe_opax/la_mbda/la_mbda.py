@@ -25,8 +25,9 @@ from safe_opax.la_mbda import cem
 
 
 @eqx.filter_jit
-def policy(model, prev_state, observation, key):
+def policy(model, prev_state, observation, key, ensemble_size):
     config = cem.CEMConfig(num_particles=150, num_iters=10, num_elite=15, stop_cond=0.1)
+    horizon = 12
 
     def sample(
         horizon,
@@ -44,11 +45,11 @@ def policy(model, prev_state, observation, key):
         )
         action = cem.policy(
             jax.tree_map(
-                lambda x: jnp.repeat(x[None], 5, 0), current_rssm_state
+                lambda x: jnp.repeat(x[None], ensemble_size, 0), current_rssm_state
             ).flatten(),
             sample,
-            15,
-            jnp.zeros((15, 2)),
+            horizon,
+            jnp.zeros((horizon, 2)),
             policy_key,
             config,
         )[0]
@@ -167,6 +168,7 @@ class LaMBDA:
             self.state,
             observation,
             next(self.prng),
+            self.config.agent.model.ensemble_size,
         )
         return np.asarray(actions)
 
