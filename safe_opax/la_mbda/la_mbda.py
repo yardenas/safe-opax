@@ -200,7 +200,7 @@ class LaMBDA:
         batch = next(self.replay_buffer.sample(1))
         features, actions = _prepare_features(batch)
         video = evaluate_model(self.model, features, actions, next(self.prng))
-        return Report(metrics=metrics, videos={"agent/model": video})
+        return Report(metrics=metrics, videos={"agent/model/prediction": video})
 
 
 @jax.jit

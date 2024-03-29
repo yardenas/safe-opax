@@ -150,7 +150,7 @@ class WeightAndBiasesWriter:
     ):
         self._handle.log(
             {
-                "video": self._handle.Video(
+                name: self._handle.Video(
                     np.array(images, copy=False),
                     fps=int(fps),
                     caption=name,

@@ -37,8 +37,8 @@ discount: 0.99
 safety_discount: 0.99
 lambda_: 0.97
 plan_horizon: 15
-update_steps: 100
-train_every: 1000
+update_steps: 10
+train_every: 10
 beta: 1.0
 free_nats: 1.
 safety_slack: 0.
