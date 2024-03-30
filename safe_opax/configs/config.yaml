@@ -31,7 +31,7 @@ wandb:
   name: ${hydra:job.override_dirname}
 
 jit: true
-mixed_precision: params=float32,compute=float16,output=float32
+mixed_precision: params=float32,compute=bfloat16,output=float32
 
 training:
   safe: true
@@ -42,6 +42,5 @@ training:
   epochs: 200
   action_repeat: 1
   render_episodes: 1
-  precision: 32
   parallel_envs: 10
   scale_reward: 1.

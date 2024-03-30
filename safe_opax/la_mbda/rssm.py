@@ -155,8 +155,9 @@ class RSSM(eqx.Module):
     def predict(
         self, prev_state: State, action: jax.Array, key: jax.Array
     ) -> tuple[State, ShiftScale]:
+        vmap_action = action.ndim == 2
         prior, deterministic = _priors_predict(
-            self.priors, prev_state, action, vmap_state=True
+            self.priors, prev_state, action, vmap_state=True, vmap_action=vmap_action
         )
         stochastic = dtx.Independent(dtx.Normal(*prior)).sample(seed=key)
         return State(stochastic, deterministic), prior
@@ -192,11 +193,17 @@ class RSSM(eqx.Module):
 
 
 def _priors_predict(
-    priors: RSSM, prev_state: State, action: jax.Array, *, vmap_state: bool = False
+    priors: RSSM,
+    prev_state: State,
+    action: jax.Array,
+    *,
+    vmap_state: bool = False,
+    vmap_action: bool = False,
 ):
     prev_state_in_axis = 0 if vmap_state else None
+    action_in_axis = 0 if vmap_action else None
     priors_fn = eqx.filter_vmap(
-        lambda prior, prev_state: prior(prev_state, action),
-        in_axes=(eqx.if_array(0), prev_state_in_axis),
+        lambda prior, prev_state, action: prior(prev_state, action),
+        in_axes=(eqx.if_array(0), prev_state_in_axis, action_in_axis),
     )
-    return priors_fn(priors, prev_state)
+    return priors_fn(priors, prev_state, action)
