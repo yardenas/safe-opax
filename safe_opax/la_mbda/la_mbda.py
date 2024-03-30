@@ -185,6 +185,7 @@ class LaMBDA:
             next(self.prng),
             self.config.agent.beta,
             self.config.agent.free_nats,
+            self.config.agent.kl_mix,
         )
         self.metrics_monitor["agent/model/loss"] = float(loss.mean())
         self.metrics_monitor["agent/model/reconstruction"] = float(
