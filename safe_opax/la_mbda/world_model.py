@@ -152,12 +152,16 @@ class WorldModel(eqx.Module):
         init_state: State | None = None,
     ) -> InferenceResult:
         obs_embeddings = jax.vmap(self.encoder)(features.observation)
+        key, ensemble_mask_key = jax.random.split(key)
+        ensemble_idx = jax.random.randint(
+            ensemble_mask_key, (), 0, self.cell.ensemble_size
+        )
 
         def fn(carry, inputs):
             prev_state = carry
             embedding, prev_action, key = inputs
             state, posterior, prior = self.cell.filter(
-                prev_state, embedding, prev_action, key
+                prev_state, embedding, prev_action, key, ensemble_idx=ensemble_idx
             )
             return state, (state, posterior, prior)
 
@@ -176,10 +180,13 @@ class WorldModel(eqx.Module):
         state: State,
         observation: jax.Array,
         action: jax.Array,
+        ensemble_idx: jax.Array,
         key: jax.Array,
     ) -> State:
         obs_embeddings = self.encoder(observation)
-        state, *_ = self.cell.filter(state, obs_embeddings, action, key)
+        state, *_ = self.cell.filter(
+            state, obs_embeddings, action, key, ensemble_idx=ensemble_idx
+        )
         return state
 
     def sample(

@@ -23,11 +23,15 @@ from safe_opax.rl.utils import Count, PRNGSequence, add_to_buffer
 
 
 @eqx.filter_jit
-def policy(actor, model, prev_state, observation, key):
+def policy(actor, model, prev_state, observation, ensemble_id, key):
     def per_env_policy(prev_state, observation, key):
         model_key, policy_key = jax.random.split(key)
         current_rssm_state = model.infer_state(
-            prev_state.rssm_state, observation, prev_state.prev_action, model_key
+            prev_state.rssm_state,
+            observation,
+            prev_state.prev_action,
+            ensemble_id,
+            model_key,
         )
         action = actor.act(current_rssm_state.flatten(), policy_key)
         return action, AgentState(current_rssm_state, action)
@@ -139,6 +143,9 @@ class LaMBDA:
         )
         self.should_train = Count(config.agent.train_every)
         self.metrics_monitor = MetricsMonitor()
+        self.ensemble_id = jax.random.randint(
+            next(self.prng), (), 0, self.config.agent.model.ensemble_size
+        )
 
     def __call__(
         self,
@@ -152,6 +159,7 @@ class LaMBDA:
             self.model,
             self.state,
             observation,
+            self.ensemble_id,
             next(self.prng),
         )
         return np.asarray(actions)
@@ -163,6 +171,9 @@ class LaMBDA:
             self.config.training.scale_reward,
         )
         self.state = jax.tree_map(lambda x: jnp.zeros_like(x), self.state)
+        self.ensemble_id = jax.random.randint(
+            next(self.prng), (), 0, self.config.agent.model.ensemble_size
+        )
 
     def update(self):
         for batch in self.replay_buffer.sample(self.config.agent.update_steps):
