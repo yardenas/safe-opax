@@ -6,7 +6,6 @@ import jax
 import jax.nn as jnn
 import jax.numpy as jnp
 
-from safe_opax.la_mbda.utils import marginalize_prediction
 
 
 class State(NamedTuple):
@@ -169,9 +168,12 @@ class RSSM(eqx.Module):
         action: jax.Array,
         key: jax.Array,
     ) -> tuple[State, ShiftScale, ShiftScale]:
-        outs = _priors_predict(self.priors, prev_state, action)
-        outs = marginalize_prediction(outs)
-        prior, deterministic = outs
+        key, prior_key = jax.random.split(key)
+        id = jax.random.randint(prior_key, (), 0, self.ensemble_size)
+        prior_model_sample = jax.tree_map(
+            lambda x: x[id], self.priors, is_leaf=eqx.is_array
+        )
+        prior, deterministic = prior_model_sample(prev_state, action)
         state = State(prev_state.stochastic, deterministic)
         posterior = self.posterior(state, embeddings)
         stochastic = dtx.Normal(*posterior).sample(seed=key)
