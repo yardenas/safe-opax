@@ -7,6 +7,7 @@ import jax.nn as jnn
 import jax.numpy as jnp
 
 
+
 class State(NamedTuple):
     stochastic: jax.Array
     deterministic: jax.Array
@@ -166,17 +167,11 @@ class RSSM(eqx.Module):
         embeddings: jax.Array,
         action: jax.Array,
         key: jax.Array,
-        *,
-        ensemble_idx: jax.Array | None = None,
     ) -> tuple[State, ShiftScale, ShiftScale]:
         key, prior_key = jax.random.split(key)
-        ensemble_idx = (
-            ensemble_idx
-            if ensemble_idx is not None
-            else jax.random.randint(prior_key, (), 0, self.ensemble_size)
-        )
+        id = jax.random.randint(prior_key, (), 0, self.ensemble_size)
         prior_model_sample = jax.tree_map(
-            lambda x: x[ensemble_idx], self.priors, is_leaf=eqx.is_array
+            lambda x: x[id], self.priors, is_leaf=eqx.is_array
         )
         prior, deterministic = prior_model_sample(prev_state, action)
         state = State(prev_state.stochastic, deterministic)
