@@ -10,9 +10,7 @@ from safe_opax.common.learner import Learner
 from safe_opax.common.mixed_precision import apply_mixed_precision
 from safe_opax.la_mbda.rssm import RSSM, Features, ShiftScale, State
 from safe_opax.la_mbda.types import Prediction
-from safe_opax.la_mbda.utils import marginalize_prediction
 from safe_opax.rl.types import Policy
-from safe_opax.rl.utils import nest_vmap
 
 _EMBEDDING_SIZE = 1024
 
@@ -207,22 +205,16 @@ class WorldModel(eqx.Module):
             )
             assert policy.shape[0] <= horizon
         elif callable(policy):
-            policy = jax.vmap(policy, in_axes=(0, None))
             inputs = jax.random.split(key, horizon)
         else:
             raise ValueError("policy must be callable or jax.Array")
         if isinstance(initial_state, jax.Array):
             initial_state = State.from_flat(initial_state, self.cell.stochastic_size)
-        initial_state = jax.tree_map(
-            lambda x: jnp.repeat(x[None], self.cell.ensemble_size, 0), initial_state
-        )
         _, (trajectory, priors) = jax.lax.scan(f, initial_state, inputs)
         # vmap twice: once for the ensemble, and second time for the horizon
-        out = nest_vmap(self.reward_cost_decoder, 2)(trajectory.flatten())
+        out = jax.vmap(self.reward_cost_decoder)(trajectory.flatten())
         reward, cost = out[..., 0], out[..., -1]
         out = Prediction(trajectory.flatten(), reward, cost)
-        # ensemble dimension first, then horizon
-        out, priors = _ensemble_first((out, priors))
         return out, priors
 
 
@@ -308,14 +300,9 @@ def evaluate_model(
         key,
         actions[0, conditioning_length:],
     )
-    prediction = marginalize_prediction(prediction)
     y_hat = jax.vmap(model.image_decoder)(prediction.next_state)
     y = observations[0, conditioning_length:]
     error = jnp.abs(y - y_hat) / 2.0 - 0.5
     normalize = lambda image: ((image + 0.5) * 255).astype(jnp.uint8)
     out = jnp.stack([normalize(x) for x in [y, y_hat, error]])
     return out
-
-
-def _ensemble_first(x):
-    return jax.tree_map(lambda x: x.swapaxes(0, 1), x)

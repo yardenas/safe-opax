@@ -177,21 +177,19 @@ def evaluate_actor(
 ) -> ActorEvaluation:
     trajectories, _ = rollout_fn(horizon, initial_states, key, actor.act)
     # vmap over batch, ensemble and time axes.
-    bootstrap_values = nest_vmap(critic, 3)(trajectories.next_state)
-    lambda_values = nest_vmap(compute_lambda_values, 2, eqx.filter_vmap)(
+    bootstrap_values = nest_vmap(critic, 2)(trajectories.next_state)
+    lambda_values = nest_vmap(compute_lambda_values, 1, eqx.filter_vmap)(
         bootstrap_values, trajectories.reward, discount, lambda_
     )
-    bootstrap_safety_values = nest_vmap(safety_critic, 3)(trajectories.next_state)
-    safety_lambda_values = nest_vmap(compute_lambda_values, 2, eqx.filter_vmap)(
+    bootstrap_safety_values = nest_vmap(safety_critic, 2)(trajectories.next_state)
+    safety_lambda_values = nest_vmap(compute_lambda_values, 1, eqx.filter_vmap)(
         bootstrap_safety_values, trajectories.cost, safety_discount, lambda_
     )
-    reward_objective_model = jax.tree_map(
-        lambda x: x[:, 0],
-        sentiment.ObjectiveModel(lambda_values, trajectories.next_state),
+    reward_objective_model = sentiment.ObjectiveModel(
+        lambda_values, trajectories.next_state
     )
-    cost_objective_model = jax.tree_map(
-        lambda x: x[:, 0],
-        sentiment.ObjectiveModel(safety_lambda_values, trajectories.next_state),
+    cost_objective_model = sentiment.ObjectiveModel(
+        safety_lambda_values, trajectories.next_state
     )
     loss = -reward_objective_model.values.mean()
     constraint = safety_budget - cost_objective_model.values.mean()
