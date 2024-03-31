@@ -89,6 +89,7 @@ def make_actor_critic(safe, state_dim, action_dim, cfg, key):
         actor_optimizer_config=cfg.agent.actor_optimizer,
         critic_optimizer_config=cfg.agent.critic_optimizer,
         safety_critic_optimizer_config=cfg.agent.safety_critic_optimizer,
+        ensemble_size=cfg.agent.ensemble_size,
         horizon=cfg.agent.plan_horizon,
         discount=cfg.agent.discount,
         safety_discount=cfg.agent.safety_discount,
@@ -124,6 +125,7 @@ class LaMBDA:
             image_shape=observation_space.shape,
             action_dim=action_shape,
             key=next(self.prng),
+            ensemble_size=config.agent.ensemble_size,
             **config.agent.model,
         )
         self.model_learner = Learner(self.model, config.agent.model_optimizer)
@@ -165,14 +167,20 @@ class LaMBDA:
         self.state = jax.tree_map(lambda x: jnp.zeros_like(x), self.state)
 
     def update(self):
-        for batch in self.replay_buffer.sample(self.config.agent.update_steps):
+        total_steps = (
+            self.config.agent.update_steps * self.config.agent.ensemble_size
+        )
+        for i, batch in enumerate(self.replay_buffer.sample(total_steps)):
             inferrered_rssm_states = self.update_model(batch)
-            initial_states = inferrered_rssm_states.reshape(
-                -1, inferrered_rssm_states.shape[-1]
-            )
-            outs = self.actor_critic.update(self.model, initial_states, next(self.prng))
-            for k, v in outs.items():
-                self.metrics_monitor[k] = v
+            if i % self.config.agent.ensemble_size == 0:
+                initial_states = inferrered_rssm_states.reshape(
+                    -1, inferrered_rssm_states.shape[-1]
+                )
+                outs = self.actor_critic.update(
+                    self.model, initial_states, next(self.prng)
+                )
+                for k, v in outs.items():
+                    self.metrics_monitor[k] = v
 
     def update_model(self, batch: TrajectoryData) -> jax.Array:
         features, actions = _prepare_features(batch)

@@ -10,7 +10,6 @@ model:
   hidden_size: 200
   stochastic_size: 60
   deterministic_size: 200
-  ensemble_size: 5
 actor:
   n_layers: 4
   hidden_size: 400
@@ -44,3 +43,4 @@ beta: 1.0
 free_nats: 1.
 kl_mix: 0.8
 safety_slack: 0.
+ensemble_size: 5

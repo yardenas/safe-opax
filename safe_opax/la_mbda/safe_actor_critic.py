@@ -45,6 +45,7 @@ class SafeModelBasedActorCritic:
         actor_optimizer_config: dict[str, Any],
         critic_optimizer_config: dict[str, Any],
         safety_critic_optimizer_config: dict[str, Any],
+        ensemble_size: int,
         horizon: int,
         discount: float,
         safety_discount: float,
@@ -60,15 +61,21 @@ class SafeModelBasedActorCritic:
             **actor_config,
             key=actor_key,
         )
-        self.critic = Critic(state_dim=state_dim, **critic_config, key=critic_key)
-        self.safety_critic = Critic(
-            state_dim=state_dim, **critic_config, key=safety_critic_key
+        make_critic_ensemble = eqx.filter_vmap(
+            lambda key: Critic(state_dim=state_dim, **critic_config, key=key)
+        )
+        self.critic = make_critic_ensemble(
+            jnp.asarray(jax.random.split(critic_key, ensemble_size))
+        )
+        self.safety_critic = make_critic_ensemble(
+            jnp.asarray(jax.random.split(safety_critic_key, ensemble_size))
         )
         self.actor_learner = Learner(self.actor, actor_optimizer_config)
         self.critic_learner = Learner(self.critic, critic_optimizer_config)
         self.safety_critic_learner = Learner(
             self.safety_critic, safety_critic_optimizer_config
         )
+        self.ensemble_size = ensemble_size
         self.horizon = horizon
         self.discount = discount
         self.lambda_ = lambda_
@@ -176,13 +183,14 @@ def evaluate_actor(
     safety_budget: float,
 ) -> ActorEvaluation:
     trajectories, _ = rollout_fn(horizon, initial_states, key, actor.act)
-    # vmap over batch, ensemble and time axes.
-    bootstrap_values = nest_vmap(critic, 2)(trajectories.next_state)
-    lambda_values = nest_vmap(compute_lambda_values, 1, eqx.filter_vmap)(
+    bootstrap_values = _ensemble_critic_predict_fn(critic, trajectories.next_state)
+    lambda_values = nest_vmap(compute_lambda_values, 2, eqx.filter_vmap)(
         bootstrap_values, trajectories.reward, discount, lambda_
     )
-    bootstrap_safety_values = nest_vmap(safety_critic, 2)(trajectories.next_state)
-    safety_lambda_values = nest_vmap(compute_lambda_values, 1, eqx.filter_vmap)(
+    bootstrap_safety_values = _ensemble_critic_predict_fn(
+        safety_critic, trajectories.next_state
+    )
+    safety_lambda_values = nest_vmap(compute_lambda_values, 2, eqx.filter_vmap)(
         bootstrap_safety_values, trajectories.cost, safety_discount, lambda_
     )
     reward_objective_model = sentiment.ObjectiveModel(
@@ -191,8 +199,9 @@ def evaluate_actor(
     cost_objective_model = sentiment.ObjectiveModel(
         safety_lambda_values, trajectories.next_state
     )
-    loss = -reward_objective_model.values.mean()
-    constraint = safety_budget - cost_objective_model.values.mean()
+    # Plus variance of values for exploration?
+    loss = -lambda_values.mean()
+    constraint = safety_budget - safety_lambda_values.mean()
     return ActorEvaluation(
         reward_objective_model,
         cost_objective_model,
@@ -243,7 +252,15 @@ def update_safe_actor_critic(
     new_actor, new_actor_state = actor_learner.grad_step(
         actor, actor_grads, actor_learning_state
     )
-    critic_loss, grads = eqx.filter_value_and_grad(critic_loss_fn)(
+    ensemble_critic_loss_fn = eqx.filter_vmap(
+        critic_loss_fn, in_axes=(eqx.if_array(0), 1, 1)
+    )
+    ensemble_critic_grads_fn = eqx.filter_value_and_grad(
+        lambda critic, trajectory, values: ensemble_critic_loss_fn(
+            critic, trajectory, values
+        ).mean()
+    )
+    critic_loss, grads = ensemble_critic_grads_fn(
         critic,
         evaluation.reward_objective_model.trajectory,
         evaluation.reward_objective_model.values,
@@ -251,12 +268,11 @@ def update_safe_actor_critic(
     new_critic, new_critic_state = critic_learner.grad_step(
         critic, grads, critic_learning_state
     )
-    # TODO (yarden): figure out the scaling here?
-    scaled_safety = evaluation.cost_objective_model.values
-    safety_critic_loss, grads = eqx.filter_value_and_grad(critic_loss_fn)(
+    safety = evaluation.cost_objective_model.values
+    safety_critic_loss, grads = ensemble_critic_grads_fn(
         safety_critic,
         evaluation.cost_objective_model.trajectory,
-        scaled_safety,
+        safety,
     )
     new_safety_critic, new_safety_critic_state = safety_critic_learner.grad_step(
         safety_critic, grads, safety_critic_learning_state
@@ -273,7 +289,7 @@ def update_safe_actor_critic(
         safety_critic_loss,
         evaluation.safe,
         evaluation.constraint,
-        scaled_safety.mean(),
+        safety.mean(),
         new_penalty_state,
         metrics,
     )
@@ -327,3 +343,16 @@ def batched_update_safe_actor_critic(
         penalty_fn,
         penalty_state,
     )
+
+
+@eqx.filter_vmap(in_axes=(eqx.if_array(0), 1), out_axes=1)
+# Could technically pass all trajectories and compute
+# the values for each trajectory, even if the trajectory
+# is not from the corresponding value.
+# This can help in estimating the variance of the mean value
+# https://github.com/boschresearch/ube-mbrl/blob/9b57ee30f32e88ab9155ac7d6489a629b1c422c3/ube_mbrl/agent/qusac.py#L203
+def _ensemble_critic_predict_fn(
+    critic: Critic,
+    trajectory: jax.Array,
+) -> jax.Array:
+    return nest_vmap(critic, 2)(trajectory)
