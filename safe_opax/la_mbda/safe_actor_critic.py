@@ -277,6 +277,12 @@ def update_safe_actor_critic(
     new_safety_critic, new_safety_critic_state = safety_critic_learner.grad_step(
         safety_critic, grads, safety_critic_learning_state
     )
+    metrics[
+        "agent/objective-values-variance"
+    ] = evaluation.reward_objective_model.values.mean((0, -1)).std()
+    metrics[
+        "agent/constraint-values-variance"
+    ] = evaluation.cost_objective_model.values.mean((0, -1)).std()
     return SafeActorCriticStepResults(
         new_actor,
         new_critic,
@@ -351,6 +357,9 @@ def batched_update_safe_actor_critic(
 # is not from the corresponding value.
 # This can help in estimating the variance of the mean value
 # https://github.com/boschresearch/ube-mbrl/blob/9b57ee30f32e88ab9155ac7d6489a629b1c422c3/ube_mbrl/agent/qusac.py#L203
+# Can "clean out" the aleatoric uncertainty by learning a distributional value:
+# https://arxiv.org/pdf/2102.03765.pdf
+# read the section on aleatoric uncertainty
 def _ensemble_critic_predict_fn(
     critic: Critic,
     trajectory: jax.Array,
