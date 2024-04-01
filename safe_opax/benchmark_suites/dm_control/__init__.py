@@ -221,6 +221,7 @@ def make(cfg: DictConfig) -> EnvironmentFactory:
 ENVIRONMENTS = {
     ("dm_cartpole", "balance"),
     ("dm_cartpole", "swingup"),
+    ("dm_cartpole", "swingup_sparse"),
     ("dm_humanoid", "stand"),
     ("dm_humanoid", "walk"),
     ("dm_manipulator", "bring_ball"),
