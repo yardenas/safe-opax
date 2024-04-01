@@ -1,4 +1,5 @@
 from typing import (
+    Any,
     NamedTuple,
     Optional,
     Protocol,
@@ -22,7 +23,7 @@ class Model(Protocol):
         initial_state: jax.Array,
         key: jax.Array,
         policy: Policy,
-    ) -> Prediction:
+    ) -> tuple[Prediction, Any]:
         ...
 
 
@@ -43,7 +44,7 @@ class RolloutFn(Protocol):
         initial_state: jax.Array,
         key: jax.Array,
         policy: Policy,
-    ) -> Prediction:
+    ) -> tuple[Prediction, Any]:
         ...
 
 

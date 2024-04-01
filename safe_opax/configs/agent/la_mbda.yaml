@@ -41,4 +41,6 @@ update_steps: 10
 train_every: 10
 beta: 1.0
 free_nats: 1.
+kl_mix: 0.8
 safety_slack: 0.
+ensemble_size: 5
