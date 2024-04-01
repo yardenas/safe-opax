@@ -25,6 +25,7 @@ def main(cfg):
         trainer = start_fresh(cfg)
     with trainer, jax.disable_jit(not cfg.jit), mixed_precision(cfg.mixed_precision):
         trainer.train()
+    _LOG.info("Done training.")
 
 
 if __name__ == "__main__":
