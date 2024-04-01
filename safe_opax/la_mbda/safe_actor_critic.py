@@ -9,15 +9,16 @@ from optax import OptState, l2_loss
 
 from safe_opax.common.learner import Learner
 from safe_opax.common.mixed_precision import apply_mixed_precision
-from safe_opax.la_mbda import sentiment
+from safe_opax.la_mbda.sentiment import Sentiment
 from safe_opax.la_mbda.actor_critic import ContinuousActor, Critic
 from safe_opax.la_mbda.types import Model, RolloutFn
 from safe_opax.rl.utils import nest_vmap
 
 
 class ActorEvaluation(NamedTuple):
-    reward_objective_model: sentiment.ObjectiveModel
-    cost_objective_model: sentiment.ObjectiveModel
+    trajectories: jax.Array
+    objective_values: jax.Array
+    cost_values: jax.Array
     loss: jax.Array
     constraint: jax.Array
     safe: jax.Array
@@ -53,6 +54,7 @@ class SafeModelBasedActorCritic:
         safety_budget: float,
         key: jax.Array,
         penalizer: Penalizer,
+        objective_sentiment: Sentiment,
     ):
         actor_key, critic_key, safety_critic_key = jax.random.split(key, 3)
         self.actor = ContinuousActor(
@@ -83,6 +85,7 @@ class SafeModelBasedActorCritic:
         self.safety_budget = safety_budget
         self.update_fn = batched_update_safe_actor_critic
         self.penalizer = penalizer
+        self.objective_sentiment = objective_sentiment
 
     def update(
         self,
@@ -110,6 +113,7 @@ class SafeModelBasedActorCritic:
             self.safety_budget,
             self.penalizer,
             self.penalizer.state,
+            self.objective_sentiment,
         )
         self.actor = results.new_actor
         self.critic = results.new_critic
@@ -181,6 +185,7 @@ def evaluate_actor(
     safety_discount: float,
     lambda_: float,
     safety_budget: float,
+    objective_sentiment: Sentiment,
 ) -> ActorEvaluation:
     trajectories, _ = rollout_fn(horizon, initial_states, key, actor.act)
     bootstrap_values = _ensemble_critic_predict_fn(critic, trajectories.next_state)
@@ -193,18 +198,13 @@ def evaluate_actor(
     safety_lambda_values = nest_vmap(compute_lambda_values, 2, eqx.filter_vmap)(
         bootstrap_safety_values, trajectories.cost, safety_discount, lambda_
     )
-    reward_objective_model = sentiment.ObjectiveModel(
-        lambda_values, trajectories.next_state
-    )
-    cost_objective_model = sentiment.ObjectiveModel(
-        safety_lambda_values, trajectories.next_state
-    )
-    # Plus variance of values for exploration?
-    loss = -lambda_values.mean()
+    objective = objective_sentiment(lambda_values)
+    loss = -objective
     constraint = safety_budget - safety_lambda_values.mean()
     return ActorEvaluation(
-        reward_objective_model,
-        cost_objective_model,
+        trajectories.next_state,
+        lambda_values,
+        safety_lambda_values,
         loss,
         constraint,
         jnp.greater(constraint, 0.0),
@@ -231,6 +231,7 @@ def update_safe_actor_critic(
     safety_budget: float,
     penalty_fn: Penalizer,
     penalty_state: Any,
+    objective_sentiment: Sentiment,
 ) -> SafeActorCriticStepResults:
     actor_grads, new_penalty_state, evaluation, metrics = penalty_fn(
         lambda actor: evaluate_actor(
@@ -245,6 +246,7 @@ def update_safe_actor_critic(
             safety_discount,
             lambda_,
             safety_budget,
+            objective_sentiment,
         ),
         penalty_state,
         actor,
@@ -262,16 +264,16 @@ def update_safe_actor_critic(
     )
     critic_loss, grads = ensemble_critic_grads_fn(
         critic,
-        evaluation.reward_objective_model.trajectory,
-        evaluation.reward_objective_model.values,
+        evaluation.trajectories,
+        evaluation.objective_values,
     )
     new_critic, new_critic_state = critic_learner.grad_step(
         critic, grads, critic_learning_state
     )
-    safety = evaluation.cost_objective_model.values
+    safety = evaluation.cost_values
     safety_critic_loss, grads = ensemble_critic_grads_fn(
         safety_critic,
-        evaluation.cost_objective_model.trajectory,
+        evaluation.trajectories,
         safety,
     )
     new_safety_critic, new_safety_critic_state = safety_critic_learner.grad_step(
@@ -279,10 +281,10 @@ def update_safe_actor_critic(
     )
     metrics[
         "agent/objective-values-variance"
-    ] = evaluation.reward_objective_model.values.mean((0, -1)).std()
+    ] = evaluation.objective_values.mean((0, -1)).std()
     metrics[
         "agent/constraint-values-variance"
-    ] = evaluation.cost_objective_model.values.mean((0, -1)).std()
+    ] = evaluation.cost_values.mean((0, -1)).std()
     return SafeActorCriticStepResults(
         new_actor,
         new_critic,
@@ -326,6 +328,7 @@ def batched_update_safe_actor_critic(
     safety_budget: float,
     penalty_fn: Penalizer,
     penalty_state: Any,
+    objective_sentiment: Sentiment,
 ) -> SafeActorCriticStepResults:
     vmapped_rollout_fn = jax.vmap(rollout_fn, (None, 0, None, None))
     return update_safe_actor_critic(
@@ -348,6 +351,7 @@ def batched_update_safe_actor_critic(
         safety_budget,
         penalty_fn,
         penalty_state,
+        objective_sentiment,
     )
 
 

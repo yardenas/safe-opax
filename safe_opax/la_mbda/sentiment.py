@@ -1,33 +1,20 @@
-from typing import Callable, NamedTuple
+from typing import Protocol
 import jax
-import jax.numpy as jnp
-
-from safe_opax.la_mbda.utils import marginalize_prediction
 
 
-class ObjectiveModel(NamedTuple):
-    values: jax.Array
-    trajectory: jax.Array
+class Sentiment(Protocol):
+    def __call__(self, values: jax.Array) -> jax.Array:
+        ...
 
 
-Sentiment = Callable[[ObjectiveModel], ObjectiveModel]
+def bayes(values: jax.Array) -> jax.Array:
+    return values.mean()
 
 
-def bayes(model: ObjectiveModel) -> ObjectiveModel:
-    return marginalize_prediction(model, 1)
+class Optimism:
+    def __init__(self, exploration_scale: float):
+        self.exploration_scale = exploration_scale
 
-
-def _emprirical_estimate(
-    model: ObjectiveModel, reduce_fn: Callable[[jax.Array], jax.Array]
-) -> ObjectiveModel:
-    ids = reduce_fn(model.values.mean((0, 2)))
-    take = lambda x: x[:, ids, :]
-    return jax.tree_map(take, model)
-
-
-def empirical_optimism(model: ObjectiveModel) -> ObjectiveModel:
-    return _emprirical_estimate(model, jnp.argmax)
-
-
-def empirical_robustness(model: ObjectiveModel) -> ObjectiveModel:
-    return _emprirical_estimate(model, jnp.argmin)
+    def __call__(self, values: jax.Array) -> jax.Array:
+        exploration_bonus = values.mean((0, -1)).std()
+        return bayes(values) + self.exploration_scale * exploration_bonus

@@ -14,6 +14,7 @@ from safe_opax.la_mbda.dummy_penalizer import DummyPenalizer
 from safe_opax.la_mbda.lbsgd import LBSGDPenalizer
 from safe_opax.la_mbda.replay_buffer import ReplayBuffer
 from safe_opax.la_mbda.safe_actor_critic import SafeModelBasedActorCritic
+from safe_opax.la_mbda.sentiment import Optimism
 from safe_opax.la_mbda.world_model import WorldModel, evaluate_model, variational_step
 from safe_opax.rl.epoch_summary import EpochSummary
 from safe_opax.rl.metrics import MetricsMonitor
@@ -97,6 +98,7 @@ def make_actor_critic(safe, state_dim, action_dim, cfg, key):
         safety_budget=episode_safety_budget,
         penalizer=penalizer,
         key=key,
+        objective_sentiment=Optimism(cfg.agent.exploration_scale),
     )
 
 
