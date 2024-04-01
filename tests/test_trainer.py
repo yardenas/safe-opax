@@ -29,6 +29,7 @@ def config():
     cfg = make_test_config(
         [
             "training.action_repeat=4",
+            "environment=dm_cartpole",
             "environment.dm_cartpole.image_observation.enabled=false",
         ]
     )
