@@ -42,6 +42,10 @@ class MetricsMonitor:
             tablefmt="orgtbl",
         )
 
+    def reset(self):
+        for v in self.metrics.values():
+            v.reset_states()
+
 
 class MetricsAccumulator:
     def __init__(self):

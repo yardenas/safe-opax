@@ -167,9 +167,7 @@ class LaMBDA:
         self.state = jax.tree_map(lambda x: jnp.zeros_like(x), self.state)
 
     def update(self):
-        total_steps = (
-            self.config.agent.update_steps * self.config.agent.ensemble_size
-        )
+        total_steps = self.config.agent.update_steps * self.config.agent.ensemble_size
         for i, batch in enumerate(self.replay_buffer.sample(total_steps)):
             inferrered_rssm_states = self.update_model(batch)
             if i % self.config.agent.ensemble_size == 0:
@@ -206,6 +204,7 @@ class LaMBDA:
         metrics = {
             k: float(v.result.mean) for k, v in self.metrics_monitor.metrics.items()
         }
+        self.metrics_monitor.reset()
         batch = next(self.replay_buffer.sample(1))
         features, actions = _prepare_features(batch)
         video = evaluate_model(self.model, features, actions, next(self.prng))
