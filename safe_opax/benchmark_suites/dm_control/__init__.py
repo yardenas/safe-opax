@@ -1,6 +1,8 @@
 import copy
 from collections import OrderedDict
 
+from gymnasium import Env
+from dm_control.utils.rewards import tolerance
 import numpy as np
 from omegaconf import DictConfig
 from safe_opax.benchmark_suites.utils import get_domain_and_task
@@ -195,10 +197,30 @@ class DMCWrapper:
         return self.env.task._random
 
 
+class ActionCostWrapper:
+    def __init__(self, env: Env, cost_multiplier: float = 0):
+        self.env = env
+        self.cost_multiplier = cost_multiplier
+
+    def step(self, action):
+        action_cost = self.cost_multiplier * (tolerance(action, (-0.1, 0.1), 0.1) - 1)[0]
+        observation, reward, terminal, truncated, info = self.env.step(action)
+        return observation, reward + action_cost, terminal, truncated, info
+
+    def __getattr__(self, name):
+        return getattr(self.env, name)
+
+
 def make(cfg: DictConfig) -> EnvironmentFactory:
     def make_env():
         domain_name, task_cfg = get_domain_and_task(cfg)
-        env = DMCWrapper(domain_name, task_cfg.task)
+        if task_cfg.task == "swingup_sparse_hard":
+            task = "swingup_sparse"
+        else:
+            task = task_cfg.task
+        env = DMCWrapper(domain_name, task)
+        if task_cfg.task == "swingup_sparse_hard":
+            env = ActionCostWrapper(env, cost_multiplier=task_cfg.cost_multiplier)
         if task_cfg.image_observation.enabled:
             env = ImageObservation(
                 env,
@@ -222,6 +244,7 @@ ENVIRONMENTS = {
     ("dm_cartpole", "balance"),
     ("dm_cartpole", "swingup"),
     ("dm_cartpole", "swingup_sparse"),
+    ("dm_cartpole", "swingup_sparse_hard"),
     ("dm_humanoid", "stand"),
     ("dm_humanoid", "walk"),
     ("dm_manipulator", "bring_ball"),
