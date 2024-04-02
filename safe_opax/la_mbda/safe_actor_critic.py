@@ -260,7 +260,7 @@ def update_safe_actor_critic(
     ensemble_critic_grads_fn = eqx.filter_value_and_grad(
         lambda critic, trajectory, values: ensemble_critic_loss_fn(
             critic, trajectory, values
-        ).mean()
+        ).sum()
     )
     critic_loss, grads = ensemble_critic_grads_fn(
         critic,
