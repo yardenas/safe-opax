@@ -1,6 +1,5 @@
 from typing import Protocol
 import jax
-import jax.numpy as jnp
 
 
 class Sentiment(Protocol):
@@ -22,4 +21,4 @@ class Optimism:
 
 
 def value_epistemic_uncertainty(values: jax.Array) -> jax.Array:
-    return jnp.var(values[..., 0], 1).mean()
+    return values[..., 0].std(1).mean()
