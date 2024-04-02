@@ -9,7 +9,7 @@ from optax import OptState, l2_loss
 
 from safe_opax.common.learner import Learner
 from safe_opax.common.mixed_precision import apply_mixed_precision
-from safe_opax.la_mbda.sentiment import Sentiment
+from safe_opax.la_mbda.sentiment import Sentiment, value_epistemic_uncertainty
 from safe_opax.la_mbda.actor_critic import ContinuousActor, Critic
 from safe_opax.la_mbda.types import Model, RolloutFn
 from safe_opax.rl.utils import nest_vmap
@@ -279,12 +279,12 @@ def update_safe_actor_critic(
     new_safety_critic, new_safety_critic_state = safety_critic_learner.grad_step(
         safety_critic, grads, safety_critic_learning_state
     )
-    metrics[
-        "agent/objective-values-variance"
-    ] = evaluation.objective_values.mean((0, -1)).std()
-    metrics[
-        "agent/constraint-values-variance"
-    ] = evaluation.cost_values.mean((0, -1)).std()
+    metrics["agent/objective-values-variance"] = value_epistemic_uncertainty(
+        evaluation.objective_values
+    )
+    metrics["agent/constraint-values-variance"] = value_epistemic_uncertainty(
+        evaluation.cost_values
+    )
     return SafeActorCriticStepResults(
         new_actor,
         new_critic,
