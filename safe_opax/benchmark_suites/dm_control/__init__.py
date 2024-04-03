@@ -203,9 +203,9 @@ class ActionCostWrapper:
         self.cost_multiplier = cost_multiplier
 
     def step(self, action):
-        action_cost = self.cost_multiplier * (tolerance(action, (-0.1, 0.1), 0.1) - 1)[0]
+        action_cost = 1 - self.cost_multiplier * tolerance(action, (-0.1, 0.1), 0.1)[0]
         observation, reward, terminal, truncated, info = self.env.step(action)
-        return observation, reward + action_cost, terminal, truncated, info
+        return observation, reward - action_cost, terminal, truncated, info
 
     def __getattr__(self, name):
         return getattr(self.env, name)
