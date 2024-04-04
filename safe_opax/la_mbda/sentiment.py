@@ -21,7 +21,4 @@ class Optimism:
 
 
 def value_epistemic_uncertainty(values: jax.Array) -> jax.Array:
-    # FIXME (yarden): The problem here is that if this is being summed
-    # with values from a whole trajectory, gradients of steps 1,...,T
-    # are going to use the value function without exploration at all.
-    return values[..., 0].std(1).mean()
+    return values.std(1).mean()
