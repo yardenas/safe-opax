@@ -1,5 +1,6 @@
-from typing import Protocol
+from typing import Callable, Protocol
 import jax
+import jax.numpy as jnp
 
 
 class Sentiment(Protocol):
@@ -17,8 +18,23 @@ class Optimism:
 
     def __call__(self, values: jax.Array) -> jax.Array:
         exploration_bonus = value_epistemic_uncertainty(values)
-        return bayes(values) * 0. + self.exploration_scale * exploration_bonus
+        return bayes(values) * 0.0 + self.exploration_scale * exploration_bonus
 
 
 def value_epistemic_uncertainty(values: jax.Array) -> jax.Array:
     return values.std(1).mean()
+
+
+def _emprirical_estimate(
+    values: jax.Array, reduce_fn: Callable[[jax.Array], jax.Array]
+) -> jax.Array:
+    ids = reduce_fn(values.mean((0, 2)))
+    return values[:, ids].mean()
+
+
+def empirical_optimism(values: jax.Array) -> jax.Array:
+    return _emprirical_estimate(values, jnp.argmax)
+
+
+def empirical_robustness(values: jax.Array) -> jax.Array:
+    return _emprirical_estimate(values, jnp.argmin)
