@@ -12,7 +12,7 @@ from safe_opax.common.mixed_precision import apply_mixed_precision
 from safe_opax.la_mbda.sentiment import Sentiment, value_epistemic_uncertainty
 from safe_opax.la_mbda.actor_critic import ContinuousActor, Critic
 from safe_opax.la_mbda.types import Model, RolloutFn
-from safe_opax.rl.utils import nest_vmap
+from safe_opax.rl.utils import glorot_uniform, init_linear_weights, nest_vmap
 
 
 class ActorEvaluation(NamedTuple):
@@ -47,6 +47,7 @@ class SafeModelBasedActorCritic:
         critic_optimizer_config: dict[str, Any],
         safety_critic_optimizer_config: dict[str, Any],
         ensemble_size: int,
+        initialization_scale: float,
         horizon: int,
         discount: float,
         safety_discount: float,
@@ -64,7 +65,11 @@ class SafeModelBasedActorCritic:
             key=actor_key,
         )
         make_critic_ensemble = eqx.filter_vmap(
-            lambda key: Critic(state_dim=state_dim, **critic_config, key=key)
+            lambda key: init_linear_weights(
+                Critic(state_dim=state_dim, **critic_config, key=key),
+                partial(glorot_uniform, scale=initialization_scale),
+                key,
+            )
         )
         self.critic = make_critic_ensemble(
             jnp.asarray(jax.random.split(critic_key, ensemble_size))

@@ -117,6 +117,7 @@ class WorldModel(eqx.Module):
         stochastic_size: int,
         hidden_size: int,
         ensemble_size: int,
+        initialization_scale: float,
         *,
         key,
     ):
@@ -133,7 +134,8 @@ class WorldModel(eqx.Module):
             _EMBEDDING_SIZE,
             action_dim,
             ensemble_size,
-            cell_key,
+            initialization_scale,
+            key=cell_key,
         )
         self.encoder = Encoder(key=encoder_key)
         state_dim = stochastic_size + deterministic_size

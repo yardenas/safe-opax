@@ -96,6 +96,7 @@ def make_actor_critic(safe, state_dim, action_dim, cfg, key):
         critic_optimizer_config=cfg.agent.critic_optimizer,
         safety_critic_optimizer_config=cfg.agent.safety_critic_optimizer,
         ensemble_size=cfg.agent.ensemble_size,
+        initialization_scale=cfg.agent.initialization_scale,
         horizon=cfg.agent.plan_horizon,
         discount=cfg.agent.discount,
         safety_discount=cfg.agent.safety_discount,
@@ -133,6 +134,7 @@ class LaMBDA:
             action_dim=action_shape,
             key=next(self.prng),
             ensemble_size=config.agent.ensemble_size,
+            initialization_scale=config.agent.initialization_scale,
             **config.agent.model,
         )
         self.model_learner = Learner(self.model, config.agent.model_optimizer)

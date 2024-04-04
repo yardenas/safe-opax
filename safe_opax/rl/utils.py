@@ -1,5 +1,6 @@
-import equinox as eqx
 import jax
+import jax.numpy as jnp
+import equinox as eqx
 
 from safe_opax.rl.trajectory import TrajectoryData
 
@@ -38,23 +39,6 @@ def normalize(observation, mean, std):
     return diff / (std + 1e-8)
 
 
-def ensemble_predict(fn, in_axes=0):
-    """
-    A decorator that wraps (parameterized-)functions such that if they define
-    an ensemble, predictions are made for each member of the ensemble individually.
-    """
-
-    def vmap_ensemble(*args, **kwargs):
-        # First vmap along the batch dimension.
-        ensemble_predict = lambda fn: jax.vmap(fn, in_axes=in_axes)(*args, **kwargs)
-        # then vmap over members of the ensemble, such that each
-        # individually computes outputs.
-        ensemble_predict = eqx.filter_vmap(ensemble_predict)
-        return ensemble_predict(fn)
-
-    return vmap_ensemble
-
-
 class Count:
     def __init__(self, n: int):
         self.count = 0
@@ -70,3 +54,25 @@ def nest_vmap(f, count, vmap_fn=jax.vmap):
     for _ in range(count):
         f = vmap_fn(f)
     return f
+
+
+def glorot_uniform(weight, key, scale=1.0):
+    fan_in, fan_out = weight.shape
+    limit = jnp.sqrt(6.0 * scale / (fan_in + fan_out))
+    return jax.random.uniform(key, weight.shape, minval=-limit, maxval=limit)
+
+
+def init_linear_weights(model, init_fn, key):
+    is_linear = lambda x: isinstance(x, eqx.nn.Linear)
+    get_weights = lambda m: [
+        x.weight
+        for x in jax.tree_util.tree_leaves(m, is_leaf=is_linear)
+        if is_linear(x)
+    ]
+    weights = get_weights(model)
+    new_weights = [
+        init_fn(weight, subkey)
+        for weight, subkey in zip(weights, jax.random.split(key, len(weights)))
+    ]
+    new_model = eqx.tree_at(get_weights, model, new_weights)
+    return new_model
