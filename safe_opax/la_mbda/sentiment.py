@@ -17,7 +17,7 @@ class Optimism:
 
     def __call__(self, values: jax.Array) -> jax.Array:
         exploration_bonus = value_epistemic_uncertainty(values)
-        return bayes(values) + self.exploration_scale * exploration_bonus
+        return bayes(values) * 0. + self.exploration_scale * exploration_bonus
 
 
 def value_epistemic_uncertainty(values: jax.Array) -> jax.Array:
