@@ -8,7 +8,6 @@ from gymnasium.spaces import Box
 from omegaconf import DictConfig
 
 from safe_opax.common.learner import Learner
-from safe_opax.common.mixed_precision import apply_mixed_precision
 from safe_opax.la_mbda import rssm
 from safe_opax.la_mbda.augmented_lagrangian import AugmentedLagrangianPenalizer
 from safe_opax.la_mbda.dummy_penalizer import DummyPenalizer
@@ -24,10 +23,6 @@ from safe_opax.rl.utils import Count, PRNGSequence, add_to_buffer
 
 
 @eqx.filter_jit
-@apply_mixed_precision(
-    target_input_names=["prev_state", "observation"],
-    target_module_names=["model", "actor"],
-)
 def policy(actor, model, prev_state, observation, key):
     def per_env_policy(prev_state, observation, key):
         model_key, policy_key = jax.random.split(key)
@@ -37,7 +32,7 @@ def policy(actor, model, prev_state, observation, key):
         action = actor.act(current_rssm_state.flatten(), policy_key)
         return action, AgentState(current_rssm_state, action)
 
-    observation = preprocess(observation, observation.dtype)
+    observation = preprocess(observation)
     return jax.vmap(per_env_policy)(
         prev_state, observation, jax.random.split(key, observation.shape[0])
     )
@@ -230,5 +225,5 @@ def _prepare_features(batch: TrajectoryData) -> tuple[rssm.Features, jax.Array]:
     return features, actions
 
 
-def preprocess(image, dtype=np.float32):
-    return (image / 255.0 - 0.5).astype(dtype)
+def preprocess(image):
+    return image / 255.0 - 0.5
