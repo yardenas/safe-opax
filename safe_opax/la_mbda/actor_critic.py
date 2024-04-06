@@ -6,6 +6,7 @@ import jax.numpy as jnp
 import jax.nn as jnn
 
 from safe_opax.common.math import inv_softplus
+from safe_opax.rl.utils import rl_initialize_weights_trick
 
 
 class ContinuousActor(eqx.Module):
@@ -22,13 +23,15 @@ class ContinuousActor(eqx.Module):
         *,
         key: jax.Array,
     ):
-        self.net = eqx.nn.MLP(
-            state_dim,
-            action_dim * 2,
-            hidden_size,
-            n_layers,
-            key=key,
-            activation=jnn.elu,
+        self.net = rl_initialize_weights_trick(
+            eqx.nn.MLP(
+                state_dim,
+                action_dim * 2,
+                hidden_size,
+                n_layers,
+                key=key,
+                activation=jnn.elu,
+            )
         )
         self.init_stddev = init_stddev
 
@@ -70,10 +73,13 @@ class Critic(eqx.Module):
         *,
         key: jax.Array,
     ):
-        self.net = eqx.nn.MLP(
-            state_dim, 1, hidden_size, n_layers, key=key, activation=jnn.elu
+        self.net = rl_initialize_weights_trick(
+            eqx.nn.MLP(
+                state_dim, "scalar", hidden_size, n_layers, key=key, activation=jnn.elu
+            ),
+            25.0,
         )
 
     def __call__(self, observation: Any) -> jax.Array:
         x = self.net(observation)
-        return x.squeeze(-1)
+        return x

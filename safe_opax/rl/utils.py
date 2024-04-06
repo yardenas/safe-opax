@@ -62,6 +62,17 @@ def glorot_uniform(weight, key, scale=1.0):
     return jax.random.uniform(key, weight.shape, minval=-limit, maxval=limit)
 
 
+def rl_initialize_weights_trick(model, bias_shift=0.0):
+    """Follows https://arxiv.org/pdf/2006.05990.pdf"""
+    model = eqx.tree_at(
+        lambda model: model.layers[-1].weight, model, model.layers[-1].weight / 100.0
+    )
+    model = eqx.tree_at(
+        lambda model: model.layers[-1].bias, model, model.layers[-1].bias + bias_shift
+    )
+    return model
+
+
 def init_linear_weights(model, init_fn, key):
     is_linear = lambda x: isinstance(x, eqx.nn.Linear)
     get_weights = lambda m: [
