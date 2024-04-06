@@ -70,6 +70,7 @@ class Critic(eqx.Module):
         n_layers: int,
         state_dim: int,
         hidden_size: int,
+        init_bias: float,
         *,
         key: jax.Array,
     ):
@@ -77,7 +78,7 @@ class Critic(eqx.Module):
             eqx.nn.MLP(
                 state_dim, "scalar", hidden_size, n_layers, key=key, activation=jnn.elu
             ),
-            25.0,
+            init_bias,
         )
 
     def __call__(self, observation: Any) -> jax.Array:

@@ -17,6 +17,7 @@ actor:
 critic:
   n_layers: 3
   hidden_size: 400
+  init_bias: 0.
 actor_optimizer:
   lr: 8e-5
   eps: 1e-5
