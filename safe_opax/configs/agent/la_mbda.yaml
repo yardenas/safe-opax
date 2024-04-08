@@ -18,22 +18,23 @@ critic:
   n_layers: 3
   hidden_size: 400
   init_bias: 25.
+  init_scale: 10.
 actor_optimizer:
   lr: 8e-5
   eps: 1e-5
-  clip: 0.5
+  clip: 50.0
 critic_optimizer:
   lr: 8e-5
   eps: 1e-5
-  clip: 0.5
+  clip: 50.0
 safety_critic_optimizer:
   lr: 8e-5
   eps: 1e-5
-  clip: 0.5
+  clip: 50.0
 model_optimizer:
   lr: 3e-4
   eps: 1e-5
-  clip: 0.5
+  clip: 5.0
 discount: 0.99
 safety_discount: 0.99
 lambda_: 0.97
