@@ -82,7 +82,6 @@ class Trainer:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         assert self.logger is not None and self.state_writer is not None
-        self.state_writer.write(self.state)
         self.state_writer.close()
 
     def train(self, epochs: Optional[int] = None) -> None:
