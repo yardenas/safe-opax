@@ -70,17 +70,11 @@ class Critic(eqx.Module):
         n_layers: int,
         state_dim: int,
         hidden_size: int,
-        init_bias: float,
-        init_scale: float,
         *,
         key: jax.Array,
     ):
-        self.net = rl_initialize_weights_trick(
-            eqx.nn.MLP(
-                state_dim, "scalar", hidden_size, n_layers, key=key, activation=jnn.elu
-            ),
-            init_bias,
-            init_scale,
+        self.net = eqx.nn.MLP(
+            state_dim, "scalar", hidden_size, n_layers, key=key, activation=jnn.elu
         )
 
     def __call__(self, observation: Any) -> jax.Array:

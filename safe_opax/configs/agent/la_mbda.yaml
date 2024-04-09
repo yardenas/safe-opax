@@ -6,6 +6,10 @@ replay_buffer:
   batch_size: 32
   sequence_length: 50
   capacity: 1000
+sentiment:
+  ensemble_size: 5
+  model_initialization_scale: 10.
+  critics_initialization_scale: 10.
 model:
   hidden_size: 200
   stochastic_size: 60
@@ -17,8 +21,6 @@ actor:
 critic:
   n_layers: 3
   hidden_size: 400
-  init_bias: 25.
-  init_scale: 10.
 actor_optimizer:
   lr: 8e-5
   eps: 1e-5
@@ -45,5 +47,3 @@ beta: 1.0
 free_nats: 1.
 kl_mix: 0.8
 safety_slack: 0.
-ensemble_size: 5
-initialization_scale: 1.
