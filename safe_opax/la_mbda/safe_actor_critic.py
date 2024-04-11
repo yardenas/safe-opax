@@ -166,7 +166,7 @@ def critic_loss_fn(
     critic: Critic, trajectories: jax.Array, lambda_values: jax.Array
 ) -> jax.Array:
     values = nest_vmap(critic, 2)(trajectories)
-    return l2_loss(values[:, :-1], lambda_values[:, 1:]).mean()
+    return l2_loss(values, lambda_values).mean()
 
 
 def evaluate_actor(
