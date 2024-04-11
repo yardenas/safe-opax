@@ -15,7 +15,6 @@ def _summarize_episodes(
     return reward, cost
 
 
-
 def interact(
     agent: Agent,
     environment: EpisodicAsync,
@@ -49,7 +48,9 @@ def interact(
                     done.all()
                 ), "No support for environments with different ending conditions"
                 np_trajectory = trajectory.as_numpy()
-                step += int(np.prod(np_trajectory.reward.shape))
+                step += (
+                    int(np.prod(np_trajectory.reward.shape)) * environment.action_repeat
+                )
                 if train:
                     agent.observe(np_trajectory)
                 reward, cost = _summarize_episodes(np_trajectory)
