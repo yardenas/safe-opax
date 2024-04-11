@@ -175,7 +175,7 @@ def critic_loss_fn(
     critic: Critic, trajectories: jax.Array, lambda_values: jax.Array
 ) -> jax.Array:
     values = nest_vmap(critic, 2)(trajectories)
-    return l2_loss(values[:, :-1], lambda_values[:, 1:]).mean()
+    return l2_loss(values, lambda_values).mean()
 
 
 def evaluate_actor(
@@ -193,21 +193,25 @@ def evaluate_actor(
     objective_sentiment: Sentiment,
 ) -> ActorEvaluation:
     trajectories, _ = rollout_fn(horizon, initial_states, key, actor.act)
-    bootstrap_values = _ensemble_critic_predict_fn(critic, trajectories.next_state)
+    next_step = lambda x: x[:, :, 1:]
+    current_step = lambda x: x[:, :, :-1]
+    next_states = next_step(trajectories.next_state)
+    bootstrap_values = _ensemble_critic_predict_fn(critic, next_states)
     lambda_values = nest_vmap(compute_lambda_values, 2, eqx.filter_vmap)(
-        bootstrap_values, trajectories.reward, discount, lambda_
+        bootstrap_values, current_step(trajectories.reward), discount, lambda_
     )
-    bootstrap_safety_values = _ensemble_critic_predict_fn(
-        safety_critic, trajectories.next_state
-    )
+    bootstrap_safety_values = _ensemble_critic_predict_fn(safety_critic, next_states)
     safety_lambda_values = nest_vmap(compute_lambda_values, 2, eqx.filter_vmap)(
-        bootstrap_safety_values, trajectories.cost, safety_discount, lambda_
+        bootstrap_safety_values,
+        current_step(trajectories.cost),
+        safety_discount,
+        lambda_,
     )
     objective = objective_sentiment(lambda_values)
     loss = -objective
     constraint = safety_budget - safety_lambda_values.mean()
     return ActorEvaluation(
-        trajectories.next_state,
+        current_step(trajectories.next_state),
         lambda_values,
         safety_lambda_values,
         loss,
