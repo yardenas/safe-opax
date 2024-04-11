@@ -9,3 +9,4 @@ environment:
 training:
   epochs: 100
   safe: false
+  action_repeat: 4
