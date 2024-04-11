@@ -183,21 +183,25 @@ def evaluate_actor(
     safety_budget: float,
 ) -> ActorEvaluation:
     trajectories, _ = rollout_fn(horizon, initial_states, key, actor.act)
-    bootstrap_values = _ensemble_critic_predict_fn(critic, trajectories.next_state)
+    next_step = lambda x: x[:, :, 1:]
+    current_step = lambda x: x[:, :, :-1]
+    next_states = next_step(trajectories.next_state)
+    bootstrap_values = _ensemble_critic_predict_fn(critic, next_states)
     lambda_values = nest_vmap(compute_lambda_values, 2, eqx.filter_vmap)(
-        bootstrap_values, trajectories.reward, discount, lambda_
+        bootstrap_values, current_step(trajectories.reward), discount, lambda_
     )
-    bootstrap_safety_values = _ensemble_critic_predict_fn(
-        safety_critic, trajectories.next_state
-    )
+    bootstrap_safety_values = _ensemble_critic_predict_fn(safety_critic, next_states)
     safety_lambda_values = nest_vmap(compute_lambda_values, 2, eqx.filter_vmap)(
-        bootstrap_safety_values, trajectories.cost, safety_discount, lambda_
+        bootstrap_safety_values,
+        current_step(trajectories.cost),
+        safety_discount,
+        lambda_,
     )
     reward_objective_model = sentiment.ObjectiveModel(
-        lambda_values, trajectories.next_state
+        lambda_values, current_step(trajectories.next_state)
     )
     cost_objective_model = sentiment.ObjectiveModel(
-        safety_lambda_values, trajectories.next_state
+        safety_lambda_values, current_step(trajectories.next_state)
     )
     # Plus variance of values for exploration?
     loss = -lambda_values.mean()
