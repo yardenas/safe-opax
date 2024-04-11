@@ -1,3 +1,4 @@
+from math import ceil
 from typing import NamedTuple
 
 import equinox as eqx
@@ -139,7 +140,9 @@ class LaMBDA:
         self.state = AgentState.init(
             config.training.parallel_envs, self.model.cell, action_shape
         )
-        self.should_train = Count(config.agent.train_every)
+        self.should_train = Count(
+            ceil(config.agent.train_every / config.training.action_repeat)
+        )
         self.metrics_monitor = MetricsMonitor()
 
     def __call__(
