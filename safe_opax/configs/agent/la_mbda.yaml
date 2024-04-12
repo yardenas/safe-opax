@@ -3,7 +3,7 @@ defaults:
 
 name: lambda
 replay_buffer:
-  batch_size: 32
+  batch_size: 16
   sequence_length: 50
   capacity: 1000
 sentiment:
