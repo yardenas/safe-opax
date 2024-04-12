@@ -40,13 +40,14 @@ def normalize(observation, mean, std):
 
 
 class Count:
-    def __init__(self, n: int):
+    def __init__(self, n: int, steps: int = 1):
         self.count = 0
-        self.n = n
+        self.n = (n // steps) * steps
+        self.steps = steps
 
     def __call__(self):
-        bingo = (self.count + 1) == self.n
-        self.count = (self.count + 1) % self.n
+        bingo = (self.count + self.steps) == self.n
+        self.count = (self.count + self.steps) % self.n
         return bingo
 
 

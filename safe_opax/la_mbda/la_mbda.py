@@ -1,4 +1,3 @@
-from math import ceil
 from typing import NamedTuple
 
 import equinox as eqx
@@ -144,7 +143,8 @@ class LaMBDA:
             config.training.parallel_envs, self.model.cell, action_shape
         )
         self.should_train = Count(
-            ceil(config.agent.train_every / config.training.action_repeat)
+            config.agent.train_every,
+            config.training.parallel_envs * config.training.action_repeat,
         )
         self.metrics_monitor = MetricsMonitor()
 
@@ -153,7 +153,7 @@ class LaMBDA:
         observation: FloatArray,
         train: bool = False,
     ) -> FloatArray:
-        if train and not self.replay_buffer.empty and self.should_train():
+        if train and self.should_train() and not self.replay_buffer.empty:
             self.update()
         actions, self.state = policy(
             self.actor_critic.actor,
