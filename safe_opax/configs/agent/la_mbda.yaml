@@ -39,7 +39,7 @@ model_optimizer:
   clip: 5.0
 discount: 0.99
 safety_discount: 0.99
-lambda_: 0.97
+lambda_: 0.95
 plan_horizon: 15
 update_steps: 100
 train_every: 1000
