@@ -1,3 +1,5 @@
+defaults:
+  - penalizer/lagrangian
 
 name: lambda
 replay_buffer:
