@@ -3,6 +3,7 @@ from typing import NamedTuple
 import equinox as eqx
 import jax
 import jax.numpy as jnp
+import distrax as dtx
 import numpy as np
 from gymnasium.spaces import Box
 from omegaconf import DictConfig
@@ -31,6 +32,10 @@ def policy(actor, model, prev_state, observation, key):
             prev_state.rssm_state, observation, prev_state.prev_action, model_key
         )
         action = actor.act(current_rssm_state.flatten(), policy_key)
+        # FIXME (yarden): don't
+        action = dtx.Normal(action, 0.3 * jnp.ones_like(action)).sample(
+            seed=policy_key
+        )
         return action, AgentState(current_rssm_state, action)
 
     observation = preprocess(observation)
