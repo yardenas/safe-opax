@@ -256,7 +256,7 @@ def variational_step(
         reconstruction_loss = -sum(
             map(
                 lambda predictions, targets: dtx.Independent(
-                    dtx.Normal(targets, 1.0), 3
+                    dtx.Normal(targets, 1.0), targets.ndim - 2
                 )
                 .log_prob(predictions)
                 .mean(),
