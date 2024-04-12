@@ -117,8 +117,7 @@ class LaMBDA:
             action_shape=action_space.shape,
             max_length=config.training.time_limit // config.training.action_repeat,
             seed=config.training.seed,
-            sequence_length=config.agent.replay_buffer.sequence_length
-            // config.training.action_repeat,
+            sequence_length=config.agent.replay_buffer.sequence_length,
             batch_size=config.agent.replay_buffer.batch_size,
             capacity=config.agent.replay_buffer.capacity,
         )
