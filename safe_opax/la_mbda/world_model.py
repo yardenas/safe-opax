@@ -143,7 +143,7 @@ class WorldModel(eqx.Module):
         # 1 + 1 = cost + reward
         # width = 400, layers = 2
         self.reward_cost_decoder = eqx.nn.MLP(
-            state_dim, 1 + 1, 400, 2, key=reward_cost_decoder_key, activation=jnn.elu
+            state_dim, 1 + 1, 400, 3, key=reward_cost_decoder_key, activation=jnn.elu
         )
 
     def __call__(

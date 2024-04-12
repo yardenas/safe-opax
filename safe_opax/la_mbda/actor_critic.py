@@ -28,7 +28,7 @@ class ContinuousActor(eqx.Module):
                 state_dim,
                 action_dim * 2,
                 hidden_size,
-                n_layers,
+                n_layers + 1,
                 key=key,
                 activation=jnn.elu,
             )
@@ -74,7 +74,7 @@ class Critic(eqx.Module):
         key: jax.Array,
     ):
         self.net = eqx.nn.MLP(
-            state_dim, "scalar", hidden_size, n_layers, key=key, activation=jnn.elu
+            state_dim, "scalar", hidden_size + 1, n_layers, key=key, activation=jnn.elu
         )
 
     def __call__(self, observation: Any) -> jax.Array:
