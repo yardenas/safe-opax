@@ -255,10 +255,11 @@ def variational_step(
         inference_result: InferenceResult = eqx.filter_vmap(infer_fn)(features, actions)
         y = features.observation, jnp.concatenate([features.reward, features.cost], -1)
         y_hat = inference_result.image, inference_result.reward_cost
+        batch_ndim = 2
         reconstruction_loss = -sum(
             map(
                 lambda predictions, targets: dtx.Independent(
-                    dtx.Normal(targets, 1.0), targets.ndim - 2
+                    dtx.Normal(targets, 1.0), targets.ndim - batch_ndim
                 )
                 .log_prob(predictions)
                 .mean(),
