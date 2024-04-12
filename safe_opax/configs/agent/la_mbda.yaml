@@ -12,7 +12,7 @@ sentiment:
   critics_initialization_scale: 1.
 model:
   hidden_size: 200
-  stochastic_size: 60
+  stochastic_size: 30
   deterministic_size: 200
 actor:
   n_layers: 4
