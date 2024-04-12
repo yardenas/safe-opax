@@ -44,3 +44,4 @@ free_nats: 1.
 kl_mix: 0.8
 safety_slack: 0.
 ensemble_size: 5
+evaluate_model: false
