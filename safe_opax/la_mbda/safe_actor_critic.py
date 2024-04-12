@@ -173,14 +173,19 @@ def compute_lambda_values(
 
 
 def critic_loss_fn(
-    critic: Critic, trajectories: jax.Array, lambda_values: jax.Array
+    critic: Critic,
+    trajectories: jax.Array,
+    lambda_values: jax.Array,
+    discount: float,
+    horizon: int,
 ) -> jax.Array:
+    planning_discount = compute_discount(discount, horizon - 1)
     values = nest_vmap(critic, 2)(trajectories)
-    return (
-        -trx.Independent(trx.Normal(lambda_values, jnp.ones_like(lambda_values)), 0)
-        .log_prob(values)
-        .mean()
-    )
+    log_probs = trx.Independent(
+        trx.Normal(lambda_values, jnp.ones_like(lambda_values)), 0
+    ).log_prob(values)
+    loss = -(log_probs * planning_discount).mean()
+    return loss
 
 
 def evaluate_actor(
@@ -212,7 +217,8 @@ def evaluate_actor(
         safety_discount,
         lambda_,
     )
-    objective = objective_sentiment(lambda_values)
+    planning_discount = compute_discount(discount, horizon - 1)
+    objective = objective_sentiment(lambda_values * planning_discount)
     loss = -objective
     constraint = safety_budget - safety_lambda_values.mean()
     return ActorEvaluation(
@@ -269,11 +275,11 @@ def update_safe_actor_critic(
         actor, actor_grads, actor_learning_state
     )
     ensemble_critic_loss_fn = eqx.filter_vmap(
-        critic_loss_fn, in_axes=(eqx.if_array(0), 1, 1)
+        critic_loss_fn, in_axes=(eqx.if_array(0), 1, 1, None, None)
     )
     ensemble_critic_grads_fn = eqx.filter_value_and_grad(
         lambda critic, trajectory, values: ensemble_critic_loss_fn(
-            critic, trajectory, values
+            critic, trajectory, values, discount, horizon
         ).sum()
     )
     critic_loss, grads = ensemble_critic_grads_fn(
@@ -383,3 +389,9 @@ def _ensemble_critic_predict_fn(
     trajectory: jax.Array,
 ) -> jax.Array:
     return nest_vmap(critic, 2)(trajectory)
+
+
+def compute_discount(factor, length):
+    d = jnp.cumprod(factor * jnp.ones((length - 1,)))
+    d = jnp.concatenate([jnp.ones((1,)), d])
+    return d
