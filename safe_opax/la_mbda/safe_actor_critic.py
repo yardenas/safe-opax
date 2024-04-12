@@ -5,7 +5,8 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 from jaxtyping import PyTree
-from optax import OptState, l2_loss
+from optax import OptState
+import distrax as trx
 
 from safe_opax.common.learner import Learner
 from safe_opax.common.mixed_precision import apply_mixed_precision
@@ -175,7 +176,11 @@ def critic_loss_fn(
     critic: Critic, trajectories: jax.Array, lambda_values: jax.Array
 ) -> jax.Array:
     values = nest_vmap(critic, 2)(trajectories)
-    return l2_loss(values, lambda_values).mean()
+    return (
+        -trx.Independent(trx.Normal(lambda_values, jnp.ones_like(lambda_values)), 0)
+        .log_prob(values)
+        .mean()
+    )
 
 
 def evaluate_actor(
