@@ -12,7 +12,7 @@ sentiment:
   critics_initialization_scale: 1.
 model:
   hidden_size: 200
-  stochastic_size: 30
+  stochastic_size: 60
   deterministic_size: 200
 actor:
   n_layers: 4
@@ -24,19 +24,19 @@ critic:
 actor_optimizer:
   lr: 8e-5
   eps: 1e-5
-  clip: 50.0
+  clip: 100.0
 critic_optimizer:
   lr: 8e-5
   eps: 1e-5
-  clip: 50.0
+  clip: 100.0
 safety_critic_optimizer:
   lr: 8e-5
   eps: 1e-5
-  clip: 50.0
+  clip: 100.0
 model_optimizer:
-  lr: 6e-4
+  lr: 3e-4
   eps: 1e-5
-  clip: 5.0
+  clip: 100.0
 discount: 0.99
 safety_discount: 0.99
 lambda_: 0.95
@@ -44,7 +44,7 @@ plan_horizon: 15
 update_steps: 100
 train_every: 1000
 beta: 1.0
-free_nats: 3.
-kl_mix: 0.5
+free_nats: 1.
+kl_mix: 0.8
 safety_slack: 0.
 evaluate_model: false

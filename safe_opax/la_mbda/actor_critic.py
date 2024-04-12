@@ -30,7 +30,6 @@ class ContinuousActor(eqx.Module):
             key=key,
             activation=jnn.elu,
         )
-
         self.init_stddev = init_stddev
 
     def __call__(self, state: jax.Array) -> trx.Transformed:
