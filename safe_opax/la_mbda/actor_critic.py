@@ -37,7 +37,7 @@ class ContinuousActor(eqx.Module):
         x = self.net(state)
         mu, stddev = jnp.split(x, 2, axis=-1)
         init_std = inv_softplus(self.init_stddev)
-        stddev = jnn.softplus(stddev + init_std) + 0.1
+        stddev = jnn.softplus(stddev + init_std) + 1e-4
         mu = 5.0 * jnn.tanh(mu / 5.0)
         dist = trx.Normal(mu, stddev)
         dist = trx.Transformed(dist, trx.Tanh())
