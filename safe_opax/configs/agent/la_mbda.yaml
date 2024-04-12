@@ -34,7 +34,7 @@ safety_critic_optimizer:
   eps: 1e-5
   clip: 50.0
 model_optimizer:
-  lr: 3e-4
+  lr: 6e-4
   eps: 1e-5
   clip: 5.0
 discount: 0.99
