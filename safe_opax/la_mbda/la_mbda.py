@@ -213,10 +213,13 @@ class LaMBDA:
             k: float(v.result.mean) for k, v in self.metrics_monitor.metrics.items()
         }
         self.metrics_monitor.reset()
-        batch = next(self.replay_buffer.sample(1))
-        features, actions = _prepare_features(batch)
-        video = evaluate_model(self.model, features, actions, next(self.prng))
-        return Report(metrics=metrics, videos={"agent/model/prediction": video})
+        if self.config.agent.evaluate_model:
+            batch = next(self.replay_buffer.sample(1))
+            features, actions = _prepare_features(batch)
+            video = evaluate_model(self.model, features, actions, next(self.prng))
+            return Report(metrics=metrics, videos={"agent/model/prediction": video})
+        else:
+            return Report(metrics=metrics)
 
 
 @jax.jit
