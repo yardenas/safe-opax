@@ -173,20 +173,17 @@ class LaMBDA:
         self.state = jax.tree_map(lambda x: jnp.zeros_like(x), self.state)
 
     def update(self):
-        total_steps = (
-            self.config.agent.update_steps * self.config.agent.sentiment.ensemble_size
-        )
-        for i, batch in enumerate(self.replay_buffer.sample(total_steps)):
+        total_steps = self.config.agent.update_steps
+        for batch in self.replay_buffer.sample(total_steps):
             inferrered_rssm_states = self.update_model(batch)
-            if i % self.config.agent.sentiment.ensemble_size == 0:
-                initial_states = inferrered_rssm_states.reshape(
-                    -1, inferrered_rssm_states.shape[-1]
-                )
-                outs = self.actor_critic.update(
-                    self.model, initial_states, next(self.prng)
-                )
-                for k, v in outs.items():
-                    self.metrics_monitor[k] = v
+            initial_states = inferrered_rssm_states.reshape(
+                -1, inferrered_rssm_states.shape[-1]
+            )
+            outs = self.actor_critic.update(
+                self.model, initial_states, next(self.prng)
+            )
+            for k, v in outs.items():
+                self.metrics_monitor[k] = v
 
     def update_model(self, batch: TrajectoryData) -> jax.Array:
         features, actions = _prepare_features(batch)
