@@ -162,9 +162,6 @@ class RSSM(eqx.Module):
     def predict(
         self, prev_state: State, action: jax.Array, key: jax.Array
     ) -> tuple[State, ShiftScale]:
-        key, prior_key = jax.random.split(key)
-        id = jax.random.randint(prior_key, (), 0, self.ensemble_size)
-        prev_state = jax.tree_map(lambda x: x[id], prev_state)
         prior, deterministic = _priors_predict(self.priors, prev_state, action)
         stochastic = dtx.Independent(dtx.Normal(*prior)).sample(seed=key)
         return State(stochastic, deterministic), prior
