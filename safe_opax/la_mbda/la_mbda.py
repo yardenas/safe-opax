@@ -1,4 +1,3 @@
-from math import ceil
 from typing import NamedTuple
 
 import equinox as eqx
@@ -15,6 +14,7 @@ from safe_opax.la_mbda.dummy_penalizer import DummyPenalizer
 from safe_opax.la_mbda.lbsgd import LBSGDPenalizer
 from safe_opax.la_mbda.replay_buffer import ReplayBuffer
 from safe_opax.la_mbda.safe_actor_critic import SafeModelBasedActorCritic
+from safe_opax.la_mbda.sentiment import empirical_optimism
 from safe_opax.la_mbda.world_model import WorldModel, evaluate_model, variational_step
 from safe_opax.rl.epoch_summary import EpochSummary
 from safe_opax.rl.metrics import MetricsMonitor
@@ -90,7 +90,8 @@ def make_actor_critic(safe, state_dim, action_dim, cfg, key):
         actor_optimizer_config=cfg.agent.actor_optimizer,
         critic_optimizer_config=cfg.agent.critic_optimizer,
         safety_critic_optimizer_config=cfg.agent.safety_critic_optimizer,
-        ensemble_size=cfg.agent.ensemble_size,
+        ensemble_size=cfg.agent.sentiment.ensemble_size,
+        initialization_scale=cfg.agent.sentiment.critics_initialization_scale,
         horizon=cfg.agent.plan_horizon,
         discount=cfg.agent.discount,
         safety_discount=cfg.agent.safety_discount,
@@ -98,6 +99,7 @@ def make_actor_critic(safe, state_dim, action_dim, cfg, key):
         safety_budget=episode_safety_budget,
         penalizer=penalizer,
         key=key,
+        objective_sentiment=empirical_optimism,
     )
 
 
@@ -125,7 +127,8 @@ class LaMBDA:
             image_shape=observation_space.shape,
             action_dim=action_shape,
             key=next(self.prng),
-            ensemble_size=config.agent.ensemble_size,
+            ensemble_size=config.agent.sentiment.ensemble_size,
+            initialization_scale=config.agent.sentiment.model_initialization_scale,
             **config.agent.model,
         )
         self.model_learner = Learner(self.model, config.agent.model_optimizer)
@@ -140,7 +143,8 @@ class LaMBDA:
             config.training.parallel_envs, self.model.cell, action_shape
         )
         self.should_train = Count(
-            ceil(config.agent.train_every / config.training.action_repeat)
+            config.agent.train_every,
+            config.training.parallel_envs * config.training.action_repeat,
         )
         self.metrics_monitor = MetricsMonitor()
 
@@ -149,7 +153,7 @@ class LaMBDA:
         observation: FloatArray,
         train: bool = False,
     ) -> FloatArray:
-        if train and not self.replay_buffer.empty and self.should_train():
+        if train and self.should_train() and not self.replay_buffer.empty:
             self.update()
         actions, self.state = policy(
             self.actor_critic.actor,
@@ -169,10 +173,12 @@ class LaMBDA:
         self.state = jax.tree_map(lambda x: jnp.zeros_like(x), self.state)
 
     def update(self):
-        total_steps = self.config.agent.update_steps * self.config.agent.ensemble_size
+        total_steps = (
+            self.config.agent.update_steps * self.config.agent.sentiment.ensemble_size
+        )
         for i, batch in enumerate(self.replay_buffer.sample(total_steps)):
             inferrered_rssm_states = self.update_model(batch)
-            if i % self.config.agent.ensemble_size == 0:
+            if i % self.config.agent.sentiment.ensemble_size == 0:
                 initial_states = inferrered_rssm_states.reshape(
                     -1, inferrered_rssm_states.shape[-1]
                 )

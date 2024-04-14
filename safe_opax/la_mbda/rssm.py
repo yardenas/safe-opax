@@ -1,3 +1,4 @@
+from functools import partial
 from typing import NamedTuple
 
 import distrax as dtx
@@ -5,6 +6,8 @@ import equinox as eqx
 import jax
 import jax.nn as jnn
 import jax.numpy as jnp
+
+from safe_opax.rl.utils import glorot_uniform, init_linear_weights
 
 
 class State(NamedTuple):
@@ -124,16 +127,22 @@ class RSSM(eqx.Module):
         embedding_size: int,
         action_dim: int,
         ensemble_size: int,
+        initialization_scale: float,
+        *,
         key: jax.Array,
     ):
         self.ensemble_size = ensemble_size
         prior_key, posterior_key = jax.random.split(key)
         make_priors = eqx.filter_vmap(
-            lambda key: Prior(
-                deterministic_size,
-                stochastic_size,
-                hidden_size,
-                action_dim,
+            lambda key: init_linear_weights(
+                Prior(
+                    deterministic_size,
+                    stochastic_size,
+                    hidden_size,
+                    action_dim,
+                    key,
+                ),
+                partial(glorot_uniform, scale=initialization_scale),
                 key,
             )
         )

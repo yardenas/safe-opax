@@ -5,19 +5,21 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 from jaxtyping import PyTree
-from optax import OptState, l2_loss
+from optax import OptState
+import distrax as trx
 
 from safe_opax.common.learner import Learner
 from safe_opax.common.mixed_precision import apply_mixed_precision
-from safe_opax.la_mbda import sentiment
+from safe_opax.la_mbda.sentiment import Sentiment, value_epistemic_uncertainty
 from safe_opax.la_mbda.actor_critic import ContinuousActor, Critic
 from safe_opax.la_mbda.types import Model, RolloutFn
-from safe_opax.rl.utils import nest_vmap
+from safe_opax.rl.utils import glorot_uniform, init_linear_weights, nest_vmap
 
 
 class ActorEvaluation(NamedTuple):
-    reward_objective_model: sentiment.ObjectiveModel
-    cost_objective_model: sentiment.ObjectiveModel
+    trajectories: jax.Array
+    objective_values: jax.Array
+    cost_values: jax.Array
     loss: jax.Array
     constraint: jax.Array
     safe: jax.Array
@@ -46,6 +48,7 @@ class SafeModelBasedActorCritic:
         critic_optimizer_config: dict[str, Any],
         safety_critic_optimizer_config: dict[str, Any],
         ensemble_size: int,
+        initialization_scale: float,
         horizon: int,
         discount: float,
         safety_discount: float,
@@ -53,6 +56,7 @@ class SafeModelBasedActorCritic:
         safety_budget: float,
         key: jax.Array,
         penalizer: Penalizer,
+        objective_sentiment: Sentiment,
     ):
         actor_key, critic_key, safety_critic_key = jax.random.split(key, 3)
         self.actor = ContinuousActor(
@@ -62,7 +66,11 @@ class SafeModelBasedActorCritic:
             key=actor_key,
         )
         make_critic_ensemble = eqx.filter_vmap(
-            lambda key: Critic(state_dim=state_dim, **critic_config, key=key)
+            lambda key: init_linear_weights(
+                Critic(state_dim=state_dim, **critic_config, key=key),
+                partial(glorot_uniform, scale=initialization_scale),
+                key,
+            )
         )
         self.critic = make_critic_ensemble(
             jnp.asarray(jax.random.split(critic_key, ensemble_size))
@@ -83,6 +91,7 @@ class SafeModelBasedActorCritic:
         self.safety_budget = safety_budget
         self.update_fn = batched_update_safe_actor_critic
         self.penalizer = penalizer
+        self.objective_sentiment = objective_sentiment
 
     def update(
         self,
@@ -110,6 +119,7 @@ class SafeModelBasedActorCritic:
             self.safety_budget,
             self.penalizer,
             self.penalizer.state,
+            self.objective_sentiment,
         )
         self.actor = results.new_actor
         self.critic = results.new_critic
@@ -163,10 +173,19 @@ def compute_lambda_values(
 
 
 def critic_loss_fn(
-    critic: Critic, trajectories: jax.Array, lambda_values: jax.Array
+    critic: Critic,
+    trajectories: jax.Array,
+    lambda_values: jax.Array,
+    discount: float,
+    horizon: int,
 ) -> jax.Array:
+    planning_discount = compute_discount(discount, horizon - 1)
     values = nest_vmap(critic, 2)(trajectories)
-    return l2_loss(values[:, :-1], lambda_values[:, 1:]).mean()
+    log_probs = trx.Independent(
+        trx.Normal(lambda_values, jnp.ones_like(lambda_values)), 0
+    ).log_prob(values)
+    loss = -(log_probs * planning_discount).mean()
+    return loss
 
 
 def evaluate_actor(
@@ -181,30 +200,31 @@ def evaluate_actor(
     safety_discount: float,
     lambda_: float,
     safety_budget: float,
+    objective_sentiment: Sentiment,
 ) -> ActorEvaluation:
     trajectories, _ = rollout_fn(horizon, initial_states, key, actor.act)
-    bootstrap_values = _ensemble_critic_predict_fn(critic, trajectories.next_state)
+    next_step = lambda x: x[:, :, 1:]
+    current_step = lambda x: x[:, :, :-1]
+    next_states = next_step(trajectories.next_state)
+    bootstrap_values = _ensemble_critic_predict_fn(critic, next_states)
     lambda_values = nest_vmap(compute_lambda_values, 2, eqx.filter_vmap)(
-        bootstrap_values, trajectories.reward, discount, lambda_
+        bootstrap_values, current_step(trajectories.reward), discount, lambda_
     )
-    bootstrap_safety_values = _ensemble_critic_predict_fn(
-        safety_critic, trajectories.next_state
-    )
+    bootstrap_safety_values = _ensemble_critic_predict_fn(safety_critic, next_states)
     safety_lambda_values = nest_vmap(compute_lambda_values, 2, eqx.filter_vmap)(
-        bootstrap_safety_values, trajectories.cost, safety_discount, lambda_
+        bootstrap_safety_values,
+        current_step(trajectories.cost),
+        safety_discount,
+        lambda_,
     )
-    reward_objective_model = sentiment.ObjectiveModel(
-        lambda_values, trajectories.next_state
-    )
-    cost_objective_model = sentiment.ObjectiveModel(
-        safety_lambda_values, trajectories.next_state
-    )
-    # Plus variance of values for exploration?
-    loss = -lambda_values.mean()
+    planning_discount = compute_discount(discount, horizon - 1)
+    objective = objective_sentiment(lambda_values * planning_discount)
+    loss = -objective
     constraint = safety_budget - safety_lambda_values.mean()
     return ActorEvaluation(
-        reward_objective_model,
-        cost_objective_model,
+        current_step(trajectories.next_state),
+        lambda_values,
+        safety_lambda_values,
         loss,
         constraint,
         jnp.greater(constraint, 0.0),
@@ -231,6 +251,7 @@ def update_safe_actor_critic(
     safety_budget: float,
     penalty_fn: Penalizer,
     penalty_state: Any,
+    objective_sentiment: Sentiment,
 ) -> SafeActorCriticStepResults:
     actor_grads, new_penalty_state, evaluation, metrics = penalty_fn(
         lambda actor: evaluate_actor(
@@ -245,6 +266,7 @@ def update_safe_actor_critic(
             safety_discount,
             lambda_,
             safety_budget,
+            objective_sentiment,
         ),
         penalty_state,
         actor,
@@ -253,36 +275,36 @@ def update_safe_actor_critic(
         actor, actor_grads, actor_learning_state
     )
     ensemble_critic_loss_fn = eqx.filter_vmap(
-        critic_loss_fn, in_axes=(eqx.if_array(0), 1, 1)
+        critic_loss_fn, in_axes=(eqx.if_array(0), 1, 1, None, None)
     )
     ensemble_critic_grads_fn = eqx.filter_value_and_grad(
         lambda critic, trajectory, values: ensemble_critic_loss_fn(
-            critic, trajectory, values
+            critic, trajectory, values, discount, horizon
         ).sum()
     )
     critic_loss, grads = ensemble_critic_grads_fn(
         critic,
-        evaluation.reward_objective_model.trajectory,
-        evaluation.reward_objective_model.values,
+        evaluation.trajectories,
+        evaluation.objective_values,
     )
     new_critic, new_critic_state = critic_learner.grad_step(
         critic, grads, critic_learning_state
     )
-    safety = evaluation.cost_objective_model.values
+    safety = evaluation.cost_values
     safety_critic_loss, grads = ensemble_critic_grads_fn(
         safety_critic,
-        evaluation.cost_objective_model.trajectory,
+        evaluation.trajectories,
         safety,
     )
     new_safety_critic, new_safety_critic_state = safety_critic_learner.grad_step(
         safety_critic, grads, safety_critic_learning_state
     )
-    metrics[
-        "agent/objective-values-variance"
-    ] = evaluation.reward_objective_model.values.mean((0, -1)).std()
-    metrics[
-        "agent/constraint-values-variance"
-    ] = evaluation.cost_objective_model.values.mean((0, -1)).std()
+    metrics["agent/objective-values-variance"] = value_epistemic_uncertainty(
+        evaluation.objective_values
+    )
+    metrics["agent/constraint-values-variance"] = value_epistemic_uncertainty(
+        evaluation.cost_values
+    )
     return SafeActorCriticStepResults(
         new_actor,
         new_critic,
@@ -326,6 +348,7 @@ def batched_update_safe_actor_critic(
     safety_budget: float,
     penalty_fn: Penalizer,
     penalty_state: Any,
+    objective_sentiment: Sentiment,
 ) -> SafeActorCriticStepResults:
     vmapped_rollout_fn = jax.vmap(rollout_fn, (None, 0, None, None))
     return update_safe_actor_critic(
@@ -348,6 +371,7 @@ def batched_update_safe_actor_critic(
         safety_budget,
         penalty_fn,
         penalty_state,
+        objective_sentiment,
     )
 
 
@@ -365,3 +389,9 @@ def _ensemble_critic_predict_fn(
     trajectory: jax.Array,
 ) -> jax.Array:
     return nest_vmap(critic, 2)(trajectory)
+
+
+def compute_discount(factor, length):
+    d = jnp.cumprod(factor * jnp.ones((length - 1,)))
+    d = jnp.concatenate([jnp.ones((1,)), d])
+    return d

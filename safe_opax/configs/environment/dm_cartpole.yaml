@@ -4,4 +4,5 @@ dm_cartpole:
     enabled: true
     image_size: [64, 64]
     image_format: "channels_first"
-    visualize_reward: true 
+    visualize_reward: true
+  cost_multiplier: 0.2

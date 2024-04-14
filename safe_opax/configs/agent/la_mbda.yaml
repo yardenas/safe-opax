@@ -3,9 +3,13 @@ defaults:
 
 name: lambda
 replay_buffer:
-  batch_size: 32
+  batch_size: 16
   sequence_length: 50
   capacity: 1000
+sentiment:
+  ensemble_size: 5
+  model_initialization_scale: 1.
+  critics_initialization_scale: 1.
 model:
   hidden_size: 200
   stochastic_size: 60
@@ -20,28 +24,27 @@ critic:
 actor_optimizer:
   lr: 8e-5
   eps: 1e-5
-  clip: 0.5
+  clip: 100.0
 critic_optimizer:
   lr: 8e-5
   eps: 1e-5
-  clip: 0.5
+  clip: 100.0
 safety_critic_optimizer:
   lr: 8e-5
   eps: 1e-5
-  clip: 0.5
+  clip: 100.0
 model_optimizer:
   lr: 3e-4
   eps: 1e-5
-  clip: 0.5
+  clip: 100.0
 discount: 0.99
 safety_discount: 0.99
-lambda_: 0.97
+lambda_: 0.95
 plan_horizon: 15
-update_steps: 10
-train_every: 10
+update_steps: 100
+train_every: 1000
 beta: 1.0
 free_nats: 1.
 kl_mix: 0.8
 safety_slack: 0.
-ensemble_size: 5
 evaluate_model: false

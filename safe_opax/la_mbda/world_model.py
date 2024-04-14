@@ -117,6 +117,7 @@ class WorldModel(eqx.Module):
         stochastic_size: int,
         hidden_size: int,
         ensemble_size: int,
+        initialization_scale: float,
         *,
         key,
     ):
@@ -133,7 +134,8 @@ class WorldModel(eqx.Module):
             _EMBEDDING_SIZE,
             action_dim,
             ensemble_size,
-            cell_key,
+            initialization_scale,
+            key=cell_key,
         )
         self.encoder = Encoder(key=encoder_key)
         state_dim = stochastic_size + deterministic_size
@@ -141,7 +143,7 @@ class WorldModel(eqx.Module):
         # 1 + 1 = cost + reward
         # width = 400, layers = 2
         self.reward_cost_decoder = eqx.nn.MLP(
-            state_dim, 1 + 1, 400, 2, key=reward_cost_decoder_key, activation=jnn.elu
+            state_dim, 1 + 1, 400, 3, key=reward_cost_decoder_key, activation=jnn.elu
         )
 
     def __call__(
@@ -253,10 +255,11 @@ def variational_step(
         inference_result: InferenceResult = eqx.filter_vmap(infer_fn)(features, actions)
         y = features.observation, jnp.concatenate([features.reward, features.cost], -1)
         y_hat = inference_result.image, inference_result.reward_cost
+        batch_ndim = 2
         reconstruction_loss = -sum(
             map(
                 lambda predictions, targets: dtx.Independent(
-                    dtx.Normal(targets, 1.0), targets.ndim - 2
+                    dtx.Normal(targets, 1.0), targets.ndim - batch_ndim
                 )
                 .log_prob(predictions)
                 .mean(),
