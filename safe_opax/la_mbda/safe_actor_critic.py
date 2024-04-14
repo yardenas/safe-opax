@@ -13,7 +13,7 @@ from safe_opax.common.mixed_precision import apply_mixed_precision
 from safe_opax.la_mbda.sentiment import Sentiment, value_epistemic_uncertainty
 from safe_opax.la_mbda.actor_critic import ContinuousActor, Critic
 from safe_opax.la_mbda.types import Model, RolloutFn
-from safe_opax.rl.utils import glorot_uniform, init_linear_weights, nest_vmap
+from safe_opax.rl.utils import nest_vmap
 
 
 class ActorEvaluation(NamedTuple):
@@ -48,7 +48,6 @@ class SafeModelBasedActorCritic:
         critic_optimizer_config: dict[str, Any],
         safety_critic_optimizer_config: dict[str, Any],
         ensemble_size: int,
-        initialization_scale: float,
         horizon: int,
         discount: float,
         safety_discount: float,
@@ -65,18 +64,9 @@ class SafeModelBasedActorCritic:
             **actor_config,
             key=actor_key,
         )
-        make_critic_ensemble = eqx.filter_vmap(
-            lambda key: init_linear_weights(
-                Critic(state_dim=state_dim, **critic_config, key=key),
-                partial(glorot_uniform, scale=initialization_scale),
-                key,
-            )
-        )
-        self.critic = make_critic_ensemble(
-            jnp.asarray(jax.random.split(critic_key, ensemble_size))
-        )
-        self.safety_critic = make_critic_ensemble(
-            jnp.asarray(jax.random.split(safety_critic_key, ensemble_size))
+        self.critic = Critic(state_dim=state_dim, **critic_config, key=critic_key)
+        self.safety_critic = Critic(
+            state_dim=state_dim, **critic_config, key=safety_critic_key
         )
         self.actor_learner = Learner(self.actor, actor_optimizer_config)
         self.critic_learner = Learner(self.critic, critic_optimizer_config)
@@ -203,15 +193,15 @@ def evaluate_actor(
     objective_sentiment: Sentiment,
 ) -> ActorEvaluation:
     trajectories, _ = rollout_fn(horizon, initial_states, key, actor.act)
-    next_step = lambda x: x[:, :, 1:]
-    current_step = lambda x: x[:, :, :-1]
+    next_step = lambda x: x[:, 1:]
+    current_step = lambda x: x[:, :-1]
     next_states = next_step(trajectories.next_state)
-    bootstrap_values = _ensemble_critic_predict_fn(critic, next_states)
-    lambda_values = nest_vmap(compute_lambda_values, 2, eqx.filter_vmap)(
+    bootstrap_values = nest_vmap(critic, 2, eqx.filter_vmap)(next_states)
+    lambda_values = eqx.filter_vmap(compute_lambda_values)(
         bootstrap_values, current_step(trajectories.reward), discount, lambda_
     )
-    bootstrap_safety_values = _ensemble_critic_predict_fn(safety_critic, next_states)
-    safety_lambda_values = nest_vmap(compute_lambda_values, 2, eqx.filter_vmap)(
+    bootstrap_safety_values = nest_vmap(safety_critic, 2, eqx.filter_vmap)(next_states)
+    safety_lambda_values = eqx.filter_vmap(compute_lambda_values)(
         bootstrap_safety_values,
         current_step(trajectories.cost),
         safety_discount,
@@ -274,27 +264,20 @@ def update_safe_actor_critic(
     new_actor, new_actor_state = actor_learner.grad_step(
         actor, actor_grads, actor_learning_state
     )
-    ensemble_critic_loss_fn = eqx.filter_vmap(
-        critic_loss_fn, in_axes=(eqx.if_array(0), 1, 1, None, None)
-    )
-    ensemble_critic_grads_fn = eqx.filter_value_and_grad(
-        lambda critic, trajectory, values: ensemble_critic_loss_fn(
-            critic, trajectory, values, discount, horizon
-        ).sum()
-    )
-    critic_loss, grads = ensemble_critic_grads_fn(
-        critic,
-        evaluation.trajectories,
-        evaluation.objective_values,
+    critics_grads_fn = eqx.filter_value_and_grad(critic_loss_fn)
+    critic_loss, grads = critics_grads_fn(
+        critic, evaluation.trajectories, evaluation.objective_values, discount, horizon
     )
     new_critic, new_critic_state = critic_learner.grad_step(
         critic, grads, critic_learning_state
     )
     safety = evaluation.cost_values
-    safety_critic_loss, grads = ensemble_critic_grads_fn(
+    safety_critic_loss, grads = critics_grads_fn(
         safety_critic,
         evaluation.trajectories,
         safety,
+        safety_discount,
+        horizon,
     )
     new_safety_critic, new_safety_critic_state = safety_critic_learner.grad_step(
         safety_critic, grads, safety_critic_learning_state
@@ -373,22 +356,6 @@ def batched_update_safe_actor_critic(
         penalty_state,
         objective_sentiment,
     )
-
-
-@eqx.filter_vmap(in_axes=(eqx.if_array(0), 1), out_axes=1)
-# Could technically pass all trajectories and compute
-# the values for each trajectory, even if the trajectory
-# is not from the corresponding value.
-# This can help in estimating the variance of the mean value
-# https://github.com/boschresearch/ube-mbrl/blob/9b57ee30f32e88ab9155ac7d6489a629b1c422c3/ube_mbrl/agent/qusac.py#L203
-# Can "clean out" the aleatoric uncertainty by learning a distributional value:
-# https://arxiv.org/pdf/2102.03765.pdf
-# read the section on aleatoric uncertainty
-def _ensemble_critic_predict_fn(
-    critic: Critic,
-    trajectory: jax.Array,
-) -> jax.Array:
-    return nest_vmap(critic, 2)(trajectory)
 
 
 def compute_discount(factor, length):

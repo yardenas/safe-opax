@@ -9,7 +9,6 @@ replay_buffer:
 sentiment:
   ensemble_size: 5
   model_initialization_scale: 1.
-  critics_initialization_scale: 1.
 model:
   hidden_size: 200
   stochastic_size: 60
