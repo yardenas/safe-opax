@@ -47,6 +47,7 @@ class SafeModelBasedActorCritic:
         actor_optimizer_config: dict[str, Any],
         critic_optimizer_config: dict[str, Any],
         safety_critic_optimizer_config: dict[str, Any],
+        initialization_scale: float,
         horizon: int,
         discount: float,
         safety_discount: float,
@@ -65,7 +66,7 @@ class SafeModelBasedActorCritic:
         )
         make_critic = lambda key: init_linear_weights(
             Critic(state_dim=state_dim, **critic_config, key=key),
-            partial(glorot_uniform, scale=1.0),
+            partial(glorot_uniform, scale=initialization_scale),
             key,
         )
         self.critic = make_critic(critic_key)
