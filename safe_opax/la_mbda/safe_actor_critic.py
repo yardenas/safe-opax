@@ -199,18 +199,22 @@ def evaluate_actor(
     current_step = lambda x: x[:, :-1]
     next_states = next_step(trajectories.next_state)
     bootstrap_values = nest_vmap(critic, 2, eqx.filter_vmap)(next_states)
+    rewards = current_step(objective_sentiment(trajectories.reward))
     lambda_values = eqx.filter_vmap(compute_lambda_values)(
-        bootstrap_values, current_step(trajectories.reward), discount, lambda_
+        bootstrap_values, rewards, discount, lambda_
     )
     bootstrap_safety_values = nest_vmap(safety_critic, 2, eqx.filter_vmap)(next_states)
+    # TODO (yarden): make costs use their own sentiments when working
+    # on safety.
+    costs = current_step(trajectories.cost.mean(1))
     safety_lambda_values = eqx.filter_vmap(compute_lambda_values)(
         bootstrap_safety_values,
-        current_step(trajectories.cost),
+        costs,
         safety_discount,
         lambda_,
     )
     planning_discount = compute_discount(discount, horizon - 1)
-    objective = objective_sentiment(lambda_values * planning_discount)
+    objective = (lambda_values * planning_discount).mean()
     loss = -objective
     constraint = safety_budget - safety_lambda_values.mean()
     return ActorEvaluation(

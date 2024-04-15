@@ -9,7 +9,7 @@ class Sentiment(Protocol):
 
 
 def bayes(values: jax.Array) -> jax.Array:
-    return values.mean()
+    return values.mean(1)
 
 
 def _emprirical_estimate(
