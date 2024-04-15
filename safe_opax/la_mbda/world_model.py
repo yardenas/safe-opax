@@ -222,9 +222,10 @@ class WorldModel(eqx.Module):
         )
         # vmap twice: once for the ensemble, and second time for the horizon
         out = nest_vmap(self.reward_cost_decoder, 2)(ensemble_trajectories.flatten())
+        # Ensemble axis before time axis.
+        out, priors = _ensemble_first((out, priors))
         reward, cost = out[..., 0], out[..., -1]
-        # FIXME (yarden): should be something less hacky.
-        out = Prediction(trajectory.flatten(), reward.mean(1), cost.mean(1))
+        out = Prediction(trajectory.flatten(), reward, cost)
         return out, priors
 
 
@@ -318,3 +319,7 @@ def evaluate_model(
     normalize = lambda image: ((image + 0.5) * 255).astype(jnp.uint8)
     out = jnp.stack([normalize(x) for x in [y, y_hat, error]])
     return out
+
+
+def _ensemble_first(x):
+    return jax.tree_map(lambda x: x.swapaxes(0, 1), x)
