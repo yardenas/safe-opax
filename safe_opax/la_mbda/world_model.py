@@ -199,8 +199,11 @@ class WorldModel(eqx.Module):
                 action = policy(jax.lax.stop_gradient(prev_state.flatten()), p_key)
             else:
                 action, key = inputs
-            state, prior = self.cell.predict(prev_state, action, key)
-            return state, (state, prior)
+            ensemble_states, prior = self.cell.predict(prev_state, action, key)
+            key, prior_key = jax.random.split(key)
+            id = jax.random.randint(prior_key, (), 0, self.cell.ensemble_size)
+            state = jax.tree_map(lambda x: x[id], ensemble_states)
+            return state, (state, ensemble_states, prior)
 
         if isinstance(policy, jax.Array):
             inputs: tuple[jax.Array, jax.Array] | jax.Array = (
@@ -209,22 +212,19 @@ class WorldModel(eqx.Module):
             )
             assert policy.shape[0] <= horizon
         elif callable(policy):
-            policy = jax.vmap(policy, in_axes=(0, None))
             inputs = jax.random.split(key, horizon)
         else:
             raise ValueError("policy must be callable or jax.Array")
         if isinstance(initial_state, jax.Array):
             initial_state = State.from_flat(initial_state, self.cell.stochastic_size)
-        initial_state = jax.tree_map(
-            lambda x: jnp.repeat(x[None], self.cell.ensemble_size, 0), initial_state
+        _, (trajectory, ensemble_trajectories, priors) = jax.lax.scan(
+            f, initial_state, inputs
         )
-        _, (trajectory, priors) = jax.lax.scan(f, initial_state, inputs)
         # vmap twice: once for the ensemble, and second time for the horizon
-        out = nest_vmap(self.reward_cost_decoder, 2)(trajectory.flatten())
+        out = nest_vmap(self.reward_cost_decoder, 2)(ensemble_trajectories.flatten())
         reward, cost = out[..., 0], out[..., -1]
-        out = Prediction(trajectory.flatten(), reward, cost)
-        # ensemble dimension first, then horizon
-        out, priors = _ensemble_first((out, priors))
+        # FIXME (yarden): should be something less hacky.
+        out = Prediction(trajectory.flatten(), reward.mean(1), cost.mean(1))
         return out, priors
 
 
@@ -318,7 +318,3 @@ def evaluate_model(
     normalize = lambda image: ((image + 0.5) * 255).astype(jnp.uint8)
     out = jnp.stack([normalize(x) for x in [y, y_hat, error]])
     return out
-
-
-def _ensemble_first(x):
-    return jax.tree_map(lambda x: x.swapaxes(0, 1), x)
