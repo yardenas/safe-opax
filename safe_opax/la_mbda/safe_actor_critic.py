@@ -47,7 +47,6 @@ class SafeModelBasedActorCritic:
         actor_optimizer_config: dict[str, Any],
         critic_optimizer_config: dict[str, Any],
         safety_critic_optimizer_config: dict[str, Any],
-        ensemble_size: int,
         horizon: int,
         discount: float,
         safety_discount: float,
@@ -76,7 +75,6 @@ class SafeModelBasedActorCritic:
         self.safety_critic_learner = Learner(
             self.safety_critic, safety_critic_optimizer_config
         )
-        self.ensemble_size = ensemble_size
         self.horizon = horizon
         self.discount = discount
         self.lambda_ = lambda_
