@@ -48,3 +48,5 @@ free_nats: 1.
 kl_mix: 0.8
 safety_slack: 0.
 evaluate_model: false
+exploration: opax
+exploration_steps: 5000

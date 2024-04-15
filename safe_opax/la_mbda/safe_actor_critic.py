@@ -12,7 +12,7 @@ from safe_opax.common.learner import Learner
 from safe_opax.common.mixed_precision import apply_mixed_precision
 from safe_opax.la_mbda.sentiment import Sentiment
 from safe_opax.la_mbda.actor_critic import ContinuousActor, Critic
-from safe_opax.la_mbda.types import Model, RolloutFn
+from safe_opax.rl.types import Model, RolloutFn
 from safe_opax.rl.utils import glorot_uniform, init_linear_weights, nest_vmap
 
 

@@ -44,3 +44,4 @@ training:
   render_episodes: 1
   parallel_envs: 10
   scale_reward: 1.
+  exploration_steps: 5000

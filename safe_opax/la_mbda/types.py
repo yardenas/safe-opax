@@ -1,5 +1,4 @@
 from typing import (
-    Any,
     NamedTuple,
     Optional,
     Protocol,
@@ -7,24 +6,7 @@ from typing import (
 
 import jax
 
-from safe_opax.rl.types import FloatArray, Policy
-
-
-class Prediction(NamedTuple):
-    next_state: jax.Array
-    reward: jax.Array
-    cost: jax.Array
-
-
-class Model(Protocol):
-    def sample(
-        self,
-        horizon: int,
-        initial_state: jax.Array,
-        key: jax.Array,
-        policy: Policy,
-    ) -> tuple[Prediction, Any]:
-        ...
+from safe_opax.rl.types import FloatArray
 
 
 class Actor(Protocol):
@@ -34,17 +16,6 @@ class Actor(Protocol):
         key: Optional[jax.Array] = None,
         deterministic: bool = False,
     ) -> FloatArray:
-        ...
-
-
-class RolloutFn(Protocol):
-    def __call__(
-        self,
-        horizon: int,
-        initial_state: jax.Array,
-        key: jax.Array,
-        policy: Policy,
-    ) -> tuple[Prediction, Any]:
         ...
 
 
