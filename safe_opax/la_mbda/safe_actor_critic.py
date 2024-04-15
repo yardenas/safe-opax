@@ -10,10 +10,10 @@ import distrax as trx
 
 from safe_opax.common.learner import Learner
 from safe_opax.common.mixed_precision import apply_mixed_precision
-from safe_opax.la_mbda.sentiment import Sentiment, value_epistemic_uncertainty
+from safe_opax.la_mbda.sentiment import Sentiment
 from safe_opax.la_mbda.actor_critic import ContinuousActor, Critic
 from safe_opax.la_mbda.types import Model, RolloutFn
-from safe_opax.rl.utils import nest_vmap
+from safe_opax.rl.utils import glorot_uniform, init_linear_weights, nest_vmap
 
 
 class ActorEvaluation(NamedTuple):
@@ -64,10 +64,13 @@ class SafeModelBasedActorCritic:
             **actor_config,
             key=actor_key,
         )
-        self.critic = Critic(state_dim=state_dim, **critic_config, key=critic_key)
-        self.safety_critic = Critic(
-            state_dim=state_dim, **critic_config, key=safety_critic_key
+        make_critic = lambda key: init_linear_weights(
+            Critic(state_dim=state_dim, **critic_config, key=key),
+            partial(glorot_uniform, scale=1.0),
+            key,
         )
+        self.critic = make_critic(critic_key)
+        self.safety_critic = make_critic(safety_critic_key)
         self.actor_learner = Learner(self.actor, actor_optimizer_config)
         self.critic_learner = Learner(self.critic, critic_optimizer_config)
         self.safety_critic_learner = Learner(
@@ -271,22 +274,16 @@ def update_safe_actor_critic(
     new_critic, new_critic_state = critic_learner.grad_step(
         critic, grads, critic_learning_state
     )
-    safety = evaluation.cost_values
+    cost_values = evaluation.cost_values
     safety_critic_loss, grads = critics_grads_fn(
         safety_critic,
         evaluation.trajectories,
-        safety,
+        cost_values,
         safety_discount,
         horizon,
     )
     new_safety_critic, new_safety_critic_state = safety_critic_learner.grad_step(
         safety_critic, grads, safety_critic_learning_state
-    )
-    metrics["agent/objective-values-variance"] = value_epistemic_uncertainty(
-        evaluation.objective_values
-    )
-    metrics["agent/constraint-values-variance"] = value_epistemic_uncertainty(
-        evaluation.cost_values
     )
     return SafeActorCriticStepResults(
         new_actor,
@@ -300,7 +297,7 @@ def update_safe_actor_critic(
         safety_critic_loss,
         evaluation.safe,
         evaluation.constraint,
-        safety.mean(),
+        cost_values.mean(),
         new_penalty_state,
         metrics,
     )

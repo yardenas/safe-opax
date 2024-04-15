@@ -12,10 +12,6 @@ def bayes(values: jax.Array) -> jax.Array:
     return values.mean()
 
 
-def value_epistemic_uncertainty(values: jax.Array) -> jax.Array:
-    return values.std(1).mean()
-
-
 def _emprirical_estimate(
     values: jax.Array, reduce_fn: Callable[[jax.Array], jax.Array]
 ) -> jax.Array:
