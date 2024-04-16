@@ -6,7 +6,7 @@ from safe_opax.la_mbda.safe_actor_critic import SafeModelBasedActorCritic
 from safe_opax.la_mbda.sentiment import bayes
 
 
-def make_actor_critic(safe, state_dim, action_dim, cfg, key, sentiment=bayes):
+def make_actor_critic(cfg, safe, state_dim, action_dim, key, sentiment=bayes):
     # Account for the the discount factor in the budget.
     episode_safety_budget = (
         (

@@ -14,7 +14,7 @@ from safe_opax.la_mbda.rssm import ShiftScale
 from safe_opax.la_mbda.sentiment import Sentiment
 from safe_opax.la_mbda.actor_critic import ContinuousActor, Critic
 from safe_opax.opax import normalized_epistemic_uncertainty
-from safe_opax.rl.types import RolloutFn
+from safe_opax.rl.types import Model, RolloutFn
 from safe_opax.rl.utils import glorot_uniform, init_linear_weights, nest_vmap
 
 
@@ -90,11 +90,11 @@ class SafeModelBasedActorCritic:
 
     def update(
         self,
-        rollout_fn: RolloutFn,
+        model: Model,
         initial_states: jax.Array,
         key: jax.Array,
     ) -> dict[str, float]:
-        actor_critic_fn = partial(self.update_fn, rollout_fn)
+        actor_critic_fn = partial(self.update_fn, model.sample)
         results: SafeActorCriticStepResults = actor_critic_fn(
             self.horizon,
             initial_states,
@@ -293,8 +293,8 @@ def update_safe_actor_critic(
         safety_critic, grads, safety_critic_learning_state
     )
     metrics["agent/epistemic_uncertainty"] = normalized_epistemic_uncertainty(
-        evaluation.priors
-    )
+        evaluation.priors, 1
+    ).mean()
     return SafeActorCriticStepResults(
         new_actor,
         new_critic,

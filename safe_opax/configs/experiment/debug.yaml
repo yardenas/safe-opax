@@ -20,3 +20,4 @@ agent:
   replay_buffer:
     batch_size: 4
     sequence_length: 16
+  exploration_steps: 750

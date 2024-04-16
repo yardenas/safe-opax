@@ -1,10 +1,10 @@
 import jax
 from omegaconf import DictConfig
 
-from safe_opax.la_mbda.opax_bridge import opax_bridge
+from safe_opax.la_mbda.opax_bridge import OpaxBridge
 from safe_opax.la_mbda.make_actor_critic import make_actor_critic
 from safe_opax.la_mbda.sentiment import identity
-from safe_opax.rl.types import RolloutFn
+from safe_opax.rl.types import Model
 
 
 class Exploration:
@@ -13,7 +13,7 @@ class Exploration:
 
     def update(
         self,
-        rollout_fn: RolloutFn,
+        model: Model,
         initial_states: jax.Array,
         key: jax.Array,
     ) -> dict[str, float]:
@@ -25,8 +25,10 @@ def make_exploration(
 ) -> Exploration:
     if config.agent.exploration_strategy == "opax":
         return OpaxExploration(config, action_dim, key)
+    elif config.agent.exploration_strategy == "uniform":
+        return UniformExploration(action_dim)
     else:
-        return UniformExploration()
+        raise NotImplementedError("Unknown exploration strategy")
 
 
 class OpaxExploration(Exploration):
@@ -47,11 +49,12 @@ class OpaxExploration(Exploration):
 
     def update(
         self,
-        rollout_fn: RolloutFn,
+        model: Model,
         initial_states: jax.Array,
         key: jax.Array,
     ) -> dict[str, float]:
-        outs = self.actor_critic.update(opax_bridge(rollout_fn), initial_states, key)
+        model = OpaxBridge(model)
+        outs = self.actor_critic.update(model, initial_states, key)
 
         def append_opax(string):
             parts = string.split("/")
@@ -66,5 +69,8 @@ class OpaxExploration(Exploration):
 
 
 class UniformExploration(Exploration):
+    def __init__(self, action_dim: int):
+        self.action_dim = action_dim
+
     def __call__(self, state: jax.Array, key: jax.Array) -> jax.Array:
-        return jax.random.uniform(jax.random.PRNGKey(key), state.shape)
+        return jax.random.uniform(key, (self.action_dim,))

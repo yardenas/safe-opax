@@ -81,10 +81,10 @@ class LaMBDA:
         )
         self.model_learner = Learner(self.model, config.agent.model_optimizer)
         self.actor_critic = make_actor_critic(
+            config,
             config.training.safe,
             config.agent.model.stochastic_size + config.agent.model.deterministic_size,
             action_dim,
-            config,
             next(self.prng),
         )
         self.exploration = make_exploration(
@@ -95,14 +95,15 @@ class LaMBDA:
         self.state = AgentState.init(
             config.training.parallel_envs, self.model.cell, action_dim
         )
+        environment_steps_per_agent_step = (
+            config.training.parallel_envs * config.training.action_repeat
+        )
         self.should_train = Count(
             config.agent.train_every,
-            config.training.parallel_envs * config.training.action_repeat,
+            environment_steps_per_agent_step,
         )
         self.should_explore = Until(
-            config.agent.exploration_steps
-            * config.training.parallel_envs
-            * config.training.action_repeat
+            config.agent.exploration_steps, environment_steps_per_agent_step
         )
         self.metrics_monitor = MetricsMonitor()
 
@@ -141,12 +142,10 @@ class LaMBDA:
             initial_states = inferrered_rssm_states.reshape(
                 -1, inferrered_rssm_states.shape[-1]
             )
-            outs = self.actor_critic.update(
-                self.model.sample, initial_states, next(self.prng)
-            )
+            outs = self.actor_critic.update(self.model, initial_states, next(self.prng))
             if self.should_explore():
                 exploration_outs = self.exploration.update(
-                    self.model.sample, initial_states, next(self.prng)
+                    self.model, initial_states, next(self.prng)
                 )
                 outs.update(exploration_outs)
             for k, v in outs.items():
