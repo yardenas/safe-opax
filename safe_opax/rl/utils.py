@@ -57,8 +57,10 @@ class Until:
         self.n = n
 
     def __call__(self):
+        return self.count <= self.n
+
+    def tick(self):
         self.count += 1
-        return self.count >= self.n
 
 
 def nest_vmap(f, count, vmap_fn=jax.vmap):

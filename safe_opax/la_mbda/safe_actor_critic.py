@@ -10,9 +10,11 @@ import distrax as trx
 
 from safe_opax.common.learner import Learner
 from safe_opax.common.mixed_precision import apply_mixed_precision
+from safe_opax.la_mbda.rssm import ShiftScale
 from safe_opax.la_mbda.sentiment import Sentiment
 from safe_opax.la_mbda.actor_critic import ContinuousActor, Critic
-from safe_opax.rl.types import Model, RolloutFn
+from safe_opax.opax import normalized_epistemic_uncertainty
+from safe_opax.rl.types import RolloutFn
 from safe_opax.rl.utils import glorot_uniform, init_linear_weights, nest_vmap
 
 
@@ -23,6 +25,7 @@ class ActorEvaluation(NamedTuple):
     loss: jax.Array
     constraint: jax.Array
     safe: jax.Array
+    priors: ShiftScale
 
 
 class Penalizer(Protocol):
@@ -87,11 +90,11 @@ class SafeModelBasedActorCritic:
 
     def update(
         self,
-        model: Model,
+        rollout_fn: RolloutFn,
         initial_states: jax.Array,
         key: jax.Array,
     ) -> dict[str, float]:
-        actor_critic_fn = partial(self.update_fn, model.sample)
+        actor_critic_fn = partial(self.update_fn, rollout_fn)
         results: SafeActorCriticStepResults = actor_critic_fn(
             self.horizon,
             initial_states,
@@ -194,7 +197,7 @@ def evaluate_actor(
     safety_budget: float,
     objective_sentiment: Sentiment,
 ) -> ActorEvaluation:
-    trajectories, _ = rollout_fn(horizon, initial_states, key, actor.act)
+    trajectories, priors = rollout_fn(horizon, initial_states, key, actor.act)
     next_step = lambda x: x[:, 1:]
     current_step = lambda x: x[:, :-1]
     next_states = next_step(trajectories.next_state)
@@ -224,6 +227,7 @@ def evaluate_actor(
         loss,
         constraint,
         jnp.greater(constraint, 0.0),
+        priors,
     )
 
 
@@ -287,6 +291,9 @@ def update_safe_actor_critic(
     )
     new_safety_critic, new_safety_critic_state = safety_critic_learner.grad_step(
         safety_critic, grads, safety_critic_learning_state
+    )
+    metrics["agent/epistemic_uncertainty"] = normalized_epistemic_uncertainty(
+        evaluation.priors
     )
     return SafeActorCriticStepResults(
         new_actor,

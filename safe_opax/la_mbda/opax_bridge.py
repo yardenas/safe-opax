@@ -16,6 +16,6 @@ def opax_bridge(rollout_fn: RolloutFn) -> RolloutFn:
         )
         trajectory, distributions = samples
         assert isinstance(distributions, ShiftScale)
-        return opax.reward(trajectory, distributions)
+        return opax.modify_reward(trajectory, distributions)
 
     return intrinsic_reward_sample

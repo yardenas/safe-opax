@@ -3,11 +3,12 @@ from omegaconf import DictConfig
 
 from safe_opax.la_mbda.opax_bridge import opax_bridge
 from safe_opax.la_mbda.make_actor_critic import make_actor_critic
+from safe_opax.la_mbda.sentiment import identity
 from safe_opax.rl.types import RolloutFn
 
 
 class Exploration:
-    def __call__(self, action: jax.Array, key: jax.Array) -> jax.Array:
+    def __call__(self, state: jax.Array, key: jax.Array) -> jax.Array:
         raise NotImplementedError("Must be implemented by subclass")
 
     def update(
@@ -22,7 +23,7 @@ class Exploration:
 def make_exploration(
     config: DictConfig, action_dim: int, key: jax.Array
 ) -> Exploration:
-    if config.agent.exploration == "opax":
+    if config.agent.exploration_strategy == "opax":
         return OpaxExploration(config, action_dim, key)
     else:
         return UniformExploration()
@@ -41,6 +42,7 @@ class OpaxExploration(Exploration):
             config.agent.model.stochastic_size + config.agent.model.deterministic_size,
             action_dim,
             key,
+            sentiment=identity,
         )
 
     def update(
@@ -59,10 +61,10 @@ class OpaxExploration(Exploration):
         outs = {f"{append_opax(k)}": v for k, v in outs.items()}
         return outs
 
-    def __call__(self, action: jax.Array, key: jax.Array) -> jax.Array:
-        return self.actor_critic.actor.act(action, key)
+    def __call__(self, state: jax.Array, key: jax.Array) -> jax.Array:
+        return self.actor_critic.actor.act(state, key)
 
 
 class UniformExploration(Exploration):
-    def __call__(self, action: jax.Array, key: jax.Array) -> jax.Array:
-        return jax.random.uniform(jax.random.PRNGKey(key), action.shape)
+    def __call__(self, state: jax.Array, key: jax.Array) -> jax.Array:
+        return jax.random.uniform(jax.random.PRNGKey(key), state.shape)

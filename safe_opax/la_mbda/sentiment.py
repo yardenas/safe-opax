@@ -8,6 +8,10 @@ class Sentiment(Protocol):
         ...
 
 
+def identity(values: jax.Array) -> jax.Array:
+    return values
+
+
 def bayes(values: jax.Array) -> jax.Array:
     return values.mean(1)
 
