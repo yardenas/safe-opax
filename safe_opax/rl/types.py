@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from typing import (
+    Any,
     Callable,
+    NamedTuple,
     Protocol,
     Union,
 )
@@ -39,3 +41,36 @@ class Agent(Protocol):
 
     def report(self, summary: EpochSummary, epoch: int, step: int) -> Report:
         ...
+
+
+class Prediction(NamedTuple):
+    next_state: jax.Array
+    reward: jax.Array
+    cost: jax.Array
+
+
+class Model(Protocol):
+    def sample(
+        self,
+        horizon: int,
+        initial_state: jax.Array,
+        key: jax.Array,
+        policy: Policy,
+    ) -> tuple[Prediction, Any]:
+        ...
+
+
+class RolloutFn(Protocol):
+    def __call__(
+        self,
+        horizon: int,
+        initial_state: jax.Array,
+        key: jax.Array,
+        policy: Policy,
+    ) -> tuple[Prediction, Any]:
+        ...
+
+
+class ShiftScale(NamedTuple):
+    shift: jax.Array
+    scale: jax.Array

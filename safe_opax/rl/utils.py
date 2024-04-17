@@ -51,6 +51,19 @@ class Count:
         return bingo
 
 
+class Until:
+    def __init__(self, n: int, steps: int = 1):
+        self.count = 0
+        self.n = n
+        self.steps = steps
+
+    def __call__(self):
+        return self.count <= self.n
+
+    def tick(self):
+        self.count += self.steps
+
+
 def nest_vmap(f, count, vmap_fn=jax.vmap):
     for _ in range(count):
         f = vmap_fn(f)

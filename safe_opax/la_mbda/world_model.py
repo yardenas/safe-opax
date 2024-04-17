@@ -9,7 +9,7 @@ from optax import OptState
 from safe_opax.common.learner import Learner
 from safe_opax.common.mixed_precision import apply_mixed_precision
 from safe_opax.la_mbda.rssm import RSSM, Features, ShiftScale, State
-from safe_opax.la_mbda.types import Prediction
+from safe_opax.rl.types import Prediction
 from safe_opax.la_mbda.utils import marginalize_prediction
 from safe_opax.rl.types import Policy
 from safe_opax.rl.utils import nest_vmap
