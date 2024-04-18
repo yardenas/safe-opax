@@ -6,11 +6,11 @@ _EPS = 1e-5
 
 
 def modify_reward(
-    trajectory: Prediction, distributions: ShiftScale
+    trajectory: Prediction, distributions: ShiftScale, scale: float = 1.0
 ) -> tuple[Prediction, ShiftScale]:
     return Prediction(
         trajectory.next_state,
-        normalized_epistemic_uncertainty(distributions),
+        normalized_epistemic_uncertainty(distributions) * scale,
         trajectory.cost,
     ), distributions
 

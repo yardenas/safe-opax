@@ -46,6 +46,7 @@ class OpaxExploration(Exploration):
             key,
             sentiment=identity,
         )
+        self.reward_scale = config.agent.exploration.exploration_reward_scale
 
     def update(
         self,
