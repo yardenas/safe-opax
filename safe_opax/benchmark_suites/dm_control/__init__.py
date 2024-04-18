@@ -240,7 +240,7 @@ def make(cfg: DictConfig) -> EnvironmentFactory:
         env = DMCWrapper(domain_name, task)
         if "safe" in task_cfg.task:
             env = ConstraintWrapper(env, task_cfg.slider_position_bound)
-        if task_cfg.task == "swingup_sparse_hard":
+        if task_cfg.task in ["swingup_sparse_hard", "safe_swingup_sparse_hard"]:
             env = ActionCostWrapper(env, cost_multiplier=task_cfg.cost_multiplier)
         if task_cfg.image_observation.enabled:
             env = ImageObservation(
