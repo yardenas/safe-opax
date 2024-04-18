@@ -25,7 +25,6 @@ def augmented_lagrangian(
     AugmentedLagrangianUpdate
 ):  # Nocedal-Wright 2006 Numerical Optimization, Eq. 17.65, p. 546
     # (with a slight change of notation)
-    # Taking the mean value since E[V_c(s)]_p(s) ~= J_c
     g = -constraint
     c = multiplier
     cond = lagrangian + c * g
