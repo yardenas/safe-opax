@@ -63,6 +63,15 @@ def lbsgd_update(
     )
 
 
+def jacrev(f, has_aux=False):
+    def jacfn(x):
+        y, vjp_fn, aux = eqx.filter_vjp(f, x, has_aux=has_aux)  # type: ignore
+        (J,) = eqx.filter_vmap(vjp_fn, in_axes=eqx.if_array(0))(jnp.eye(len(y)))
+        return J, aux
+
+    return jacfn
+
+
 class LBSGDPenalizer:
     def __init__(self, m_0: float, m_1: float, eta: float, eta_rate: float) -> None:
         self.m_0 = m_0
@@ -82,7 +91,7 @@ class LBSGDPenalizer:
             outs = jnp.stack([loss, -evaluation.constraint])
             return outs, evaluation
 
-        jacobian, rest = eqx.filter_jacrev(evaluate_helper, has_aux=True)(actor)
+        jacobian, rest = jacrev(evaluate_helper, has_aux=True)(actor)
         g, grad_f_1 = pytrees_unstack(jacobian)
         alpha = rest.constraint
         updates, state, lr = lbsgd_update(
