@@ -73,7 +73,7 @@ def jacrev(f, has_aux=False):
 
 
 class LBSGDPenalizer:
-    def __init__(self, m_0, m_1, eta, eta_rate) -> None:
+    def __init__(self, m_0: float, m_1: float, eta: float, eta_rate: float) -> None:
         self.m_0 = m_0
         self.m_1 = m_1
         self.eta_rate = eta_rate + 1.0
@@ -101,6 +101,8 @@ class LBSGDPenalizer:
             self.m_0,
             self.m_1,
         )
-        metrics = {"agent/lbsgd/eta": jnp.asarray(state.eta)}
-        metrics["agent/lbsgd/lr"] = jnp.asarray(lr)
+        metrics = {
+            "agent/lbsgd/eta": jnp.asarray(state.eta),
+            "agent/lbsgd/lr": jnp.asarray(lr),
+        }
         return updates, state, rest, metrics
