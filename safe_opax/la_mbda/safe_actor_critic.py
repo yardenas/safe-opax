@@ -129,7 +129,7 @@ class SafeModelBasedActorCritic:
             "agent/safety_critic/loss": results.safety_critic_loss.item(),
             "agent/safety_critic/safe": float(results.safe.item()),
             "agent/safety_critic/constraint": results.constraint.item(),
-            "agent/safety_critic/safety": results.safety.item(),
+            "agent/safety_critic/cost_value": results.cost_value.item(),
             **{k: v.item() for k, v in results.metrics.items()},
         }
 
@@ -146,7 +146,7 @@ class SafeActorCriticStepResults(NamedTuple):
     safety_critic_loss: jax.Array
     safe: jax.Array
     constraint: jax.Array
-    safety: jax.Array
+    cost_value: jax.Array
     new_penalty_state: Any
     metrics: dict[str, jax.Array]
 

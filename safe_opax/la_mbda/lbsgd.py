@@ -7,34 +7,34 @@ import jax
 import jax.numpy as jnp
 from jaxtyping import PyTree
 
+from safe_opax.common.mixed_precision import apply_dtype
 from safe_opax.common.pytree_utils import pytrees_unstack
 from safe_opax.la_mbda.actor_critic import ContinuousActor
 from safe_opax.la_mbda.safe_actor_critic import ActorEvaluation
+
+_EPS = 1e-8
 
 
 class LBSGDState(NamedTuple):
     eta: jax.Array
 
 
-def compute_lr(constraint, loss_grads, constraint_grads, m_0, m_1, eta):
-    constraint_grads, _ = jax.flatten_util.ravel_pytree(constraint_grads)  # type: ignore
-    loss_grads, _ = jax.flatten_util.ravel_pytree(loss_grads)  # type: ignore
-    projection = constraint_grads.dot(loss_grads)
+def compute_lr(alpha_1, g, grad_f_1, m_0, m_1, eta):
+    grad_f_1, _ = jax.flatten_util.ravel_pytree(grad_f_1)
+    g, _ = jax.flatten_util.ravel_pytree(g)
+    theta_1 = grad_f_1.dot(g / (jnp.linalg.norm(g) + _EPS))
     lhs = (
-        constraint
-        / (
-            2.0 * jnp.abs(projection) / jnp.linalg.norm(loss_grads)
-            + jnp.sqrt(constraint * m_1 + 1e-8)
-        )
-        / (jnp.linalg.norm(loss_grads) + 1e-8)
+        alpha_1
+        / (2.0 * jnp.abs(theta_1) + jnp.sqrt(alpha_1 * m_1 + _EPS))
+        / (jnp.linalg.norm(g) + _EPS)
     )
     m_2 = (
         m_0
-        + 10.0 * eta * (m_1 / (constraint + 1e-8))
+        + 10.0 * eta * (m_1 / (alpha_1 + _EPS))
         + 8.0
         * eta
-        * jnp.linalg.norm(projection) ** 2
-        / ((jnp.linalg.norm(loss_grads) * constraint) ** 2)
+        * jnp.linalg.norm(theta_1) ** 2
+        / ((jnp.linalg.norm(g) * alpha_1) ** 2 + _EPS)
     )
     rhs = 1.0 / m_2
     return jnp.minimum(lhs, rhs)
@@ -42,22 +42,22 @@ def compute_lr(constraint, loss_grads, constraint_grads, m_0, m_1, eta):
 
 def lbsgd_update(
     state: LBSGDState, updates: PyTree, eta_rate: float, m_0: float, m_1: float
-) -> tuple[PyTree, LBSGDState]:
+) -> tuple[PyTree, LBSGDState, float]:
     def happy_case():
-        lr = compute_lr(constraint, loss_grads, constraints_grads, m_0, m_1, eta_t)
+        lr = compute_lr(alpha_1, g, grad_f_1, m_0, m_1, eta_t)
         new_eta = eta_t / eta_rate
-        updates = jax.tree_map(lambda x: x * lr, loss_grads)
-        return updates, LBSGDState(new_eta)
+        updates = jax.tree_map(lambda x: x * lr, g)
+        return updates, LBSGDState(new_eta), lr
 
     def fallback():
         # Taking the negative gradient of the constraints to minimize the costs
-        updates = jax.tree_map(lambda x: x * -1.0, constraints_grads)
-        return updates, LBSGDState(eta_t)
+        updates = grad_f_1
+        return updates, LBSGDState(eta_t), jnp.nan
 
-    loss_grads, constraints_grads, constraint = updates
+    g, grad_f_1, alpha_1 = updates
     eta_t = state.eta
     return jax.lax.cond(
-        jnp.greater(constraint, 0.0),
+        jnp.greater(alpha_1, 0.0),
         happy_case,
         fallback,
     )
@@ -87,19 +87,20 @@ class LBSGDPenalizer:
     ) -> tuple[PyTree, Any, ActorEvaluation, dict[str, jax.Array]]:
         def evaluate_helper(actor):
             evaluation = evaluate(actor)
-            outs = jnp.stack([evaluation.loss, evaluation.constraint])
+            loss = evaluation.loss - state.eta * jnp.log(evaluation.constraint)
+            outs = jnp.stack([loss, -evaluation.constraint])
             return outs, evaluation
 
         jacobian, rest = jacrev(evaluate_helper, has_aux=True)(actor)
-        loss_grads, constraint_grads = pytrees_unstack(jacobian)
-        updates, state = lbsgd_update(
+        g, grad_f_1 = pytrees_unstack(jacobian)
+        alpha = rest.constraint
+        updates, state, lr = lbsgd_update(
             state,
-            (loss_grads, constraint_grads, rest.constraint),
+            apply_dtype((g, grad_f_1, alpha), jnp.float32),
             self.eta_rate,
             self.m_0,
             self.m_1,
         )
-        metrics = {
-            "agent/lbsgd/eta": state.eta,
-        }
+        metrics = {"agent/lbsgd/eta": jnp.asarray(state.eta)}
+        metrics["agent/lbsgd/lr"] = jnp.asarray(lr)
         return updates, state, rest, metrics
