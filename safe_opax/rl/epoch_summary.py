@@ -30,7 +30,7 @@ class EpochSummary:
         stacked_costs = np.stack(costs)
         return (
             _objective(stacked_rewards),
-            _cost_rate(stacked_costs),
+            _objective(stacked_costs),
             _feasibility(stacked_costs, self.cost_boundary),
         )
 
@@ -52,10 +52,6 @@ class EpochSummary:
 
 def _objective(rewards: npt.NDArray[Any]) -> float:
     return float(rewards.sum(2).mean())
-
-
-def _cost_rate(costs: npt.NDArray[Any]) -> float:
-    return float(costs.mean())
 
 
 def _feasibility(costs: npt.NDArray[Any], boundary: float) -> float:
