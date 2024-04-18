@@ -203,9 +203,28 @@ class ActionCostWrapper:
         self.cost_multiplier = cost_multiplier
 
     def step(self, action):
-        action_cost = self.cost_multiplier * (1 - tolerance(action, (-0.1, 0.1), 0.1))[0]
+        action_cost = (
+            self.cost_multiplier * (1 - tolerance(action, (-0.1, 0.1), 0.1))[0]
+        )
         observation, reward, terminal, truncated, info = self.env.step(action)
         return observation, reward - action_cost, terminal, truncated, info
+
+    def __getattr__(self, name):
+        return getattr(self.env, name)
+
+
+class ConstraintWrapper:
+    def __init__(self, env: Env, slider_position_bound: float):
+        self.env = env
+        self.physics = env.env.physics
+        self.slider_position_bound = slider_position_bound
+
+    def step(self, action):
+        observation, reward, terminal, truncated, info = self.env.step(action)
+        slider_pos = self.physics.cart_position().copy()
+        cost = float(np.abs(slider_pos) >= self.slider_position_bound)
+        info["cost"] = cost
+        return observation, reward, terminal, truncated, info
 
     def __getattr__(self, name):
         return getattr(self.env, name)
@@ -214,11 +233,13 @@ class ActionCostWrapper:
 def make(cfg: DictConfig) -> EnvironmentFactory:
     def make_env():
         domain_name, task_cfg = get_domain_and_task(cfg)
-        if task_cfg.task == "swingup_sparse_hard":
+        if task_cfg.task in ["swingup_sparse_hard", "safe_swingup_sparse_hard"]:
             task = "swingup_sparse"
         else:
             task = task_cfg.task
         env = DMCWrapper(domain_name, task)
+        if "safe" in task_cfg.task:
+            env = ConstraintWrapper(env, task_cfg.slider_position_bound)
         if task_cfg.task == "swingup_sparse_hard":
             env = ActionCostWrapper(env, cost_multiplier=task_cfg.cost_multiplier)
         if task_cfg.image_observation.enabled:
@@ -245,6 +266,7 @@ ENVIRONMENTS = {
     ("dm_cartpole", "swingup"),
     ("dm_cartpole", "swingup_sparse"),
     ("dm_cartpole", "swingup_sparse_hard"),
+    ("dm_cartpole", "safe_swingup_sparse_hard"),
     ("dm_humanoid", "stand"),
     ("dm_humanoid", "walk"),
     ("dm_manipulator", "bring_ball"),

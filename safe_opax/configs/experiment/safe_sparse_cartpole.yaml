@@ -1,0 +1,13 @@
+# @package _global_
+defaults:
+  - override /environment: dm_cartpole
+
+environment:
+  dm_cartpole:
+    task: swingup_sparse_hard
+
+training:
+  epochs: 100
+  safe: true
+  action_repeat: 2
+  safety_budget: 100
