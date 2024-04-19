@@ -54,7 +54,7 @@ class OpaxExploration(Exploration):
         initial_states: jax.Array,
         key: jax.Array,
     ) -> dict[str, float]:
-        model = OpaxBridge(model)
+        model = OpaxBridge(model, self.reward_scale)
         outs = self.actor_critic.update(model, initial_states, key)
 
         def append_opax(string):
