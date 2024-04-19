@@ -1,3 +1,4 @@
+import jax
 import jax.numpy as jnp
 from safe_opax.la_mbda.rssm import ShiftScale
 from safe_opax.rl.types import Prediction
@@ -6,11 +7,17 @@ _EPS = 1e-5
 
 
 def modify_reward(
-    trajectory: Prediction, distributions: ShiftScale, scale: float = 1.0
+    trajectory: Prediction,
+    distributions: ShiftScale,
+    scale: float = 1.0,
+    stop_grad: bool = True,
 ) -> tuple[Prediction, ShiftScale]:
+    new_rewards = normalized_epistemic_uncertainty(distributions) * scale
+    if stop_grad:
+        new_rewards = jax.lax.stop_gradient(new_rewards)
     return Prediction(
         trajectory.next_state,
-        normalized_epistemic_uncertainty(distributions) * scale,
+        new_rewards,
         trajectory.cost,
     ), distributions
 
