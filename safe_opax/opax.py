@@ -10,7 +10,7 @@ def modify_reward(
     trajectory: Prediction,
     distributions: ShiftScale,
     scale: float = 1.0,
-    stop_grad: bool = True,
+    stop_grad: bool = False,
 ) -> tuple[Prediction, ShiftScale]:
     new_rewards = normalized_epistemic_uncertainty(distributions) * scale
     if stop_grad:
