@@ -115,7 +115,9 @@ class LaMBDA:
         if train and self.should_train() and not self.replay_buffer.empty:
             self.update()
         policy_fn = (
-            self.exploration if self.should_explore() else self.actor_critic.actor.act
+            self.exploration.get_policy()
+            if self.should_explore()
+            else self.actor_critic.actor.act
         )
         self.should_explore.tick()
         actions, self.state = policy(
