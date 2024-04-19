@@ -18,6 +18,7 @@ actor:
   n_layers: 4
   hidden_size: 400
   init_stddev: 5.
+  initialization_scale: 0.01
 critic:
   n_layers: 3
   hidden_size: 400

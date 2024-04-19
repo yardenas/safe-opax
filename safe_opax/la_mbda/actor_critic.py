@@ -20,6 +20,7 @@ class ContinuousActor(eqx.Module):
         action_dim: int,
         hidden_size: int,
         init_stddev: float,
+        initialization_scale: float,
         *,
         key: jax.Array,
     ):
@@ -31,7 +32,8 @@ class ContinuousActor(eqx.Module):
                 n_layers + 1,
                 key=key,
                 activation=jnn.elu,
-            )
+            ),
+            weight_scale=initialization_scale,
         )
         self.init_stddev = init_stddev
 

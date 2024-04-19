@@ -52,7 +52,7 @@ def lbsgd_update(
     def fallback():
         # Taking the negative gradient of the constraints to minimize the costs
         updates = grad_f_1
-        return updates, LBSGDState(eta_t), jnp.nan
+        return updates, LBSGDState(eta_t), 0.0
 
     g, grad_f_1, alpha_1 = updates
     eta_t = state.eta
