@@ -57,7 +57,7 @@ def lbsgd_update(
     g, grad_f_1, alpha_1 = updates
     eta_t = state.eta
     return jax.lax.cond(
-        jnp.greater(alpha_1, 0.0),
+        jnp.greater(alpha_1, _EPS),
         happy_case,
         fallback,
     )

@@ -56,17 +56,17 @@ class OpaxExploration(Exploration):
     ) -> dict[str, float]:
         model = OpaxBridge(model, self.reward_scale)
         outs = self.actor_critic.update(model, initial_states, key)
-
-        def append_opax(string):
-            parts = string.split("/")
-            parts.insert(2, "opax")
-            return "/".join(parts)
-
-        outs = {f"{append_opax(k)}": v for k, v in outs.items()}
+        outs = {f"{_append_opax(k)}": v for k, v in outs.items()}
         return outs
 
     def __call__(self, state: jax.Array, key: jax.Array) -> jax.Array:
         return self.actor_critic.actor.act(state, key)
+
+
+def _append_opax(string):
+    parts = string.split("/")
+    parts.insert(2, "opax")
+    return "/".join(parts)
 
 
 class UniformExploration(Exploration):
