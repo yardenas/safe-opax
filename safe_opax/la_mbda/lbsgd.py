@@ -37,22 +37,22 @@ def compute_lr(alpha_1, g, grad_f_1, m_0, m_1, eta):
         / ((jnp.linalg.norm(g) * alpha_1) ** 2 + _EPS)
     )
     rhs = 1.0 / m_2
-    return jnp.minimum(lhs, rhs)
+    return jnp.minimum(lhs, rhs), (lhs, rhs)
 
 
 def lbsgd_update(
     state: LBSGDState, updates: PyTree, eta_rate: float, m_0: float, m_1: float
-) -> tuple[PyTree, LBSGDState, float]:
+) -> tuple[PyTree, LBSGDState, tuple[float, ...]]:
     def happy_case():
-        lr = compute_lr(alpha_1, g, grad_f_1, m_0, m_1, eta_t)
+        lr, (lhs, rhs) = compute_lr(alpha_1, g, grad_f_1, m_0, m_1, eta_t)
         new_eta = eta_t / eta_rate
         updates = jax.tree_map(lambda x: x * lr, g)
-        return updates, LBSGDState(new_eta), lr
+        return updates, LBSGDState(new_eta), (lr, lhs, rhs)
 
     def fallback():
         # Taking the negative gradient of the constraints to minimize the costs
         updates = grad_f_1
-        return updates, LBSGDState(eta_t), 0.0
+        return updates, LBSGDState(eta_t), (0.0, 0.0, 0.0)
 
     g, grad_f_1, alpha_1 = updates
     eta_t = state.eta
@@ -94,7 +94,7 @@ class LBSGDPenalizer:
         jacobian, rest = jacrev(evaluate_helper, has_aux=True)(actor)
         g, grad_f_1 = pytrees_unstack(jacobian)
         alpha = rest.constraint
-        updates, state, lr = lbsgd_update(
+        updates, state, (lr, lhs, rhs) = lbsgd_update(
             state,
             apply_dtype((g, grad_f_1, alpha), jnp.float32),
             self.eta_rate,
@@ -104,5 +104,7 @@ class LBSGDPenalizer:
         metrics = {
             "agent/lbsgd/eta": jnp.asarray(state.eta),
             "agent/lbsgd/lr": jnp.asarray(lr),
+            "agent/lbsgd/lhs": jnp.asarray(lhs),
+            "agent/lbsgd/rhs": jnp.asarray(rhs),
         }
         return updates, state, rest, metrics
