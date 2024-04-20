@@ -1,6 +1,6 @@
 name: lbsgd
-m_0: 1e4
-m_1: 1e4
+m_0: 1.2e4
+m_1: 1.2e4
 eta: 0.1
 eta_rate: 8e-6
 

@@ -31,10 +31,7 @@ def compute_lr(alpha_1, g, grad_f_1, m_0, m_1, eta):
     m_2 = (
         m_0
         + 10.0 * eta * (m_1 / (alpha_1 + _EPS))
-        + 8.0
-        * eta
-        * jnp.linalg.norm(theta_1) ** 2
-        / ((jnp.linalg.norm(g) * alpha_1) ** 2 + _EPS)
+        + 8.0 * eta * (theta_1 / alpha_1 + _EPS) ** 2
     )
     rhs = 1.0 / m_2
     return jnp.minimum(lhs, rhs), (lhs, rhs)
