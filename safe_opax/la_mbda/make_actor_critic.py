@@ -28,6 +28,7 @@ def make_actor_critic(cfg, safe, state_dim, action_dim, key, sentiment=bayes):
                 cfg.agent.penalizer.m_1,
                 cfg.agent.penalizer.eta,
                 cfg.agent.penalizer.eta_rate,
+                cfg.agent.actor_optimizer.lr,
             )
         elif cfg.agent.penalizer.name == "lagrangian":
             penalizer = AugmentedLagrangianPenalizer(

@@ -23,11 +23,7 @@ def compute_lr(alpha_1, g, grad_f_1, m_0, m_1, eta):
     grad_f_1, _ = jax.flatten_util.ravel_pytree(grad_f_1)
     g, _ = jax.flatten_util.ravel_pytree(g)
     theta_1 = grad_f_1.dot(g / (jnp.linalg.norm(g) + _EPS))
-    lhs = (
-        alpha_1
-        / (2.0 * jnp.abs(theta_1) + jnp.sqrt(alpha_1 * m_1 + _EPS))
-        / (jnp.linalg.norm(g) + _EPS)
-    )
+    lhs = alpha_1 / (2.0 * jnp.abs(theta_1) + jnp.sqrt(alpha_1 * m_1 + _EPS))
     m_2 = (
         m_0
         + 10.0 * eta * (m_1 / (alpha_1 + _EPS))
@@ -38,17 +34,23 @@ def compute_lr(alpha_1, g, grad_f_1, m_0, m_1, eta):
 
 
 def lbsgd_update(
-    state: LBSGDState, updates: PyTree, eta_rate: float, m_0: float, m_1: float
+    state: LBSGDState,
+    updates: PyTree,
+    eta_rate: float,
+    m_0: float,
+    m_1: float,
+    base_lr: float,
+    backup_lr: float,
 ) -> tuple[PyTree, LBSGDState, tuple[float, ...]]:
     def happy_case():
         lr, (lhs, rhs) = compute_lr(alpha_1, g, grad_f_1, m_0, m_1, eta_t)
         new_eta = eta_t / eta_rate
-        updates = jax.tree_map(lambda x: x * lr, g)
+        updates = jax.tree_map(lambda x: x * lr / base_lr, g)
         return updates, LBSGDState(new_eta), (lr, lhs, rhs)
 
     def fallback():
         # Taking the negative gradient of the constraints to minimize the costs
-        updates = grad_f_1
+        updates = jax.tree_map(lambda x: x * backup_lr, grad_f_1)
         return updates, LBSGDState(eta_t), (0.0, 0.0, 0.0)
 
     g, grad_f_1, alpha_1 = updates
@@ -70,10 +72,20 @@ def jacrev(f, has_aux=False):
 
 
 class LBSGDPenalizer:
-    def __init__(self, m_0: float, m_1: float, eta: float, eta_rate: float) -> None:
+    def __init__(
+        self,
+        m_0: float,
+        m_1: float,
+        eta: float,
+        eta_rate: float,
+        base_lr: float,
+        backup_lr: float = 1e-2,
+    ) -> None:
         self.m_0 = m_0
         self.m_1 = m_1
         self.eta_rate = eta_rate + 1.0
+        self.base_lr = base_lr
+        self.backup_lr = backup_lr
         self.state = LBSGDState(eta)
 
     def __call__(
@@ -97,6 +109,8 @@ class LBSGDPenalizer:
             self.eta_rate,
             self.m_0,
             self.m_1,
+            self.base_lr,
+            self.backup_lr,
         )
         metrics = {
             "agent/lbsgd/eta": jnp.asarray(state.eta),
