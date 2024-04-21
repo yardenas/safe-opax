@@ -1,9 +1,13 @@
+import logging
 import numpy as np
 from safe_opax.la_mbda.augmented_lagrangian import AugmentedLagrangianPenalizer
 from safe_opax.la_mbda.dummy_penalizer import DummyPenalizer
 from safe_opax.la_mbda.lbsgd import LBSGDPenalizer
 from safe_opax.la_mbda.safe_actor_critic import SafeModelBasedActorCritic
 from safe_opax.la_mbda.sentiment import bayes
+
+
+_LOG = logging.getLogger(__name__)
 
 
 def make_actor_critic(cfg, safe, state_dim, action_dim, key, sentiment=bayes):
@@ -16,6 +20,7 @@ def make_actor_critic(cfg, safe, state_dim, action_dim, key, sentiment=bayes):
         if cfg.agent.safety_discount < 1.0 - np.finfo(np.float32).eps
         else cfg.training.safety_budget
     ) + cfg.agent.safety_slack
+    _LOG.info(f"Episode safety budget: {episode_safety_budget}")
     if safe:
         if cfg.agent.penalizer.name == "lbsgd":
             penalizer = LBSGDPenalizer(
