@@ -8,9 +8,11 @@ from safe_opax.la_mbda.sentiment import bayes
 
 def make_actor_critic(cfg, safe, state_dim, action_dim, key, sentiment=bayes):
     # Account for the the discount factor in the budget.
-    total_steps = cfg.training.time_limit / cfg.training.action_repeat
     episode_safety_budget = (
-        ((cfg.training.safety_budget / total_steps) / (1.0 - cfg.agent.safety_discount))
+        (
+            (cfg.training.safety_budget / cfg.training.time_limit)
+            / (1.0 - cfg.agent.safety_discount)
+        )
         if cfg.agent.safety_discount < 1.0 - np.finfo(np.float32).eps
         else cfg.training.safety_budget
     ) + cfg.agent.safety_slack
