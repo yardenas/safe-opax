@@ -8,6 +8,7 @@ from safe_opax.rl.types import Policy, Prediction
 
 class OpaxBridge(eqx.Module):
     model: WorldModel
+    reward_scale: float = eqx.field(static=True)
 
     def sample(
         self,
@@ -20,4 +21,4 @@ class OpaxBridge(eqx.Module):
             horizon, initial_state, key, policy
         )
         trajectory, distributions = samples
-        return opax.modify_reward(trajectory, distributions)
+        return opax.modify_reward(trajectory, distributions, self.reward_scale)

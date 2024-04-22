@@ -43,8 +43,7 @@ class MetricsMonitor:
         )
 
     def reset(self):
-        for v in self.metrics.values():
-            v.reset_states()
+        self.metrics = defaultdict(MetricsAccumulator)
 
 
 class MetricsAccumulator:

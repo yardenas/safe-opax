@@ -84,7 +84,7 @@ def rl_initialize_weights_trick(model, bias_shift=0.0, weight_scale=0.01):
         model.layers[-1].weight * weight_scale,
     )
     model = eqx.tree_at(
-        lambda model: model.layers[-1].bias, model, model.layers[-1].bias + bias_shift
+        lambda model: model.layers[-1].bias, model, model.layers[-1].bias * 0. + bias_shift
     )
     return model
 

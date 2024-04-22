@@ -6,3 +6,4 @@ dm_cartpole:
     image_format: "channels_first"
     visualize_reward: true
   cost_multiplier: 0.2
+  slider_position_bound: 0.5

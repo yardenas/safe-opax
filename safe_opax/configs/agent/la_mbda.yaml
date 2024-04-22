@@ -1,5 +1,5 @@
 defaults:
-  - penalizer/lagrangian
+  - penalizer: lagrangian
 
 name: lambda
 replay_buffer:
@@ -18,6 +18,7 @@ actor:
   n_layers: 4
   hidden_size: 400
   init_stddev: 5.
+  initialization_scale: 0.01
 critic:
   n_layers: 3
   hidden_size: 400
@@ -50,3 +51,4 @@ safety_slack: 0.
 evaluate_model: false
 exploration_strategy: uniform
 exploration_steps: 5000
+exploration_reward_scale: 10.0
