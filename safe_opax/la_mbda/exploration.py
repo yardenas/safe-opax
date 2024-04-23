@@ -23,10 +23,12 @@ class Exploration:
 def make_exploration(
     config: DictConfig, action_dim: int, key: jax.Array
 ) -> Exploration:
-    if config.agent.exploration_strategy == "opax":
+    if config.agent.exploration_strategy.name == "opax":
         return OpaxExploration(config, action_dim, key)
-    elif config.agent.exploration_strategy == "uniform":
-        return UniformExploration(action_dim)
+    elif config.agent.exploration_strategy.name == "uniform":
+        return UniformExploration(
+            action_dim, config.agent.exploration_strategy.action_limit
+        )
     else:
         raise NotImplementedError("Unknown exploration strategy")
 
@@ -49,7 +51,7 @@ class OpaxExploration(Exploration):
                 config.agent.sentiment.constraint_pessimism
             ),
         )
-        self.reward_scale = config.agent.exploration_reward_scale
+        self.reward_scale = config.agent.exploration_strategy.reward_scale
 
     def update(
         self,
@@ -73,10 +75,10 @@ def _append_opax(string):
 
 
 class UniformExploration(Exploration):
-    def __init__(self, action_dim: int):
+    def __init__(self, action_dim: int, limit: float = 1.0):
         self.action_dim = action_dim
         self.policy = lambda state, key: jax.random.uniform(
-            key, (self.action_dim,), minval=-1.0, maxval=1.0
+            key, (self.action_dim,), minval=-limit, maxval=limit
         )
 
     def get_policy(self) -> Policy:

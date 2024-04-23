@@ -1,5 +1,6 @@
 defaults:
   - penalizer: lagrangian
+  - exploration_strategy: uniform
 
 name: lambda
 replay_buffer:
@@ -50,6 +51,4 @@ free_nats: 1.
 kl_mix: 0.8
 safety_slack: 0.
 evaluate_model: false
-exploration_strategy: uniform
 exploration_steps: 5000
-exploration_reward_scale: 10.0
