@@ -97,11 +97,10 @@ class Trainer:
             summary, wall_time, steps = self._run_training_epoch(
                 self.config.training.episodes_per_epoch
             )
-            objective, cost_return, feasibilty = summary.metrics
+            objective, cost_return = summary.metrics
             metrics = {
                 "train/objective": objective,
                 "train/cost_return": cost_return,
-                "train/feasibility": feasibilty,
                 "train/fps": steps / wall_time,
             }
             report = agent.report(summary, epoch, self.step)
