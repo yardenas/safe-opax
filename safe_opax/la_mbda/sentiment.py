@@ -16,6 +16,18 @@ def bayes(values: jax.Array) -> jax.Array:
     return values.mean(1)
 
 
+class UpperConfidenceBound(Sentiment):
+    def __init__(self, alpha: float = 1.0):
+        self.alpha = alpha
+
+    def __call__(self, values: jax.Array) -> jax.Array:
+        return upper_confidence_bound(values, self.alpha)
+
+
+def upper_confidence_bound(values: jax.Array, alpha: float) -> jax.Array:
+    return jnp.mean(values, axis=1) + alpha * jnp.std(values, axis=1)
+
+
 def _emprirical_estimate(
     values: jax.Array, reduce_fn: Callable[[jax.Array], jax.Array]
 ) -> jax.Array:

@@ -3,7 +3,7 @@ from omegaconf import DictConfig
 
 from safe_opax.la_mbda.opax_bridge import OpaxBridge
 from safe_opax.la_mbda.make_actor_critic import make_actor_critic
-from safe_opax.la_mbda.sentiment import identity
+from safe_opax.la_mbda.sentiment import UpperConfidenceBound, identity
 from safe_opax.rl.types import Model, Policy
 
 
@@ -44,7 +44,10 @@ class OpaxExploration(Exploration):
             config.agent.model.stochastic_size + config.agent.model.deterministic_size,
             action_dim,
             key,
-            sentiment=identity,
+            objective_sentiment=identity,
+            constraint_sentiment=UpperConfidenceBound(
+                config.agent.sentiment.constraint_pessimism
+            ),
         )
         self.reward_scale = config.agent.exploration_reward_scale
 
