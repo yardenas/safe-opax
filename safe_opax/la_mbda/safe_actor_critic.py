@@ -75,11 +75,6 @@ class SafeModelBasedActorCritic:
         )
         self.critic = make_critic(critic_key)
         self.safety_critic = make_critic(safety_critic_key)
-        self.safety_critic = eqx.tree_at(
-            lambda critic: critic.net.layers[-1].bias,
-            self.safety_critic,
-            self.safety_critic.net.layers[-1].bias * 0.0 + safety_budget,
-        )
         self.actor_learner = Learner(self.actor, actor_optimizer_config)
         self.critic_learner = Learner(self.critic, critic_optimizer_config)
         self.safety_critic_learner = Learner(
