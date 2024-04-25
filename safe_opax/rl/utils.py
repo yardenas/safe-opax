@@ -40,14 +40,17 @@ def normalize(observation, mean, std):
 
 
 class Count:
-    def __init__(self, n: int, steps: int = 1):
+    def __init__(self, n: int, steps: int = 1, cycle: bool = True):
         self.count = 0
         self.n = (n // steps) * steps
         self.steps = steps
+        self.cycle = cycle
 
     def __call__(self):
         bingo = (self.count + self.steps) == self.n
-        self.count = (self.count + self.steps) % self.n
+        self.count = self.count + self.steps
+        if self.cycle:
+            self.count = self.count % self.n
         return bingo
 
 
@@ -84,7 +87,9 @@ def rl_initialize_weights_trick(model, bias_shift=0.0, weight_scale=0.01):
         model.layers[-1].weight * weight_scale,
     )
     model = eqx.tree_at(
-        lambda model: model.layers[-1].bias, model, model.layers[-1].bias * 0. + bias_shift
+        lambda model: model.layers[-1].bias,
+        model,
+        model.layers[-1].bias * 0.0 + bias_shift,
     )
     return model
 

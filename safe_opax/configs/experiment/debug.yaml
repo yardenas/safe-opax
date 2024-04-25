@@ -21,3 +21,5 @@ agent:
     batch_size: 4
     sequence_length: 16
   exploration_steps: 750
+  pretrain_steps: 600
+  pretrain_update_steps: 2

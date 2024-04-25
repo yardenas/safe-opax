@@ -54,3 +54,5 @@ evaluate_model: false
 exploration_steps: 5000
 skip_actor_steps: 0
 safety_critic_bias: 10
+pretrain_steps: 1000
+pretrain_update_steps: 1000

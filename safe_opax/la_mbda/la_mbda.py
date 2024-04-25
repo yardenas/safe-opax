@@ -105,6 +105,9 @@ class LaMBDA:
         self.should_explore = Until(
             config.agent.exploration_steps, environment_steps_per_agent_step
         )
+        self.should_pretrain = Count(
+            config.agent.pretrain_steps, environment_steps_per_agent_step, False
+        )
         self.metrics_monitor = MetricsMonitor()
 
     def __call__(
@@ -112,6 +115,8 @@ class LaMBDA:
         observation: FloatArray,
         train: bool = False,
     ) -> FloatArray:
+        if self.should_pretrain() and not self.replay_buffer.empty:
+            self.pretrain()
         if train and self.should_train() and not self.replay_buffer.empty:
             self.update()
         policy_fn = (
@@ -137,15 +142,30 @@ class LaMBDA:
         )
         self.state = jax.tree_map(lambda x: jnp.zeros_like(x), self.state)
 
+    def pretrain(self):
+        total_steps = self.config.agent.pretrain_update_steps
+        for batch in self.replay_buffer.sample(total_steps):
+            inferred_states = inference(self.model, batch, next(self.prng)).flatten()
+            initial_states = inferred_states.reshape(-1, inferred_states.shape[-1])
+            outs = self.actor_critic.update(self.model, initial_states, next(self.prng))
+            if self.should_explore():
+                exploration_outs = self.exploration.update(
+                    self.model, initial_states, next(self.prng)
+                )
+                outs.update(exploration_outs)
+            for k, v in outs.items():
+                self.metrics_monitor[k] = v
+
     def update(self):
         total_steps = self.config.agent.update_steps
         for batch in self.replay_buffer.sample(total_steps):
-            inferrered_rssm_states = self.update_model(batch)
-            initial_states = inferrered_rssm_states.reshape(
-                -1, inferrered_rssm_states.shape[-1]
-            )
+            inferred_states = self.update_model(batch)
+            initial_states = inferred_states.reshape(-1, inferred_states.shape[-1])
             outs = self.actor_critic.update(self.model, initial_states, next(self.prng))
-            if self.should_explore():
+            if (
+                self.should_explore()
+                and self.should_explore.count > self.should_pretrain.n
+            ):
                 exploration_outs = self.exploration.update(
                     self.model, initial_states, next(self.prng)
                 )
@@ -185,6 +205,15 @@ class LaMBDA:
             return Report(metrics=metrics, videos={"agent/model/prediction": video})
         else:
             return Report(metrics=metrics)
+
+
+@eqx.filter_jit
+def inference(model, batch, key):
+    features, actions = _prepare_features(batch)
+    infer_fn = lambda features, actions: model(features, actions, key)
+    inference_result = eqx.filter_vmap(infer_fn)(features, actions)
+    inferrered_rssm_states = inference_result.state
+    return inferrered_rssm_states
 
 
 @jax.jit
