@@ -96,7 +96,7 @@ class LBSGDPenalizer:
     ) -> tuple[PyTree, Any, ActorEvaluation, dict[str, jax.Array]]:
         def evaluate_helper(actor):
             evaluation = evaluate(actor)
-            loss = evaluation.loss - state.eta * jnp.log(evaluation.constraint + _EPS)
+            loss = evaluation.loss - state.eta * jnp.log(evaluation.constraint)
             outs = jnp.stack([loss, -evaluation.constraint])
             return outs, evaluation
 
