@@ -53,3 +53,4 @@ safety_slack: 0.
 evaluate_model: false
 exploration_steps: 5000
 skip_actor_steps: 0
+safety_critic_bias: 10
