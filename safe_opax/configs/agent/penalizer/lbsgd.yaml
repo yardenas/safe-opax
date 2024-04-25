@@ -3,7 +3,8 @@ m_0: 1.2e4
 m_1: 1.2e4
 eta: 0.1
 eta_rate: 8e-6
-
+backup_lr: 1e-2
+  
 
 
 

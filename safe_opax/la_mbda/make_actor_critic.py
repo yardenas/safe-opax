@@ -37,6 +37,7 @@ def make_actor_critic(
                 cfg.agent.penalizer.eta,
                 cfg.agent.penalizer.eta_rate,
                 cfg.agent.actor_optimizer.lr,
+                cfg.agent.penalizer.backup_lr,
             )
         elif cfg.agent.penalizer.name == "lagrangian":
             penalizer = AugmentedLagrangianPenalizer(
