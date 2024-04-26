@@ -108,6 +108,7 @@ class LaMBDA:
         self.should_pretrain = Count(
             config.agent.pretrain_steps, environment_steps_per_agent_step, False
         )
+        self.pretrained = False
         self.metrics_monitor = MetricsMonitor()
 
     def __call__(
@@ -155,6 +156,7 @@ class LaMBDA:
                 outs.update(exploration_outs)
             for k, v in outs.items():
                 self.metrics_monitor[k] = v
+        self.pretrained = True
 
     def update(self):
         total_steps = self.config.agent.update_steps
@@ -162,10 +164,7 @@ class LaMBDA:
             inferred_states = self.update_model(batch)
             initial_states = inferred_states.reshape(-1, inferred_states.shape[-1])
             outs = self.actor_critic.update(self.model, initial_states, next(self.prng))
-            if (
-                self.should_explore()
-                and self.should_explore.count > self.should_pretrain.n
-            ):
+            if self.should_explore() and self.pretrained:
                 exploration_outs = self.exploration.update(
                     self.model, initial_states, next(self.prng)
                 )
