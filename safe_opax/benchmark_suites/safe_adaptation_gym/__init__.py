@@ -7,23 +7,28 @@ from safe_opax.rl.types import EnvironmentFactory
 from safe_opax.rl.wrappers import ChannelFirst
 
 
+def sample_task(seed):
+    easy_tasks = (
+        "go_to_goal",
+        "push_box",
+        "collect",
+        "catch_goal",
+        "press_buttons",
+        "unsupervised",
+    )
+    task = np.random.RandomState(seed).choice(easy_tasks)
+    return task
+
+
 def make(cfg: DictConfig) -> EnvironmentFactory:
     def make_env():
         import safe_adaptation_gym
 
-        easy_tasks = (
-            "go_to_goal",
-            "push_box",
-            "collect",
-            "catch_goal",
-            "press_buttons",
-            "unsupervised",
-        )
         _, task_cfg = get_domain_and_task(cfg)
         if task_cfg.task is not None:
             task = task_cfg.task
         else:
-            task = np.random.RandomState(cfg.training.seed).choice(easy_tasks)
+            task = sample_task(cfg.training.seed)
         env = safe_adaptation_gym.make(
             robot_name=task_cfg.robot_name,
             task_name=task,
