@@ -15,12 +15,15 @@ def make(cfg: DictConfig) -> EnvironmentFactory:
             "go_to_goal",
             "push_box",
             "collect",
-            "dribble_ball",
             "catch_goal",
             "press_buttons",
+            "unsupervised",
         )
-        task = np.random.RandomState(cfg.training.seed).choice(easy_tasks)
         _, task_cfg = get_domain_and_task(cfg)
+        if task_cfg.task is not None:
+            task = task_cfg.task
+        else:
+            task = np.random.RandomState(cfg.training.seed).choice(easy_tasks)
         env = safe_adaptation_gym.make(
             robot_name=task_cfg.robot_name,
             task_name=task,
