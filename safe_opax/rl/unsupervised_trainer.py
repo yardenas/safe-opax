@@ -26,7 +26,14 @@ class UnsupervisedTrainer(Trainer):
 
     def __enter__(self):
         super().__enter__()
-        self.env.reset(options={"task": TASKS["unsupervised"]()})
+        self.env.reset(
+            options={
+                "task": [
+                    TASKS["unsupervised"]()
+                    for _ in range(self.config.training.parallel_envs)
+                ]
+            }
+        )
         return self
 
     def _run_training_epoch(

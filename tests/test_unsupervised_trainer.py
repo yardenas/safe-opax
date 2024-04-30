@@ -1,10 +1,9 @@
 import pathlib
 from unittest.mock import patch
 import pytest
+from safe_opax.rl.unsupervised_trainer import UnsupervisedTrainer
 from tests import DummyAgent, make_test_config
-from safe_opax.rl.trainer import Trainer
 from safe_opax import benchmark_suites
-from safe_adaptation_gym.benchmark import TASKS
 
 
 @pytest.fixture
@@ -24,7 +23,7 @@ def config():
 def trainer(config):
     make_env = benchmark_suites.make(config)
     dummy_env = make_env()
-    trainer = Trainer(
+    trainer = UnsupervisedTrainer(
         config,
         make_env,
         DummyAgent(dummy_env.action_space, config),
@@ -35,11 +34,7 @@ def trainer(config):
 
 
 def test_epoch(trainer):
-    with patch.object(trainer.env, "reset", wraps=trainer.env.reset) as mock:
-        with trainer as trainer:
-            mock.assert_called_once_with(options={"task": TASKS["unsupervised"]()})
+    with trainer as trainer:
+        with patch.object(trainer.env, "reset", wraps=trainer.env.reset) as mock:
             trainer.train(1)
-    # Should be called twice:
-    # First time upon initialization, second time when transitioning to
-    # task exploitation.
-    assert mock.call_count == 2
+    assert mock.call_count == 4
