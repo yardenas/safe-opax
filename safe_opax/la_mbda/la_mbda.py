@@ -105,8 +105,12 @@ class LaMBDA:
         self.should_explore = Until(
             config.agent.exploration_steps, environment_steps_per_agent_step
         )
+        pretrain_steps = max(
+            config.agent.pretrain_steps,
+            config.training.time_limit * config.training.parallel_envs,
+        )
         self.should_pretrain = Count(
-            config.agent.pretrain_steps, environment_steps_per_agent_step, False
+            pretrain_steps, environment_steps_per_agent_step, False
         )
         self.pretrained = False
         self.metrics_monitor = MetricsMonitor()
