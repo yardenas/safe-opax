@@ -14,9 +14,20 @@ from safe_opax.rl.logging import StateWriter, TrainingLogger
 from safe_opax.rl.types import Agent, EnvironmentFactory
 from safe_opax.rl.utils import PRNGSequence
 
+from safe_adaptation_gym.benchmark import TASKS
+from safe_opax.benchmark_suites.safe_adaptation_gym import sample_task
+
 _LOG = logging.getLogger(__name__)
 
 _TRAINING_STATE = "state.pkl"
+
+
+def get_trainer(name):
+    trainers = {"rl": Trainer, "unsupervised": UnsupervisedTrainer}
+    if name in trainers:
+        return trainers[name]
+    else:
+        raise NotImplementedError(f"Unknown trainer type: {name}")
 
 
 def get_state_path() -> str:
@@ -33,11 +44,11 @@ def start_fresh(
     cfg: DictConfig,
 ) -> "Trainer":
     make_env = benchmark_suites.make(cfg)
-    return Trainer(cfg, make_env)
+    return get_trainer(cfg.training.trainer)(cfg, make_env)
 
 
 def load_state(cfg, state_path) -> "Trainer":
-    return Trainer.from_pickle(cfg, state_path)
+    return get_trainer(cfg.training.trainer).from_pickle(cfg, state_path)
 
 
 class Trainer:
@@ -166,3 +177,43 @@ class Trainer:
             "epoch": self.epoch,
             "step": self.step,
         }
+
+
+class UnsupervisedTrainer(Trainer):
+    def __init__(
+        self,
+        config: DictConfig,
+        make_env: EnvironmentFactory,
+        agent: Agent | None = None,
+        start_epoch: int = 0,
+        step: int = 0,
+        seeds: PRNGSequence | None = None,
+    ):
+        super().__init__(config, make_env, agent, start_epoch, step, seeds)
+
+    def __enter__(self):
+        super().__enter__()
+        self.env.reset(
+            options={
+                "task": [
+                    TASKS["unsupervised"]()
+                    for _ in range(self.config.training.parallel_envs)
+                ]
+            }
+        )
+        return self
+
+    def _run_training_epoch(
+        self, episodes_per_epoch: int
+    ) -> tuple[EpochSummary, float, int]:
+        outs = super()._run_training_epoch(episodes_per_epoch)
+        if self.step >= self.config.training.exploration_steps:
+            task_name = sample_task(self.config.training.seed + self.step)
+            _LOG.info(f"Exploration complete. Changing to task {task_name}")
+            tasks = [
+                TASKS[task_name.lower()]()
+                for _ in range(self.config.training.parallel_envs)
+            ]
+            assert self.env is not None
+            self.env.reset(options={"task": tasks})
+        return outs

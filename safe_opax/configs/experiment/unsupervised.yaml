@@ -2,11 +2,8 @@
 defaults:
   - override /environment: safe_adaptation_gym
 
-environment:
-  safe_adaptation_gym:
-    task: unsupervised
-
 training:
+  trainer: unsupervised
   epochs: 100
   safe: true
   action_repeat: 2

@@ -1,7 +1,7 @@
 import pathlib
 from unittest.mock import patch
 import pytest
-from safe_opax.rl.unsupervised_trainer import UnsupervisedTrainer
+from safe_opax.rl.trainer import UnsupervisedTrainer
 from tests import DummyAgent, make_test_config
 from safe_opax import benchmark_suites
 
