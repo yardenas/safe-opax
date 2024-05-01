@@ -15,6 +15,7 @@ from safe_opax.rl.types import Agent, EnvironmentFactory
 from safe_opax.rl.utils import PRNGSequence
 
 from safe_adaptation_gym.benchmark import TASKS
+from safe_adaptation_gym.tasks import Task
 from safe_opax.benchmark_suites.safe_adaptation_gym import sample_task
 
 _LOG = logging.getLogger(__name__)
@@ -190,6 +191,8 @@ class UnsupervisedTrainer(Trainer):
         seeds: PRNGSequence | None = None,
     ):
         super().__init__(config, make_env, agent, start_epoch, step, seeds)
+        self.test_task_name = sample_task(self.config.training.seed)
+        self.test_tasks: list[Task] | None = None
 
     def __enter__(self):
         super().__enter__()
@@ -207,13 +210,15 @@ class UnsupervisedTrainer(Trainer):
         self, episodes_per_epoch: int
     ) -> tuple[EpochSummary, float, int]:
         outs = super()._run_training_epoch(episodes_per_epoch)
-        if self.step >= self.config.training.exploration_steps:
-            task_name = sample_task(self.config.training.seed + self.step)
-            _LOG.info(f"Exploration complete. Changing to task {task_name}")
-            tasks = [
-                TASKS[task_name.lower()]()
+        if (
+            self.step >= self.config.training.exploration_steps
+            and self.test_tasks is None
+        ):
+            _LOG.info(f"Exploration complete. Changing to task {self.test_task_name}")
+            self.test_tasks = [
+                TASKS[self.test_task_name.lower()]()
                 for _ in range(self.config.training.parallel_envs)
             ]
             assert self.env is not None
-            self.env.reset(options={"task": tasks})
+            self.env.reset(options={"task": self.test_tasks})
         return outs
