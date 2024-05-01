@@ -34,7 +34,6 @@ jit: true
 mixed_precision: params=float32,compute=float16,output=float32
 
 training:
-  trainer: rl
   safe: true
   safety_budget: 25
   seed: 0

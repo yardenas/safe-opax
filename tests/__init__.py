@@ -1,23 +1,4 @@
 from hydra import compose, initialize
-import numpy as np
-
-from safe_opax.rl.types import Report
-
-
-class DummyAgent:
-    def __init__(self, action_space, config) -> None:
-        self.config = config
-        parallel_envs = config.training.parallel_envs
-        self._policy = lambda: np.repeat(action_space.sample(), parallel_envs)
-
-    def __call__(self, *args, **kwargs):
-        return self._policy()
-
-    def observe(self, *args, **kwargs):
-        pass
-
-    def report(self, *args, **kwargs) -> Report:
-        return Report(metrics={}, videos={})
 
 
 def make_test_config(additional_overrides=None):

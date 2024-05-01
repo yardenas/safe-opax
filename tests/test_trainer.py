@@ -1,9 +1,27 @@
 import pathlib
 import time
+import numpy as np
 import pytest
-from tests import DummyAgent, make_test_config
+from tests import make_test_config
 from safe_opax.rl.trainer import Trainer
+from safe_opax.rl.types import Report
 from safe_opax import benchmark_suites
+
+
+class DummyAgent:
+    def __init__(self, action_space, config) -> None:
+        self.config = config
+        parallel_envs = config.training.parallel_envs
+        self._policy = lambda: np.repeat(action_space.sample(), parallel_envs)
+
+    def __call__(self, *args, **kwargs):
+        return self._policy()
+
+    def observe(self, *args, **kwargs):
+        pass
+
+    def report(self, *args, **kwargs) -> Report:
+        return Report(metrics={}, videos={})
 
 
 @pytest.fixture
