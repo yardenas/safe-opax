@@ -16,6 +16,6 @@ training:
 
 agent:
   exploration_steps: 1000000
-  pretrain_steps: 150000
+  pretrain_steps: 20000
   actor:
     init_stddev: 0.025
