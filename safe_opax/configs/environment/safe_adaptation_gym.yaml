@@ -1,4 +1,5 @@
 safe_adaptation_gym:
+  task: null
   robot_name: "point"
   image_observation:
     enabled: true

@@ -1,7 +1,6 @@
 # @package _global_
 defaults:
   - override /environment: dm_cartpole
-  - override /agent/penalizer: lbsgd
 
 environment:
   dm_cartpole:
