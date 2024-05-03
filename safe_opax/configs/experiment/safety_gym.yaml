@@ -8,5 +8,4 @@ training:
   action_repeat: 2
 
 agent:
-  exploration_strategy: opax
   exploration_steps: 0
