@@ -144,12 +144,21 @@ class LaMBDA:
             initial_states = inferrered_rssm_states.reshape(
                 -1, inferrered_rssm_states.shape[-1]
             )
-            outs = self.actor_critic.update(self.model, initial_states, next(self.prng))
             if self.should_explore():
+                if not self.config.agent.unsupervised:
+                    outs = self.actor_critic.update(
+                        self.model, initial_states, next(self.prng)
+                    )
+                else:
+                    outs = {}
                 exploration_outs = self.exploration.update(
                     self.model, initial_states, next(self.prng)
                 )
                 outs.update(exploration_outs)
+            else:
+                outs = self.actor_critic.update(
+                    self.model, initial_states, next(self.prng)
+                )
             for k, v in outs.items():
                 self.metrics_monitor[k] = v
 
