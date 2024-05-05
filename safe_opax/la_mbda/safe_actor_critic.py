@@ -1,4 +1,3 @@
-from functools import partial
 from typing import Any, Callable, NamedTuple, Protocol
 
 import equinox as eqx
@@ -15,7 +14,7 @@ from safe_opax.la_mbda.sentiment import Sentiment
 from safe_opax.la_mbda.actor_critic import ContinuousActor, Critic
 from safe_opax.opax import normalized_epistemic_uncertainty
 from safe_opax.rl.types import Model, RolloutFn
-from safe_opax.rl.utils import glorot_uniform, init_linear_weights, nest_vmap
+from safe_opax.rl.utils import nest_vmap
 
 
 class ActorEvaluation(NamedTuple):
@@ -68,13 +67,10 @@ class SafeModelBasedActorCritic:
             **actor_config,
             key=actor_key,
         )
-        make_critic = lambda key: init_linear_weights(
-            Critic(state_dim=state_dim, **critic_config, key=key),
-            partial(glorot_uniform, scale=initialization_scale),
-            key,
+        self.critic = Critic(state_dim=state_dim, **critic_config, key=critic_key)
+        self.safety_critic = Critic(
+            state_dim=state_dim, **critic_config, key=safety_critic_key
         )
-        self.critic = make_critic(critic_key)
-        self.safety_critic = make_critic(safety_critic_key)
         self.actor_learner = Learner(self.actor, actor_optimizer_config)
         self.critic_learner = Learner(self.critic, critic_optimizer_config)
         self.safety_critic_learner = Learner(
