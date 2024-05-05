@@ -15,7 +15,7 @@ from safe_opax.la_mbda.replay_buffer import ReplayBuffer
 from safe_opax.la_mbda.world_model import WorldModel, evaluate_model, variational_step
 from safe_opax.rl.epoch_summary import EpochSummary
 from safe_opax.rl.metrics import MetricsMonitor
-from safe_opax.rl.trajectory import TrajectoryData
+from safe_opax.rl.trajectory import TrajectoryData, Transition
 from safe_opax.rl.types import FloatArray, Report
 from safe_opax.rl.utils import Count, PRNGSequence, Until, add_to_buffer
 
@@ -136,6 +136,9 @@ class LaMBDA:
             self.config.training.scale_reward,
         )
         self.state = jax.tree_map(lambda x: jnp.zeros_like(x), self.state)
+
+    def observe_transition(self, transition: Transition) -> None:
+        pass
 
     def update(self):
         total_steps = self.config.agent.update_steps
