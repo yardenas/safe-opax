@@ -12,6 +12,7 @@ from safe_opax.la_mbda import rssm
 from safe_opax.la_mbda.exploration import make_exploration
 from safe_opax.la_mbda.make_actor_critic import make_actor_critic
 from safe_opax.la_mbda.replay_buffer import ReplayBuffer
+from safe_opax.la_mbda.sentiment import Sentiment, UpperConfidenceBound, bayes
 from safe_opax.la_mbda.world_model import WorldModel, evaluate_model, variational_step
 from safe_opax.rl.epoch_summary import EpochSummary
 from safe_opax.rl.metrics import MetricsMonitor
@@ -51,6 +52,15 @@ class AgentState(NamedTuple):
         return self
 
 
+def make_sentiment(alpha) -> Sentiment:
+    if alpha is None:
+        return bayes
+    elif alpha > 0.0:
+        return UpperConfidenceBound(alpha)
+    else:
+        raise ValueError(f"Invalid alpha: {alpha}")
+
+
 class LaMBDA:
     def __init__(
         self,
@@ -86,6 +96,8 @@ class LaMBDA:
             config.agent.model.stochastic_size + config.agent.model.deterministic_size,
             action_dim,
             next(self.prng),
+            make_sentiment(self.config.agent.sentiment.objective_optimism),
+            make_sentiment(self.config.agent.sentiment.constraint_pessimism),
         )
         self.exploration = make_exploration(
             config,

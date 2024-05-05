@@ -44,7 +44,7 @@ class OpaxExploration(Exploration):
             config.agent.model.stochastic_size + config.agent.model.deterministic_size,
             action_dim,
             key,
-            sentiment=identity,
+            objective_sentiment=identity,
         )
         self.reward_scale = config.agent.exploration_reward_scale
 
