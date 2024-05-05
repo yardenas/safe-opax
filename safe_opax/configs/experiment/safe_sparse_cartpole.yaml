@@ -16,4 +16,4 @@ agent:
   exploration_strategy: opax
   exploration_steps: 0
   actor:
-    init_stddev: 5.0
+    init_stddev: 0.025
