@@ -25,6 +25,8 @@ class ActorEvaluation(NamedTuple):
     constraint: jax.Array
     safe: jax.Array
     priors: ShiftScale
+    reward_stddev: jax.Array
+    cost_stddev: jax.Array
 
 
 class Penalizer(Protocol):
@@ -225,6 +227,8 @@ def evaluate_actor(
         constraint,
         jnp.greater(constraint, 0.0),
         priors,
+        rewards.std(1).mean(),
+        costs.std(1).mean(),
     )
 
 
@@ -297,9 +301,11 @@ def update_safe_actor_critic(
     new_safety_critic, new_safety_critic_state = safety_critic_learner.grad_step(
         safety_critic, grads, safety_critic_learning_state
     )
-    metrics["agent/epistemic_uncertainty"] = normalized_epistemic_uncertainty(
+    metrics["agent/sentiment/epistemic_uncertainty"] = normalized_epistemic_uncertainty(
         evaluation.priors, 1
     ).mean()
+    metrics["agent/sentiment/reward_stddev"] = evaluation.reward_stddev
+    metrics["agent/sentiment/cost_stddev"] = evaluation.cost_stddev
     return SafeActorCriticStepResults(
         new_actor,
         new_critic,
