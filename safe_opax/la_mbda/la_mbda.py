@@ -53,7 +53,7 @@ class AgentState(NamedTuple):
 
 
 def make_sentiment(alpha) -> Sentiment:
-    if alpha is None:
+    if alpha is None or alpha == 0.0:
         return bayes
     elif alpha > 0.0:
         return UpperConfidenceBound(alpha)
