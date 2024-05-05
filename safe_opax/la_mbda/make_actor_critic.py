@@ -67,6 +67,4 @@ def make_actor_critic(
         key=key,
         objective_sentiment=objective_sentiment,
         constraint_sentiment=constraint_sentiment,
-        skip_actor_steps=cfg.agent.skip_actor_steps,
-        safety_critic_bias=cfg.agent.safety_critic_bias,
     )

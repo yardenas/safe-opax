@@ -86,7 +86,7 @@ class Trainer:
         if self.seeds is None:
             self.seeds = PRNGSequence(self.config.training.seed)
         if self.agent is None:
-            if self.config.agent.name == "la_mbda":
+            if self.config.agent.name == "lambda":
                 self.agent = LaMBDA(
                     self.env.observation_space,
                     self.env.action_space,
