@@ -1,3 +1,4 @@
+from copy import deepcopy
 import equinox as eqx
 import jax
 import jax.numpy as jnp
@@ -31,7 +32,11 @@ class LaMBDADalal(LaMBDA):
         action_space: Box,
         config: DictConfig,
     ):
-        super().__init__(observation_space, action_space, config)
+        # A hack to make LaMBDA's policy unsafe
+        config_agent = deepcopy(config)
+        config_agent.training.safe = False
+        super().__init__(observation_space, action_space, config_agent)
+        self.config = config
         self.cost_model = eqx.nn.MLP(
             config.agent.model.stochastic_size + config.agent.model.deterministic_size,
             int(np.prod(action_space.shape)),
@@ -44,13 +49,16 @@ class LaMBDADalal(LaMBDA):
         train: bool = False,
     ) -> FloatArray:
         action = super().__call__(observation, train)
-        return filter_actions(
-            self.cost_model,
-            self.state.rssm_state.flatten(),
-            action,
-            self.prev_cost,
-            1.0,
-        )
+        if self.config.training.safe:
+            return filter_actions(
+                self.cost_model,
+                self.state.rssm_state.flatten(),
+                action,
+                self.prev_cost,
+                1.0,
+            )
+        else:
+            return action
 
     def observe_transition(self, transition: Transition) -> None:
         self.prev_cost = transition.cost
