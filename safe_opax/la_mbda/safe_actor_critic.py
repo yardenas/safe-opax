@@ -59,6 +59,7 @@ class SafeModelBasedActorCritic:
         key: jax.Array,
         penalizer: Penalizer,
         objective_sentiment: Sentiment,
+        constraint_sentiment: Sentiment,
     ):
         actor_key, critic_key, safety_critic_key = jax.random.split(key, 3)
         self.actor = ContinuousActor(
@@ -84,9 +85,9 @@ class SafeModelBasedActorCritic:
         self.lambda_ = lambda_
         self.safety_discount = safety_discount
         self.safety_budget = safety_budget
-        self.update_fn = batched_update_safe_actor_critic
         self.penalizer = penalizer
         self.objective_sentiment = objective_sentiment
+        self.constraint_sentiment = constraint_sentiment
 
     def update(
         self,
@@ -94,8 +95,8 @@ class SafeModelBasedActorCritic:
         initial_states: jax.Array,
         key: jax.Array,
     ) -> dict[str, float]:
-        actor_critic_fn = partial(self.update_fn, model.sample)
-        results: SafeActorCriticStepResults = actor_critic_fn(
+        results: SafeActorCriticStepResults = update_safe_actor_critic(
+            model.sample,
             self.horizon,
             initial_states,
             self.actor,
@@ -115,6 +116,7 @@ class SafeModelBasedActorCritic:
             self.penalizer,
             self.penalizer.state,
             self.objective_sentiment,
+            self.constraint_sentiment,
         )
         self.actor = results.new_actor
         self.critic = results.new_critic
@@ -196,6 +198,7 @@ def evaluate_actor(
     lambda_: float,
     safety_budget: float,
     objective_sentiment: Sentiment,
+    constraint_sentiment: Sentiment,
 ) -> ActorEvaluation:
     trajectories, priors = rollout_fn(horizon, initial_states, key, actor.act)
     next_step = lambda x: x[:, 1:]
@@ -207,9 +210,7 @@ def evaluate_actor(
         bootstrap_values, rewards, discount, lambda_
     )
     bootstrap_safety_values = nest_vmap(safety_critic, 2, eqx.filter_vmap)(next_states)
-    # TODO (yarden): make costs use their own sentiments when working
-    # on safety.
-    costs = current_step(trajectories.cost.mean(1))
+    costs = current_step(constraint_sentiment(trajectories.cost))
     safety_lambda_values = eqx.filter_vmap(compute_lambda_values)(
         bootstrap_safety_values,
         costs,
@@ -231,6 +232,11 @@ def evaluate_actor(
     )
 
 
+@eqx.filter_jit
+@apply_mixed_precision(
+    target_module_names=["critic", "safety_critic", "actor", "rollout_fn"],
+    target_input_names=["initial_states"],
+)
 def update_safe_actor_critic(
     rollout_fn: RolloutFn,
     horizon: int,
@@ -252,13 +258,15 @@ def update_safe_actor_critic(
     penalty_fn: Penalizer,
     penalty_state: Any,
     objective_sentiment: Sentiment,
+    constraint_sentiment: Sentiment,
 ) -> SafeActorCriticStepResults:
+    vmapped_rollout_fn = jax.vmap(rollout_fn, (None, 0, None, None))
     actor_grads, new_penalty_state, evaluation, metrics = penalty_fn(
         lambda actor: evaluate_actor(
             actor,
             critic,
             safety_critic,
-            rollout_fn,
+            vmapped_rollout_fn,
             horizon,
             initial_states,
             key,
@@ -267,6 +275,7 @@ def update_safe_actor_critic(
             lambda_,
             safety_budget,
             objective_sentiment,
+            constraint_sentiment,
         ),
         penalty_state,
         actor,
@@ -310,58 +319,6 @@ def update_safe_actor_critic(
         cost_values.mean(),
         new_penalty_state,
         metrics,
-    )
-
-
-@eqx.filter_jit
-@apply_mixed_precision(
-    target_module_names=["critic", "safety_critic", "actor", "rollout_fn"],
-    target_input_names=["initial_states"],
-)
-def batched_update_safe_actor_critic(
-    rollout_fn: RolloutFn,
-    horizon: int,
-    initial_states: jax.Array,
-    actor: ContinuousActor,
-    critic: Critic,
-    safety_critic: Critic,
-    actor_learning_state: OptState,
-    critic_learning_state: OptState,
-    safety_critic_learning_state: OptState,
-    actor_learner: Learner,
-    critic_learner: Learner,
-    safety_critic_learner: Learner,
-    key: jax.Array,
-    discount: float,
-    safety_discount: float,
-    lambda_: float,
-    safety_budget: float,
-    penalty_fn: Penalizer,
-    penalty_state: Any,
-    objective_sentiment: Sentiment,
-) -> SafeActorCriticStepResults:
-    vmapped_rollout_fn = jax.vmap(rollout_fn, (None, 0, None, None))
-    return update_safe_actor_critic(
-        vmapped_rollout_fn,
-        horizon,
-        initial_states,
-        actor,
-        critic,
-        safety_critic,
-        actor_learning_state,
-        critic_learning_state,
-        safety_critic_learning_state,
-        actor_learner,
-        critic_learner,
-        safety_critic_learner,
-        key,
-        discount,
-        safety_discount,
-        lambda_,
-        safety_budget,
-        penalty_fn,
-        penalty_state,
-        objective_sentiment,
     )
 
 

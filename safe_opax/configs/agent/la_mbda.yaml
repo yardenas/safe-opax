@@ -10,6 +10,8 @@ sentiment:
   ensemble_size: 5
   model_initialization_scale: 0.5
   critics_initialization_scale: 0.167
+  constraint_pessimism: 1.
+  objective_optimism: 1.
 model:
   hidden_size: 200
   stochastic_size: 60
