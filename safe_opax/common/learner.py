@@ -27,7 +27,7 @@ class Learner:
     def grad_step(
         self, model: PyTree, grads: PyTree, state: optax.OptState
     ) -> tuple[PyTree, optax.OptState]:
-        # TODO (yarden): should retain the policy and use params dtype
+        # TODO (anon): should retain the policy and use params dtype
         grads = apply_dtype(grads, jnp.float32)
         updates, new_opt_state = self.optimizer.update(grads, state)
         all_ok = all_finite(updates)
