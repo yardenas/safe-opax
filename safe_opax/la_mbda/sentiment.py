@@ -27,10 +27,10 @@ class UpperConfidenceBound(Sentiment):
 def upper_confidence_bound(
     values: jax.Array, alpha: float, stop_gradient: bool = True
 ) -> jax.Array:
-    stddev = jnp.std(values, axis=1)
+    variance = jnp.var(values, axis=1)
     if stop_gradient:
-        stddev = jax.lax.stop_gradient(stddev)
-    return jnp.mean(values, axis=1) + alpha * stddev
+        variance = jax.lax.stop_gradient(variance)
+    return jnp.mean(values, axis=1) + alpha * variance
 
 
 def _emprirical_estimate(
