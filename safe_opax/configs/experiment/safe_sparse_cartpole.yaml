@@ -16,4 +16,7 @@ agent:
   exploration_strategy: opax
   exploration_steps: 1000000
   actor:
-    init_stddev: 0.001
+    init_stddev: 0.025
+  sentiment:
+    objective_optimism: 1.0
+    constraint_pessimism: 1.0

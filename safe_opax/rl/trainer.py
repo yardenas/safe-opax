@@ -8,6 +8,7 @@ from omegaconf import DictConfig
 
 from safe_opax import benchmark_suites
 from safe_opax.la_mbda.la_mbda import LaMBDA
+from safe_opax.lambda_dalal.la_mbda_dalal import LaMBDADalal
 from safe_opax.rl import acting, episodic_async_env
 from safe_opax.rl.epoch_summary import EpochSummary
 from safe_opax.rl.logging import StateWriter, TrainingLogger
@@ -85,11 +86,22 @@ class Trainer:
         if self.seeds is None:
             self.seeds = PRNGSequence(self.config.training.seed)
         if self.agent is None:
-            self.agent = LaMBDA(
-                self.env.observation_space,
-                self.env.action_space,
-                self.config,
-            )
+            if self.config.agent.name == "lambda":
+                self.agent = LaMBDA(
+                    self.env.observation_space,
+                    self.env.action_space,
+                    self.config,
+                )
+            elif self.config.agent.name == "lambda_dalal":
+                self.agent = LaMBDADalal(
+                    self.env.observation_space,
+                    self.env.action_space,
+                    self.config,
+                )
+            else:
+                raise NotImplementedError(
+                    f"Unknown agent type: {self.config.agent.name}"
+                )
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):

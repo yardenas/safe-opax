@@ -16,6 +16,9 @@ class DummyAgent:
     def observe(self, *args, **kwargs):
         pass
 
+    def observe_transition(self, *args, **kwargs):
+        pass
+
     def report(self, *args, **kwargs) -> Report:
         return Report(metrics={}, videos={})
 

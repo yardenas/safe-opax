@@ -12,10 +12,11 @@ from safe_opax.la_mbda import rssm
 from safe_opax.la_mbda.exploration import make_exploration
 from safe_opax.la_mbda.make_actor_critic import make_actor_critic
 from safe_opax.la_mbda.replay_buffer import ReplayBuffer
+from safe_opax.la_mbda.sentiment import Sentiment, UpperConfidenceBound, bayes
 from safe_opax.la_mbda.world_model import WorldModel, evaluate_model, variational_step
 from safe_opax.rl.epoch_summary import EpochSummary
 from safe_opax.rl.metrics import MetricsMonitor
-from safe_opax.rl.trajectory import TrajectoryData
+from safe_opax.rl.trajectory import TrajectoryData, Transition
 from safe_opax.rl.types import FloatArray, Report
 from safe_opax.rl.utils import Count, PRNGSequence, Until, add_to_buffer
 
@@ -49,6 +50,15 @@ class AgentState(NamedTuple):
         prev_action = jnp.zeros((batch_size, action_dim))
         self = cls(rssm_state, prev_action)
         return self
+
+
+def make_sentiment(alpha) -> Sentiment:
+    if alpha is None or alpha == 0.0:
+        return bayes
+    elif alpha > 0.0:
+        return UpperConfidenceBound(alpha)
+    else:
+        raise ValueError(f"Invalid alpha: {alpha}")
 
 
 class LaMBDA:
@@ -86,6 +96,8 @@ class LaMBDA:
             config.agent.model.stochastic_size + config.agent.model.deterministic_size,
             action_dim,
             next(self.prng),
+            make_sentiment(self.config.agent.sentiment.objective_optimism),
+            make_sentiment(self.config.agent.sentiment.constraint_pessimism),
         )
         self.exploration = make_exploration(
             config,
@@ -136,6 +148,9 @@ class LaMBDA:
             self.config.training.scale_reward,
         )
         self.state = jax.tree_map(lambda x: jnp.zeros_like(x), self.state)
+
+    def observe_transition(self, transition: Transition) -> None:
+        pass
 
     def update(self):
         total_steps = self.config.agent.update_steps

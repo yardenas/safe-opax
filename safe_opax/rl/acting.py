@@ -42,6 +42,7 @@ def interact(
                 observations, next_observations, actions, rewards, costs
             )
             trajectory.transitions.append(transition)
+            agent.observe_transition(transition)
             observations = next_observations
             if done.any():
                 assert (
