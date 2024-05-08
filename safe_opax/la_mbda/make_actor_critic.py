@@ -10,7 +10,15 @@ from safe_opax.la_mbda.sentiment import bayes
 _LOG = logging.getLogger(__name__)
 
 
-def make_actor_critic(cfg, safe, state_dim, action_dim, key, sentiment=bayes):
+def make_actor_critic(
+    cfg,
+    safe,
+    state_dim,
+    action_dim,
+    key,
+    objective_sentiment=bayes,
+    constraint_sentiment=bayes,
+):
     # Account for the the discount factor in the budget.
     episode_safety_budget = (
         (
@@ -29,6 +37,7 @@ def make_actor_critic(cfg, safe, state_dim, action_dim, key, sentiment=bayes):
                 cfg.agent.penalizer.eta,
                 cfg.agent.penalizer.eta_rate,
                 cfg.agent.actor_optimizer.lr,
+                cfg.agent.penalizer.backup_lr,
             )
         elif cfg.agent.penalizer.name == "lagrangian":
             penalizer = AugmentedLagrangianPenalizer(
@@ -56,5 +65,6 @@ def make_actor_critic(cfg, safe, state_dim, action_dim, key, sentiment=bayes):
         safety_budget=episode_safety_budget,
         penalizer=penalizer,
         key=key,
-        objective_sentiment=sentiment,
+        objective_sentiment=objective_sentiment,
+        constraint_sentiment=constraint_sentiment,
     )
