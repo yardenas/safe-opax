@@ -9,6 +9,7 @@ from optax import OptState
 from safe_opax.common.learner import Learner
 from safe_opax.common.mixed_precision import apply_mixed_precision
 from safe_opax.la_mbda.rssm import RSSM, Features, ShiftScale, State
+from safe_opax.opax import normalized_epistemic_uncertainty
 from safe_opax.rl.types import Prediction
 from safe_opax.la_mbda.utils import marginalize_prediction
 from safe_opax.rl.types import Policy
@@ -228,7 +229,9 @@ class WorldModel(eqx.Module):
         out = nest_vmap(self.reward_cost_decoder, 2)(ensemble_trajectories.flatten())
         # Ensemble axis before time axis.
         out, priors = _ensemble_first((out, priors))
-        out = out.mean(0) + self.scale * jnp.var(priors.shift, 0).mean(1)[:, None]
+        out = (
+            out.mean(0) + self.scale * normalized_epistemic_uncertainty(priors)[:, None]
+        )
         reward, cost = out[..., 0], out[..., -1]
         out = Prediction(trajectory.flatten(), reward, cost)
         return out, priors
