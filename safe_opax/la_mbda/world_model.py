@@ -108,6 +108,7 @@ class WorldModel(eqx.Module):
     encoder: Encoder
     image_decoder: ImageDecoder
     reward_cost_decoder: eqx.nn.MLP
+    scale: float = eqx.static_field()
 
     def __init__(
         self,
@@ -118,6 +119,7 @@ class WorldModel(eqx.Module):
         hidden_size: int,
         ensemble_size: int,
         initialization_scale: float,
+        scale: float,
         *,
         key,
     ):
@@ -145,6 +147,8 @@ class WorldModel(eqx.Module):
         self.reward_cost_decoder = eqx.nn.MLP(
             state_dim, 1 + 1, 400, 3, key=reward_cost_decoder_key, activation=jnn.elu
         )
+        assert scale is not None
+        self.scale = scale
 
     def __call__(
         self,
@@ -224,6 +228,7 @@ class WorldModel(eqx.Module):
         out = nest_vmap(self.reward_cost_decoder, 2)(ensemble_trajectories.flatten())
         # Ensemble axis before time axis.
         out, priors = _ensemble_first((out, priors))
+        out = out.mean(0) + self.scale * jnp.var(priors.shift, 0).mean(1)[:, None]
         reward, cost = out[..., 0], out[..., -1]
         out = Prediction(trajectory.flatten(), reward, cost)
         return out, priors
