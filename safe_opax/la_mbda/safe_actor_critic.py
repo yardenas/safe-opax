@@ -207,12 +207,12 @@ def evaluate_actor(
     current_step = lambda x: x[:, :-1]
     next_states = next_step(trajectories.next_state)
     bootstrap_values = nest_vmap(critic, 2, eqx.filter_vmap)(next_states)
-    rewards = current_step(trajectories.reward)
+    rewards = current_step(objective_sentiment(trajectories.reward, priors))
     lambda_values = eqx.filter_vmap(compute_lambda_values)(
         bootstrap_values, rewards, discount, lambda_
     )
     bootstrap_safety_values = nest_vmap(safety_critic, 2, eqx.filter_vmap)(next_states)
-    costs = current_step(trajectories.cost)
+    costs = current_step(constraint_sentiment(trajectories.cost, priors))
     safety_lambda_values = eqx.filter_vmap(compute_lambda_values)(
         bootstrap_safety_values,
         costs,
