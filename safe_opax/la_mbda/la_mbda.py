@@ -87,7 +87,6 @@ class LaMBDA:
             key=next(self.prng),
             ensemble_size=config.agent.sentiment.ensemble_size,
             initialization_scale=config.agent.sentiment.model_initialization_scale,
-            scale=config.agent.sentiment.objective_optimism,
             **config.agent.model,
         )
         self.model_learner = Learner(self.model, config.agent.model_optimizer)
