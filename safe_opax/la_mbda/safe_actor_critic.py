@@ -12,7 +12,7 @@ from safe_opax.common.learner import Learner
 from safe_opax.common.mixed_precision import apply_mixed_precision
 from safe_opax.la_mbda.rssm import ShiftScale
 from safe_opax.la_mbda.sentiment import Sentiment
-from safe_opax.la_mbda.actor_critic import ContinuousActor, Critic
+from safe_opax.la_mbda.actor_critic import ContinuousActor, Critic, actor_entropy
 from safe_opax.opax import normalized_epistemic_uncertainty
 from safe_opax.rl.types import Model, RolloutFn
 from safe_opax.rl.utils import glorot_uniform, init_linear_weights, nest_vmap
@@ -310,6 +310,7 @@ def update_safe_actor_critic(
     ).mean()
     metrics["agent/sentiment/reward_stddev"] = evaluation.reward_stddev
     metrics["agent/sentiment/cost_stddev"] = evaluation.cost_stddev
+    metrics["agent/actor/entropy"] = actor_entropy(new_actor, initial_states)
     return SafeActorCriticStepResults(
         new_actor,
         new_critic,
