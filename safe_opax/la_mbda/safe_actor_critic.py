@@ -231,8 +231,8 @@ def evaluate_actor(
         constraint,
         jnp.greater(constraint, 0.0),
         priors,
-        rewards.std(1).mean(),
-        costs.std(1).mean(),
+        trajectories.reward.std(1).mean(),
+        trajectories.cost.std(1).mean(),
     )
 
 
