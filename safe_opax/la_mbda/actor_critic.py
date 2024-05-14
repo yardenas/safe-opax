@@ -82,3 +82,10 @@ class Critic(eqx.Module):
     def __call__(self, observation: Any) -> jax.Array:
         x = self.net(observation)
         return x
+
+
+def actor_entropy(actor, states):
+    log_prob = lambda state: actor(state).sample_and_log_prob(
+        seed=jax.random.PRNGKey(0)
+    )[1]
+    return -eqx.filter_vmap(log_prob)(states).mean()
