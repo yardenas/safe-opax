@@ -1,5 +1,5 @@
 safe_adaptation_gym:
-  task: null
+  task: go_to_goal
   robot_name: "point"
   image_observation:
     enabled: true

@@ -57,7 +57,6 @@ def make_actor_critic(
         actor_optimizer_config=cfg.agent.actor_optimizer,
         critic_optimizer_config=cfg.agent.critic_optimizer,
         safety_critic_optimizer_config=cfg.agent.safety_critic_optimizer,
-        initialization_scale=cfg.agent.sentiment.critics_initialization_scale,
         horizon=cfg.agent.plan_horizon,
         discount=cfg.agent.discount,
         safety_discount=cfg.agent.safety_discount,
