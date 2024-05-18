@@ -1,4 +1,3 @@
-from functools import partial
 from typing import Any, Callable, NamedTuple, Protocol
 
 import equinox as eqx
@@ -12,10 +11,10 @@ from safe_opax.common.learner import Learner
 from safe_opax.common.mixed_precision import apply_mixed_precision
 from safe_opax.la_mbda.rssm import ShiftScale
 from safe_opax.la_mbda.sentiment import Sentiment
-from safe_opax.la_mbda.actor_critic import ContinuousActor, Critic
+from safe_opax.la_mbda.actor_critic import ContinuousActor, Critic, actor_entropy
 from safe_opax.opax import normalized_epistemic_uncertainty
 from safe_opax.rl.types import Model, RolloutFn
-from safe_opax.rl.utils import glorot_uniform, init_linear_weights, nest_vmap
+from safe_opax.rl.utils import nest_vmap
 
 
 class ActorEvaluation(NamedTuple):
@@ -52,7 +51,6 @@ class SafeModelBasedActorCritic:
         actor_optimizer_config: dict[str, Any],
         critic_optimizer_config: dict[str, Any],
         safety_critic_optimizer_config: dict[str, Any],
-        initialization_scale: float,
         horizon: int,
         discount: float,
         safety_discount: float,
@@ -70,11 +68,7 @@ class SafeModelBasedActorCritic:
             **actor_config,
             key=actor_key,
         )
-        make_critic = lambda key: init_linear_weights(
-            Critic(state_dim=state_dim, **critic_config, key=key),
-            partial(glorot_uniform, scale=initialization_scale),
-            key,
-        )
+        make_critic = lambda key: Critic(state_dim=state_dim, **critic_config, key=key)
         self.critic = make_critic(critic_key)
         self.safety_critic = make_critic(safety_critic_key)
         self.actor_learner = Learner(self.actor, actor_optimizer_config)
@@ -231,8 +225,8 @@ def evaluate_actor(
         constraint,
         jnp.greater(constraint, 0.0),
         priors,
-        rewards.std(1).mean(),
-        costs.std(1).mean(),
+        trajectories.reward.std(1).mean(),
+        trajectories.cost.std(1).mean(),
     )
 
 
@@ -310,6 +304,7 @@ def update_safe_actor_critic(
     ).mean()
     metrics["agent/sentiment/reward_stddev"] = evaluation.reward_stddev
     metrics["agent/sentiment/cost_stddev"] = evaluation.cost_stddev
+    metrics["agent/actor/entropy"] = actor_entropy(new_actor, initial_states)
     return SafeActorCriticStepResults(
         new_actor,
         new_critic,
