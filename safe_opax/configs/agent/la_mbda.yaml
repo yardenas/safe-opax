@@ -8,7 +8,7 @@ replay_buffer:
   capacity: 1000
 sentiment:
   ensemble_size: 5
-  model_initialization_scale: 0.5
+  model_initialization_scale: null
   constraint_pessimism: null
   objective_optimism: null
 model:
