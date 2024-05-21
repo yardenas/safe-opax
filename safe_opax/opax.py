@@ -25,10 +25,8 @@ def modify_reward(
 def normalized_epistemic_uncertainty(
     distributions: ShiftScale, axis: int = 0
 ) -> jnp.ndarray:
-    epistemic_uncertainty = distributions.shift.std(axis)
-    aleatoric_uncertainty = distributions.scale.mean(axis)
+    epistemic_uncertainty = distributions.shift.var(axis)
+    aleatoric_uncertainty = (distributions.scale**2).mean(axis)
     return 0.5 * jnp.log(
-        1.0
-        + (epistemic_uncertainty.mean(-1) / (aleatoric_uncertainty.mean(-1) + _EPS))
-        ** 2
+        1.0 + (epistemic_uncertainty.mean(-1) / (aleatoric_uncertainty.mean(-1) + _EPS))
     )
