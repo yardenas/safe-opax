@@ -9,6 +9,18 @@ from safe_opax.common.math import inv_softplus
 from safe_opax.rl.utils import rl_initialize_weights_trick
 
 
+class StableTanh(trx.Tanh):
+    def inverse_and_log_det(self, y):
+        dtype = y.dtype
+        y = y.astype(jnp.float32)
+        # Clip to avoid computing very large gradients outside of
+        # the given range.
+        y = jnp.clip(y, -0.99999997, 0.99999997)
+        x = jnp.arctanh(y)
+        x = x.astype(dtype)
+        return x, -self.forward_log_det_jacobian(x)
+
+
 class ContinuousActor(eqx.Module):
     net: eqx.nn.MLP
     init_stddev: float = eqx.static_field()
@@ -44,7 +56,7 @@ class ContinuousActor(eqx.Module):
         stddev = jnn.softplus(stddev + init_std) + 1e-4
         mu = 5.0 * jnn.tanh(mu / 5.0)
         dist = trx.Normal(mu, stddev)
-        dist = trx.Transformed(dist, trx.Tanh())
+        dist = trx.Transformed(dist, StableTanh())
         return dist
 
     def act(
