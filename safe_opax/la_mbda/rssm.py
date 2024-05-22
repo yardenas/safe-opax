@@ -1,13 +1,13 @@
-from functools import partial
 from typing import NamedTuple
 
 import distrax as dtx
 import equinox as eqx
 import jax
+import jax.flatten_util
 import jax.nn as jnn
 import jax.numpy as jnp
 
-from safe_opax.rl.utils import glorot_uniform, init_linear_weights
+from safe_opax.rl.utils import init_linear_weights_and_biases
 
 
 class State(NamedTuple):
@@ -127,27 +127,26 @@ class RSSM(eqx.Module):
         embedding_size: int,
         action_dim: int,
         ensemble_size: int,
-        initialization_scale: float,
+        initialization_scale: float | None = None,
         *,
         key: jax.Array,
     ):
         self.ensemble_size = ensemble_size
         prior_key, posterior_key = jax.random.split(key)
-        make_priors = eqx.filter_vmap(
-            lambda key: init_linear_weights(
-                Prior(
-                    deterministic_size,
-                    stochastic_size,
-                    hidden_size,
-                    action_dim,
-                    key,
-                ),
-                partial(glorot_uniform, scale=initialization_scale),
-                key,
-            )
+        dummy_prior = Prior(
+            deterministic_size,
+            stochastic_size,
+            hidden_size,
+            action_dim,
+            key,
         )
-        self.priors = make_priors(
-            jnp.asarray(jax.random.split(prior_key, ensemble_size))
+        initialization_scale = (
+            initialization_scale
+            if initialization_scale is not None
+            else jax.flatten_util.ravel_pytree(dummy_prior)[0].std()
+        )
+        self.priors = jitter_priors(
+            dummy_prior, prior_key, initialization_scale, ensemble_size
         )
         self.posterior = Posterior(
             deterministic_size,
@@ -214,3 +213,14 @@ def _priors_predict(
         in_axes=(eqx.if_array(0), prev_state_in_axis, action_in_axis),
     )
     return priors_fn(priors, prev_state, action)
+
+
+def jitter_priors(
+    prior: Prior, key: jax.Array, scale: float, ensemble_size: int
+) -> Prior:
+    make_priors = eqx.filter_vmap(
+        lambda key: init_linear_weights_and_biases(
+            prior, lambda x, subkey: x + scale * jax.random.normal(subkey, x.shape), key
+        )
+    )
+    return make_priors(jnp.asarray(jax.random.split(key, ensemble_size)))

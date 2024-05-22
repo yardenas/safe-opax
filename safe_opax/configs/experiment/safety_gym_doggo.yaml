@@ -1,0 +1,17 @@
+# @package _global_
+defaults:
+  - override /environment: safe_adaptation_gym
+
+training:
+  epochs: 100
+  safe: true
+  action_repeat: 2
+
+environment:
+  safe_adaptation_gym:
+    robot_name: doggo
+
+agent:
+  exploration_steps: 0
+  actor:
+    initialization_scale: 1.

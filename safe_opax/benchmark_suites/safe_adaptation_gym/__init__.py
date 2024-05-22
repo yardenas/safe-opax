@@ -44,7 +44,7 @@ def make(cfg: DictConfig) -> EnvironmentFactory:
             task_name=task,
             seed=cfg.training.seed,
             rgb_observation=task_cfg.image_observation.enabled,
-            render_lidar_and_collision=not task_cfg.image_observation.enabled,
+            render_lidar_and_collision=False,
         )
         env = SafeAdaptationEnvCompatibility(env)
         if (
