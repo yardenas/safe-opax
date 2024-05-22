@@ -27,7 +27,7 @@ def double_buffer(ds: Iterable[TrajectoryData]) -> Iterator[TrajectoryData]:
       Batches of sharded device arrays.
     """
     batch = None
-    # TODO (anon): should be sharded better
+    # TODO (yarden): should be sharded better
     # see equinox's docs for DDP
     devices = jax.local_devices()[0]
     for next_batch in ds:

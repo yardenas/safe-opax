@@ -2,7 +2,7 @@
 name = "safe-opax"
 version = "0.1.0"
 description = ""
-authors = ["Anonymous"]
+authors = ["Yarden As"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
