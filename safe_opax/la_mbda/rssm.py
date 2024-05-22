@@ -145,6 +145,7 @@ class RSSM(eqx.Module):
             if initialization_scale is not None
             else jax.flatten_util.ravel_pytree(dummy_prior)[0].std()
         )
+        initialization_scale = initialization_scale if ensemble_size > 1 else 0.
         self.priors = jitter_priors(
             dummy_prior, prior_key, initialization_scale, ensemble_size
         )
