@@ -84,22 +84,35 @@ def rl_initialize_weights_trick(model, bias_shift=0.0, weight_scale=0.01):
         model.layers[-1].weight * weight_scale,
     )
     model = eqx.tree_at(
-        lambda model: model.layers[-1].bias, model, model.layers[-1].bias * 0. + bias_shift
+        lambda model: model.layers[-1].bias,
+        model,
+        model.layers[-1].bias * 0.0 + bias_shift,
     )
     return model
 
 
-def init_linear_weights(model, init_fn, key):
+def init_linear_weights_and_biases(model, init_fn, key):
     is_linear = lambda x: isinstance(x, eqx.nn.Linear)
     get_weights = lambda m: [
         x.weight
         for x in jax.tree_util.tree_leaves(m, is_leaf=is_linear)
         if is_linear(x)
     ]
+    get_biases = lambda m: [
+        x.bias
+        for x in jax.tree_util.tree_leaves(m, is_leaf=is_linear)
+        if is_linear(x) and x.bias is not None
+    ]
     weights = get_weights(model)
+    biases = get_biases(model)
     new_weights = [
         init_fn(weight, subkey)
         for weight, subkey in zip(weights, jax.random.split(key, len(weights)))
     ]
+    new_biases = [
+        init_fn(bias, subkey)
+        for bias, subkey in zip(biases, jax.random.split(key, len(biases)))
+    ]
     new_model = eqx.tree_at(get_weights, model, new_weights)
+    new_model = eqx.tree_at(get_biases, new_model, new_biases)
     return new_model
