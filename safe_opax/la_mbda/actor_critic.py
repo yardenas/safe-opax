@@ -51,8 +51,8 @@ class ContinuousActor(eqx.Module):
         init_std = inv_softplus(self.init_stddev)
         stddev = jnn.softplus(stddev + init_std) + 1e-4
         mu = 5.0 * jnn.tanh(mu / 5.0)
-        dist = trx.Normal(mu, stddev)
-        bijector = StableTanh()
+        dist = trx.MultivariateNormalDiag(mu, stddev)
+        bijector = trx.Block(StableTanh(), 1)
         dist = trx.Transformed(dist, bijector)
         return dist
 
