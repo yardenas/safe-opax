@@ -3,9 +3,10 @@ defaults:
   - override /environment: safe_adaptation_gym
 
 training:
-  epochs: 100
+  epochs: 200
   safe: true
   action_repeat: 2
+  episodes_per_epoch: 10
 
 environment:
   safe_adaptation_gym:
