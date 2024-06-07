@@ -25,6 +25,7 @@ moviepy = "^1.0.3"
 safe-adaptation-gym = {git = "https://git@github.com/lasgroup/safe-adaptation-gym.git"}
 jmp = {git = "https://github.com/deepmind/jmp"}
 tensorboard = "^2.16.2"
+safety-gym = {git = "https://git@github.com/yardenas/safety-gym"}
 
 
 [[tool.poetry.source]]
