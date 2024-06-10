@@ -1,5 +1,6 @@
 safety_gym:
-  task: Goal2
+  task: Goal
+  level: 2
   robot_name: "Doggo"
   image_observation:
     enabled: true

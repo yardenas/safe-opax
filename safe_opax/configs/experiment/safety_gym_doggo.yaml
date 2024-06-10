@@ -9,8 +9,9 @@ training:
   episodes_per_epoch: 5
 
 environment:
-  safe_adaptation_gym:
+  safety_gym:
     robot_name: doggo
+    level: 1
 
 agent:
   exploration_steps: 0

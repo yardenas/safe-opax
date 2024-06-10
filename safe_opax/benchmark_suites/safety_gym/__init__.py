@@ -31,7 +31,11 @@ def make(cfg: DictConfig) -> EnvironmentFactory:
         _, task_cfg = get_domain_and_task(cfg)
         task_name = task_cfg.safety_gym.task
         robot_name = task_cfg.safety_gym.robot_name
-        env = gym.make(f"Safexp-{robot_name}{task_name}-v0")
+        if robot_name == "Doggo" and task_cfg.safety_gym.level is None:
+            level = "1"
+        else:
+            level = task_cfg.safety_gym.level or "2"
+        env = gym.make(f"Safexp-{robot_name}{task_name}{level}-v0")
         env = SafetyGymCompatibility(env)
         # Turning manually on the 'observe_vision' flag so a rendering context gets
         # opened and
