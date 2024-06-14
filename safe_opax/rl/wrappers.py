@@ -58,7 +58,7 @@ class ImageObservation(ObservationWrapper):
 class ChannelFirst(ObservationWrapper):
     def __init__(self, env):
         super(ChannelFirst, self).__init__(env)
-        shape = self.unwrapped.observation_space.shape
+        shape = self.env.observation_space.shape
         assert isinstance(shape, tuple) and len(shape) == 3
         self.observation_space = Box(
             0, 255, (shape[2], shape[0], shape[1]), np.float32

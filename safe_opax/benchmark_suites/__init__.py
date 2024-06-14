@@ -16,6 +16,10 @@ def make(cfg: DictConfig) -> EnvironmentFactory:
         from safe_opax.benchmark_suites.safe_adaptation_gym import make
 
         make_env = make(cfg)
+    elif domain_name == "safety_gym":
+        from safe_opax.benchmark_suites.safety_gym import make
+
+        make_env = make(cfg)
     else:
         raise NotImplementedError(f"Environment {domain_name} not implemented")
     return make_env
