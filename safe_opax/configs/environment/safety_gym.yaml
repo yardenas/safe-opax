@@ -1,8 +1,8 @@
 safety_gym:
   task: Goal
   level: 2
-  robot_name: "Doggo"
+  robot_name: Doggo
   image_observation:
     enabled: true
     image_size: [64, 64]
-    image_format: "channels_first"
+    image_format: channels_first

@@ -10,7 +10,7 @@ training:
 
 environment:
   safety_gym:
-    robot_name: doggo
+    robot_name: Doggo
     level: 1
 
 agent:
