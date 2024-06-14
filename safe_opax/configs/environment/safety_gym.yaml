@@ -1,7 +1,7 @@
 safety_gym:
   task: Goal
   level: 2
-  robot_name: Doggo
+  robot_name: Point
   image_observation:
     enabled: true
     image_size: [64, 64]
