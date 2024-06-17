@@ -3,16 +3,15 @@ defaults:
   - override /environment: safe_adaptation_gym
 
 training:
-  epochs: 200
+  epochs: 100
   safe: true
   action_repeat: 2
-  episodes_per_epoch: 5
+  exploration_steps: 1000000
 
 environment:
   safe_adaptation_gym:
     robot_name: doggo
 
 agent:
-  exploration_steps: 0
-  actor:
-    initialization_scale: 1.
+  exploration_strategy: opax
+  exploration_steps: 1000000
