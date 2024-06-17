@@ -1,6 +1,6 @@
 # @package _global_
 defaults:
-  - override /environment: safety_gym
+  - override /environment: safe_adaptation_gym
 
 training:
   epochs: 200
@@ -9,9 +9,8 @@ training:
   episodes_per_epoch: 5
 
 environment:
-  safety_gym:
-    robot_name: Doggo
-    level: 1
+  safe_adaptation_gym:
+    robot_name: doggo
 
 agent:
   exploration_steps: 0

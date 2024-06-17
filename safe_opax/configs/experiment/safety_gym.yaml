@@ -1,6 +1,6 @@
 # @package _global_
 defaults:
-  - override /environment: safety_gym
+  - override /environment: safe_adaptation_gym
 
 training:
   epochs: 100
