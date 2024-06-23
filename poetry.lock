@@ -2857,8 +2857,8 @@ dev = ["Pillow", "matplotlib", "pytest (>=4.4.0)"]
 [package.source]
 type = "git"
 url = "ssh://git@github.com/lasgroup/safe-adaptation-gym"
-reference = "171520688f2bf7c18fa453a10b0a6589dbc5436f"
-resolved_reference = "171520688f2bf7c18fa453a10b0a6589dbc5436f"
+reference = "HEAD"
+resolved_reference = "6f1c6a08b0402d162c420d69f1f34a59480562f7"
 
 [[package]]
 name = "scipy"
@@ -3488,4 +3488,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10,<3.12"
-content-hash = "0ff0a3d235a6bf0978f09103a7d21e56bc279e3d82debc41625c96bad20b416e"
+content-hash = "794f3d5aeab97530a3a6d42e5111f651c0b72a659c7574cff923b125d9999852"
