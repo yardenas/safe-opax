@@ -196,8 +196,7 @@ def evaluate_actor(
     objective_sentiment: Sentiment,
     constraint_sentiment: Sentiment,
 ) -> ActorEvaluation:
-    keys = jnp.asarray(jax.random.split(key, initial_states.shape[0]))
-    trajectories, priors = rollout_fn(horizon, initial_states, keys, actor.act)
+    trajectories, priors = rollout_fn(horizon, initial_states, key, actor.act)
     next_step = lambda x: x[:, 1:]
     current_step = lambda x: x[:, :-1]
     next_states = next_step(trajectories.next_state)

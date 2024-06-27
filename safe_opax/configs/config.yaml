@@ -42,7 +42,7 @@ training:
   episodes_per_epoch: 5
   epochs: 200
   action_repeat: 1
-  render_episodes: 1
+  render_episodes: 0
   parallel_envs: 10
   scale_reward: 1.
   exploration_steps: 5000

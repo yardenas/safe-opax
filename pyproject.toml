@@ -22,7 +22,7 @@ dm-env = "^1.6"
 distrax = "^0.1.5"
 pillow = "^10.2.0"
 moviepy = "^1.0.3"
-safe-adaptation-gym = {git = "https://git@github.com/lasgroup/safe-adaptation-gym.git"}
+safe-adaptation-gym = {git = "ssh://git@github.com/lasgroup/safe-adaptation-gym"}
 jmp = {git = "https://github.com/deepmind/jmp"}
 tensorboard = "^2.16.2"
 
