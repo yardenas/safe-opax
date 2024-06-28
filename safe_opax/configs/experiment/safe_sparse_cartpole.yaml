@@ -18,5 +18,4 @@ agent:
   actor:
     init_stddev: 0.025
   sentiment:
-    objective_optimism: 1.0
     constraint_pessimism: 1.0
