@@ -258,7 +258,7 @@ def update_safe_actor_critic(
     objective_sentiment: Sentiment,
     constraint_sentiment: Sentiment,
 ) -> SafeActorCriticStepResults:
-    vmapped_rollout_fn = jax.vmap(rollout_fn, (None, 0, 0, None))
+    vmapped_rollout_fn = jax.vmap(rollout_fn, (None, 0, None, None))
     actor_grads, new_penalty_state, evaluation, metrics = penalty_fn(
         lambda actor: evaluate_actor(
             actor,
