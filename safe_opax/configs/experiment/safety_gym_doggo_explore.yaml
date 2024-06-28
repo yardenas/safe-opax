@@ -13,3 +13,7 @@ environment:
   safe_adaptation_gym:
     robot_name: doggo
     task: collect
+
+agent:
+  exploration_strategy: opax
+  exploration_steps: 100000
