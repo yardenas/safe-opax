@@ -10,7 +10,7 @@ class Sentiment(Protocol):
         ...
 
 
-def identity(values: jax.Array) -> jax.Array:
+def identity(values: jax.Array, state_distribution: ShiftScale) -> jax.Array:
     return values
 
 
