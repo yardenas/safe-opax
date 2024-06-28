@@ -9,6 +9,13 @@ class Sentiment(Protocol):
     def __call__(self, values: jax.Array, state_distribution: ShiftScale) -> jax.Array:
         ...
 
+def make_sentiment(alpha) -> Sentiment:
+    if alpha is None or alpha == 0.0:
+        return bayes
+    elif alpha > 0.0:
+        return UpperConfidenceBound(alpha)
+    else:
+        raise ValueError(f"Invalid alpha: {alpha}")
 
 def identity(values: jax.Array, state_distribution: ShiftScale) -> jax.Array:
     return values
