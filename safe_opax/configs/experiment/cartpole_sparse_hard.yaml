@@ -10,3 +10,7 @@ training:
   epochs: 100
   safe: false
   action_repeat: 2
+
+agent:
+  sentiment: 
+    constraint_pessimism: 50.0
