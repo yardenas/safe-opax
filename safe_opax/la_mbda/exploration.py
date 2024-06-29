@@ -75,6 +75,8 @@ def _append_opax(string):
 class UniformExploration(Exploration):
     def __init__(self, action_dim: int):
         self.action_dim = action_dim
+        self.policy = lambda _, key: jax.random.uniform(key, (self.action_dim,))
+
 
     def get_policy(self) -> Policy:
-        return lambda state, key: jax.random.uniform(key, (self.action_dim,))
+        return self.policy
