@@ -16,4 +16,4 @@ environment:
 
 agent:
   exploration_strategy: opax
-  exploration_steps: 100000
+  exploration_steps: 1000000
