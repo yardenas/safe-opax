@@ -16,6 +16,7 @@ training:
 
 agent:
   update_steps: 2
+  pretrain_steps: 2
   train_every: 50
   replay_buffer:
     batch_size: 4

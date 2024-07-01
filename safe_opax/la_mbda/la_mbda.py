@@ -52,8 +52,6 @@ class AgentState(NamedTuple):
         return self
 
 
-
-
 class LaMBDA:
     def __init__(
         self,
@@ -111,6 +109,7 @@ class LaMBDA:
             config.agent.exploration_steps, environment_steps_per_agent_step
         )
         self.metrics_monitor = MetricsMonitor()
+        self.pretrain = True
 
     def __call__(
         self,
@@ -146,20 +145,28 @@ class LaMBDA:
         pass
 
     def update(self):
-        total_steps = self.config.agent.update_steps
-        for batch in self.replay_buffer.sample(total_steps):
+        total_steps = (
+            self.config.agent.update_steps
+            if not self.pretrain
+            else self.config.agent.pretrain_steps
+        )
+        for i, batch in enumerate(self.replay_buffer.sample(total_steps)):
             inferred_rssm_states = self.update_model(batch)
             initial_states = inferred_rssm_states.reshape(
                 -1, inferred_rssm_states.shape[-1]
             )
-            outs = self.actor_critic.update(self.model, initial_states, next(self.prng))
-            if self.should_explore():
-                exploration_outs = self.exploration.update(
+            if not self.pretrain and (i % self.config.agent.model_timescale_ratio) == 0:
+                outs = self.actor_critic.update(
                     self.model, initial_states, next(self.prng)
                 )
-                outs.update(exploration_outs)
-            for k, v in outs.items():
-                self.metrics_monitor[k] = v
+                if self.should_explore():
+                    exploration_outs = self.exploration.update(
+                        self.model, initial_states, next(self.prng)
+                    )
+                    outs.update(exploration_outs)
+                for k, v in outs.items():
+                    self.metrics_monitor[k] = v
+        self.pretrain = False
 
     def update_model(self, batch: TrajectoryData) -> jax.Array:
         features, actions = _prepare_features(batch)
