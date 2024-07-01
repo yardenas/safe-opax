@@ -14,7 +14,7 @@ from safe_opax.la_mbda.sentiment import Sentiment
 from safe_opax.la_mbda.actor_critic import ContinuousActor, Critic, actor_entropy
 from safe_opax.opax import normalized_epistemic_uncertainty
 from safe_opax.rl.types import Model, RolloutFn
-from safe_opax.rl.utils import Count, nest_vmap
+from safe_opax.rl.utils import nest_vmap
 
 
 class ActorEvaluation(NamedTuple):
@@ -60,7 +60,6 @@ class SafeModelBasedActorCritic:
         penalizer: Penalizer,
         objective_sentiment: Sentiment,
         constraint_sentiment: Sentiment,
-        timescale_ratio: int = 1
     ):
         actor_key, critic_key, safety_critic_key = jax.random.split(key, 3)
         self.actor = ContinuousActor(
@@ -85,7 +84,6 @@ class SafeModelBasedActorCritic:
         self.penalizer = penalizer
         self.objective_sentiment = objective_sentiment
         self.constraint_sentiment = constraint_sentiment
-        self.train_actor = Count(timescale_ratio)
 
     def update(
         self,
@@ -115,7 +113,6 @@ class SafeModelBasedActorCritic:
             self.penalizer.state,
             self.objective_sentiment,
             self.constraint_sentiment,
-            self.train_actor(),
         )
         self.actor = results.new_actor
         self.critic = results.new_critic
@@ -260,39 +257,30 @@ def update_safe_actor_critic(
     penalty_state: Any,
     objective_sentiment: Sentiment,
     constraint_sentiment: Sentiment,
-    with_actor: bool = True,
 ) -> SafeActorCriticStepResults:
     vmapped_rollout_fn = jax.vmap(rollout_fn, (None, 0, None, None))
-    curry_evaluate_actor = lambda actor: evaluate_actor(
-        actor,
-        critic,
-        safety_critic,
-        vmapped_rollout_fn,
-        horizon,
-        initial_states,
-        key,
-        discount,
-        safety_discount,
-        lambda_,
-        safety_budget,
-        objective_sentiment,
-        constraint_sentiment,
-    )
-    if with_actor:
-        actor_grads, new_penalty_state, evaluation, metrics = penalty_fn(
-            curry_evaluate_actor,
-            penalty_state,
+    actor_grads, new_penalty_state, evaluation, metrics = penalty_fn(
+        lambda actor: evaluate_actor(
             actor,
-        )
-        new_actor, new_actor_state = actor_learner.grad_step(
-            actor, actor_grads, actor_learning_state
-        )
-    else:
-        new_actor = actor
-        new_actor_state = actor_learning_state
-        new_penalty_state = penalty_state
-        evaluation = curry_evaluate_actor(actor)
-        metrics = {}
+            critic,
+            safety_critic,
+            vmapped_rollout_fn,
+            horizon,
+            initial_states,
+            key,
+            discount,
+            safety_discount,
+            lambda_,
+            safety_budget,
+            objective_sentiment,
+            constraint_sentiment,
+        ),
+        penalty_state,
+        actor,
+    )
+    new_actor, new_actor_state = actor_learner.grad_step(
+        actor, actor_grads, actor_learning_state
+    )
     critics_grads_fn = eqx.filter_value_and_grad(critic_loss_fn)
     critic_loss, grads = critics_grads_fn(
         critic, evaluation.trajectories, evaluation.objective_values, discount, horizon

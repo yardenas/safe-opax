@@ -66,5 +66,4 @@ def make_actor_critic(
         key=key,
         objective_sentiment=objective_sentiment,
         constraint_sentiment=constraint_sentiment,
-        timescale_ratio=cfg.agent.actor_critic_timescale_ratio,
     )

@@ -11,8 +11,6 @@ sentiment:
   model_initialization_scale: null
   constraint_pessimism: null
   objective_optimism: null
-model_timescale_ratio: 1
-actor_critic_timescale_ratio: 1
 model:
   hidden_size: 200
   stochastic_size: 60
@@ -46,7 +44,6 @@ safety_discount: 0.99
 lambda_: 0.95
 plan_horizon: 15
 update_steps: 100
-pretrain_steps: 100
 train_every: 1000
 beta: 1.0
 free_nats: 1.
