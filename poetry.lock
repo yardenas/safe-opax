@@ -2856,7 +2856,7 @@ dev = ["Pillow", "matplotlib", "pytest (>=4.4.0)"]
 
 [package.source]
 type = "git"
-url = "ssh://git@github.com/lasgroup/safe-adaptation-gym"
+url = "https://git@github.com/lasgroup/safe-adaptation-gym"
 reference = "HEAD"
 resolved_reference = "c91e05d26e0ca9416696cf460f1cf5a39006097b"
 
@@ -3488,4 +3488,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10,<3.12"
-content-hash = "794f3d5aeab97530a3a6d42e5111f651c0b72a659c7574cff923b125d9999852"
+content-hash = "d9eb3daa39c8a9b48c044a8b370399d9f91202c6ca13e93e099bc86adf4b1f5a"
