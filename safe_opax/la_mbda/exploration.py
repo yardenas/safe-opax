@@ -3,7 +3,7 @@ from omegaconf import DictConfig
 
 from safe_opax.la_mbda.opax_bridge import OpaxBridge
 from safe_opax.la_mbda.make_actor_critic import make_actor_critic
-from safe_opax.la_mbda.sentiment import identity
+from safe_opax.la_mbda.sentiment import identity, make_sentiment
 from safe_opax.rl.types import Model, Policy
 
 
@@ -45,6 +45,9 @@ class OpaxExploration(Exploration):
             action_dim,
             key,
             objective_sentiment=identity,
+            constraint_sentiment=make_sentiment(
+                config.agent.sentiment.constraint_pessimism
+            ),
         )
         self.reward_scale = config.agent.exploration_reward_scale
 
@@ -72,6 +75,8 @@ def _append_opax(string):
 class UniformExploration(Exploration):
     def __init__(self, action_dim: int):
         self.action_dim = action_dim
+        self.policy = lambda _, key: jax.random.uniform(key, (self.action_dim,))
+
 
     def get_policy(self) -> Policy:
-        return lambda state, key: jax.random.uniform(key, (self.action_dim,))
+        return self.policy

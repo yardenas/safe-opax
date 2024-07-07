@@ -12,7 +12,7 @@ from safe_opax.la_mbda import rssm
 from safe_opax.la_mbda.exploration import make_exploration
 from safe_opax.la_mbda.make_actor_critic import make_actor_critic
 from safe_opax.la_mbda.replay_buffer import ReplayBuffer
-from safe_opax.la_mbda.sentiment import Sentiment, UpperConfidenceBound, bayes
+from safe_opax.la_mbda.sentiment import make_sentiment
 from safe_opax.la_mbda.world_model import WorldModel, evaluate_model, variational_step
 from safe_opax.rl.epoch_summary import EpochSummary
 from safe_opax.rl.metrics import MetricsMonitor
@@ -52,13 +52,6 @@ class AgentState(NamedTuple):
         return self
 
 
-def make_sentiment(alpha) -> Sentiment:
-    if alpha is None or alpha == 0.0:
-        return bayes
-    elif alpha > 0.0:
-        return UpperConfidenceBound(alpha)
-    else:
-        raise ValueError(f"Invalid alpha: {alpha}")
 
 
 class LaMBDA:
