@@ -250,6 +250,7 @@ def variational_step(
     beta: float = 1.0,
     free_nats: float = 0.0,
     kl_mix: float = 0.8,
+    with_reward: bool = True,
 ) -> tuple[tuple[WorldModel, OptState], tuple[jax.Array, TrainingResults]]:
     def loss_fn(model):
         infer_fn = lambda features, actions: model(features, actions, key)

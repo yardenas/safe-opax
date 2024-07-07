@@ -152,17 +152,29 @@ class LaMBDA:
             initial_states = inferred_rssm_states.reshape(
                 -1, inferred_rssm_states.shape[-1]
             )
-            outs = self.actor_critic.update(self.model, initial_states, next(self.prng))
             if self.should_explore():
+                if not self.config.agent.unsupervised:
+                    outs = self.actor_critic.update(
+                        self.model, initial_states, next(self.prng)
+                    )
+                else:
+                    outs = {}
                 exploration_outs = self.exploration.update(
                     self.model, initial_states, next(self.prng)
                 )
                 outs.update(exploration_outs)
+            else:
+                outs = self.actor_critic.update(
+                    self.model, initial_states, next(self.prng)
+                )
             for k, v in outs.items():
                 self.metrics_monitor[k] = v
 
     def update_model(self, batch: TrajectoryData) -> jax.Array:
         features, actions = _prepare_features(batch)
+        learn_reward = not self.should_explore() or (
+            self.should_explore() and not self.config.agent.unsupervised
+        )
         (self.model, self.model_learner.state), (loss, rest) = variational_step(
             features,
             actions,
@@ -173,6 +185,7 @@ class LaMBDA:
             self.config.agent.beta,
             self.config.agent.free_nats,
             self.config.agent.kl_mix,
+            learn_reward,
         )
         self.metrics_monitor["agent/model/loss"] = float(loss.mean())
         self.metrics_monitor["agent/model/reconstruction"] = float(
