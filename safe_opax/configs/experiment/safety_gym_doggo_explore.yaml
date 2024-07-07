@@ -17,5 +17,3 @@ environment:
 agent:
   exploration_strategy: opax
   exploration_steps: 1000000
-  sentiment:
-    constraint_pessimism: 50.0
