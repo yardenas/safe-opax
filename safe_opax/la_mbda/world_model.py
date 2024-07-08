@@ -266,12 +266,12 @@ def variational_step(
         else:
             reward = features.reward
             reward_cost = inference_result.reward_cost
-        cost_reward_logprobs = logprobs(
+        reward_cost_logprobs = logprobs(
             reward_cost,
             jnp.concatenate([reward, features.cost], -1),
         )
         image_logprobs = logprobs(inference_result.image, features.observation)
-        reconstruction_loss = -cost_reward_logprobs - image_logprobs
+        reconstruction_loss = -reward_cost_logprobs - image_logprobs
         kl_loss = kl_divergence(
             inference_result.posteriors, inference_result.priors, free_nats, kl_mix
         )

@@ -12,12 +12,11 @@ from safe_opax.lambda_dalal.la_mbda_dalal import LaMBDADalal
 from safe_opax.rl import acting, episodic_async_env
 from safe_opax.rl.epoch_summary import EpochSummary
 from safe_opax.rl.logging import StateWriter, TrainingLogger
-from safe_opax.rl.types import Agent, EnvironmentFactory
+from safe_opax.rl.types import EnvironmentFactory
 from safe_opax.rl.utils import PRNGSequence
 
 from safe_adaptation_gym.benchmark import TASKS
 from safe_adaptation_gym.tasks import Task
-from safe_opax.benchmark_suites.safe_adaptation_gym import sample_task
 
 _LOG = logging.getLogger(__name__)
 
@@ -58,7 +57,7 @@ class Trainer:
         self,
         config: DictConfig,
         make_env: EnvironmentFactory,
-        agent: Agent | None = None,
+        agent: LaMBDA | LaMBDADalal | None = None,
         start_epoch: int = 0,
         step: int = 0,
         seeds: PRNGSequence | None = None,
@@ -86,23 +85,26 @@ class Trainer:
         if self.seeds is None:
             self.seeds = PRNGSequence(self.config.training.seed)
         if self.agent is None:
-            if self.config.agent.name == "lambda":
-                self.agent = LaMBDA(
-                    self.env.observation_space,
-                    self.env.action_space,
-                    self.config,
-                )
-            elif self.config.agent.name == "lambda_dalal":
-                self.agent = LaMBDADalal(
-                    self.env.observation_space,
-                    self.env.action_space,
-                    self.config,
-                )
-            else:
-                raise NotImplementedError(
-                    f"Unknown agent type: {self.config.agent.name}"
-                )
+            self.agent = self.make_agent()
         return self
+
+    def make_agent(self) -> LaMBDA | LaMBDADalal:
+        assert self.env is not None
+        if self.config.agent.name == "lambda":
+            agent = LaMBDA(
+                self.env.observation_space,
+                self.env.action_space,
+                self.config,
+            )
+        elif self.config.agent.name == "lambda_dalal":
+            agent = LaMBDADalal(
+                self.env.observation_space,
+                self.env.action_space,
+                self.config,
+            )
+        else:
+            raise NotImplementedError(f"Unknown agent type: {self.config.agent.name}")
+        return agent
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         assert self.logger is not None and self.state_writer is not None
@@ -197,13 +199,13 @@ class UnsupervisedTrainer(Trainer):
         self,
         config: DictConfig,
         make_env: EnvironmentFactory,
-        agent: Agent | None = None,
+        agent: LaMBDA | LaMBDADalal | None = None,
         start_epoch: int = 0,
         step: int = 0,
         seeds: PRNGSequence | None = None,
     ):
         super().__init__(config, make_env, agent, start_epoch, step, seeds)
-        self.test_task_name = sample_task(self.config.training.seed)
+        self.test_task_name = self.config.training.test_task_name
         self.test_tasks: list[Task] | None = None
 
     def __enter__(self):
@@ -233,4 +235,9 @@ class UnsupervisedTrainer(Trainer):
             ]
             assert self.env is not None
             self.env.reset(options={"task": self.test_tasks})
+            assert self.agent is not None
+            old_agent = self.agent
+            self.agent = self.make_agent()
+            self.agent.model = old_agent.model
+            self.agent.should_explore = old_agent.should_explore
         return outs
