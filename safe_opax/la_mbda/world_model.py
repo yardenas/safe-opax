@@ -256,9 +256,13 @@ def variational_step(
         infer_fn = lambda features, actions: model(features, actions, key)
         inference_result: InferenceResult = eqx.filter_vmap(infer_fn)(features, actions)
         batch_ndim = 2
-        logprobs = lambda predictions, targets: dtx.Independent(
-            dtx.Normal(targets, 1.0), targets.ndim - batch_ndim
-        ).log_prob(predictions)
+        logprobs = (
+            lambda predictions, targets: dtx.Independent(
+                dtx.Normal(targets, 1.0), targets.ndim - batch_ndim
+            )
+            .log_prob(predictions)
+            .mean()
+        )
         if not with_reward:
             reward = jnp.zeros_like(features.reward)
             _, pred_cost = jnp.split(inference_result.reward_cost, 2, -1)
