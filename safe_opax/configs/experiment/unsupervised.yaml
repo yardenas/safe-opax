@@ -10,7 +10,6 @@ training:
   episodes_per_epoch: 5
   exploration_steps: 1000000
   test_task_name: go_to_goal
-  unsupervised: true
 
 environment:
   safe_adaptation_gym:
@@ -19,3 +18,4 @@ environment:
 agent:
   exploration_strategy: opax
   exploration_steps: 1000000
+  unsupervised: true
