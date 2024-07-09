@@ -236,8 +236,6 @@ class UnsupervisedTrainer(Trainer):
             assert self.env is not None
             self.env.reset(options={"task": self.test_tasks})
             assert self.agent is not None
-            old_agent = self.agent
-            self.agent = self.make_agent()
-            self.agent.model = old_agent.model
-            self.agent.should_explore = old_agent.should_explore
+            new_agent = self.make_agent()
+            self.agent.replay_buffer = new_agent.replay_buffer
         return outs
