@@ -52,8 +52,6 @@ class AgentState(NamedTuple):
         return self
 
 
-
-
 class LaMBDA:
     def __init__(
         self,
@@ -148,6 +146,13 @@ class LaMBDA:
     def update(self):
         total_steps = self.config.agent.update_steps
         for batch in self.replay_buffer.sample(total_steps):
+            batch = TrajectoryData(
+                batch.observation,
+                batch.next_observation,
+                batch.action,
+                batch.reward * self.config.agent.reward_scale,
+                batch.cost,
+            )
             inferred_rssm_states = self.update_model(batch)
             initial_states = inferred_rssm_states.reshape(
                 -1, inferred_rssm_states.shape[-1]
