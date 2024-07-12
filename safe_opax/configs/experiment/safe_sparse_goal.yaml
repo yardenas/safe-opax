@@ -14,4 +14,6 @@ training:
 agent:
   exploration_strategy: opax
   exploration_steps: 850000
-  reward_scale: 10.
+  actor:
+    init_stddev: 0.025
+  reward_scale: 1.
