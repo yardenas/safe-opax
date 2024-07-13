@@ -16,4 +16,3 @@ agent:
   exploration_steps: 850000
   actor:
     init_stddev: 0.025
-  reward_scale: 1.
