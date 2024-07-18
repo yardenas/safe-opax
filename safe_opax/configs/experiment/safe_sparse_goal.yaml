@@ -16,3 +16,5 @@ agent:
   exploration_steps: 850000
   actor:
     init_stddev: 0.025
+  sentiment:
+    model_initialization_scale: 0.05
