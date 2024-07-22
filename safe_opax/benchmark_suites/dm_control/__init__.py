@@ -3,7 +3,6 @@ from collections import OrderedDict
 
 from gymnasium import Env
 from dm_control.utils.rewards import tolerance
-from dm_control.suite.cartpole import Balance
 import numpy as np
 from omegaconf import DictConfig
 from safe_opax.benchmark_suites.utils import get_domain_and_task
@@ -231,16 +230,6 @@ class ConstraintWrapper:
         return getattr(self.env, name)
 
 
-class DownTask(Balance):
-    def __init__(self, swing_up, sparse, random=None):
-        super().__init__(swing_up, sparse, random)
-
-    def _get_reward(self, physics, sparse):
-        cart_in_bounds = tolerance(physics.cart_position(), self._CART_RANGE)
-        angle_down = tolerance(physics.pole_angle_cosine(), (-1, -0.995))
-        return angle_down * cart_in_bounds
-
-
 class CartpoleUnsupervisedWrapper:
     def __init__(self, env: Env):
         self.env = env
@@ -254,10 +243,13 @@ class CartpoleUnsupervisedWrapper:
         """Resets environment and returns flattened initial state."""
         if "task" in options:
             assert options["task"] == "keepdown"
-            new_task = DownTask(
-                self.env.task._swing_up, self.env.task._sparse, self.random
-            )
-            self.env.task = new_task
+
+            def _get_reward(self, physics, sparse):
+                cart_in_bounds = tolerance(physics.cart_position(), self._CART_RANGE)
+                angle_down = tolerance(physics.pole_angle_cosine(), (-1, -0.995))
+                return angle_down * cart_in_bounds
+
+            self.env.task._get_reward = _get_reward
         time_step = self.env.reset()
         if seed is not None:
             self.seed(seed)
