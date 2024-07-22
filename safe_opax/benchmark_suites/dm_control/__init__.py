@@ -236,10 +236,6 @@ class CartpoleUnsupervisedWrapper:
         self._task = self.env.env.env.env.env._env.task
         self._reward_fn = self._task._get_reward
 
-    def step(self, action):
-        observation, reward, terminal, truncated, info = self.env.step(action)
-        return observation, reward, terminal, truncated, info
-
     def reset(self, *, seed=None, options=None):
         """Resets environment and returns flattened initial state."""
         if options is not None and "task" in options:
@@ -248,7 +244,9 @@ class CartpoleUnsupervisedWrapper:
 
                 def _get_reward(physics, sparse):
                     cart_in_bounds = tolerance(physics.cart_position(), (-0.25, 0.25))
-                    angle_down = tolerance(physics.pole_angle_cosine(), (-1, -0.995)).prod()
+                    angle_down = tolerance(
+                        physics.pole_angle_cosine(), (-1, -0.995)
+                    ).prod()
                     return angle_down * cart_in_bounds
 
                 self._task._get_reward = _get_reward
