@@ -213,7 +213,7 @@ class UnsupervisedTrainer(Trainer):
         self.env.reset(
             options={
                 "task": [
-                    TASKS["unsupervised"]()
+                    get_task("unsupervised")
                     for _ in range(self.config.training.parallel_envs)
                 ]
             }
@@ -230,7 +230,7 @@ class UnsupervisedTrainer(Trainer):
         ):
             _LOG.info(f"Exploration complete. Changing to task {self.test_task_name}")
             self.test_tasks = [
-                get_test_task(self.test_task_name)
+                get_task(self.test_task_name)
                 for _ in range(self.config.training.parallel_envs)
             ]
             assert self.env is not None
@@ -241,10 +241,14 @@ class UnsupervisedTrainer(Trainer):
         return outs
 
 
-def get_test_task(task_name: str) -> Task:
+def get_task(task_name: str) -> Task:
     # Handles the interface difference between
     # cartpole unsupervised and safe-adaptation-gym
     if task_name in TASKS:
         return TASKS[task_name.lower()]()
-    elif task_name == "keepdown":
+    elif task_name == "swingup":
         return task_name
+    elif task_name == "unsupervised":
+        return task_name
+    else:
+        raise ValueError(f"Unknown task name: {task_name}")
