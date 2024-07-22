@@ -9,6 +9,7 @@ class DummyAgent:
         self.config = config
         parallel_envs = config.training.parallel_envs
         self._policy = lambda: np.repeat(action_space.sample(), parallel_envs)
+        self.replay_buffer = 123
 
     def __call__(self, *args, **kwargs):
         return self._policy()
