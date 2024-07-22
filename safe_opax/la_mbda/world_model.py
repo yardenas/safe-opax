@@ -250,24 +250,32 @@ def variational_step(
     beta: float = 1.0,
     free_nats: float = 0.0,
     kl_mix: float = 0.8,
+    with_reward: bool = True,
 ) -> tuple[tuple[WorldModel, OptState], tuple[jax.Array, TrainingResults]]:
     def loss_fn(model):
         infer_fn = lambda features, actions: model(features, actions, key)
         inference_result: InferenceResult = eqx.filter_vmap(infer_fn)(features, actions)
-        y = features.observation, jnp.concatenate([features.reward, features.cost], -1)
-        y_hat = inference_result.image, inference_result.reward_cost
         batch_ndim = 2
-        reconstruction_loss = -sum(
-            map(
-                lambda predictions, targets: dtx.Independent(
-                    dtx.Normal(targets, 1.0), targets.ndim - batch_ndim
-                )
-                .log_prob(predictions)
-                .mean(),
-                y_hat,
-                y,
+        logprobs = (
+            lambda predictions, targets: dtx.Independent(
+                dtx.Normal(targets, 1.0), targets.ndim - batch_ndim
             )
+            .log_prob(predictions)
+            .mean()
         )
+        if not with_reward:
+            reward = jnp.zeros_like(features.reward)
+            _, pred_cost = jnp.split(inference_result.reward_cost, 2, -1)
+            reward_cost = jnp.concatenate([reward, pred_cost], -1)
+        else:
+            reward = features.reward
+            reward_cost = inference_result.reward_cost
+        reward_cost_logprobs = logprobs(
+            reward_cost,
+            jnp.concatenate([reward, features.cost], -1),
+        )
+        image_logprobs = logprobs(inference_result.image, features.observation)
+        reconstruction_loss = -reward_cost_logprobs - image_logprobs
         kl_loss = kl_divergence(
             inference_result.posteriors, inference_result.priors, free_nats, kl_mix
         )

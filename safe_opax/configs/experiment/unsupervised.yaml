@@ -4,11 +4,18 @@ defaults:
 
 training:
   trainer: unsupervised
-  epochs: 100
+  epochs: 200
   safe: true
   action_repeat: 2
+  episodes_per_epoch: 5
   exploration_steps: 1000000
+  test_task_name: go_to_goal
+
+environment:
+  safe_adaptation_gym:
+    robot_name: doggo
 
 agent:
   exploration_strategy: opax
   exploration_steps: 1000000
+  unsupervised: true
