@@ -292,7 +292,7 @@ def make(cfg: DictConfig) -> EnvironmentFactory:
             from gymnasium.wrappers.flatten_observation import FlattenObservation
 
             env = FlattenObservation(env)
-        if cfg.trainer.unsupervised:
+        if cfg.training.trainer == "unsupervised":
             env = CartpoleUnsupervisedWrapper(env)
         return env
 
