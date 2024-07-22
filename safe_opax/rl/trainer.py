@@ -230,7 +230,7 @@ class UnsupervisedTrainer(Trainer):
         ):
             _LOG.info(f"Exploration complete. Changing to task {self.test_task_name}")
             self.test_tasks = [
-                TASKS[self.test_task_name.lower()]()
+                get_test_task(self.test_task_name)
                 for _ in range(self.config.training.parallel_envs)
             ]
             assert self.env is not None
@@ -239,3 +239,12 @@ class UnsupervisedTrainer(Trainer):
             new_agent = self.make_agent()
             self.agent.replay_buffer = new_agent.replay_buffer
         return outs
+
+
+def get_test_task(task_name: str) -> Task:
+    # Handles the interface difference between
+    # cartpole unsupervised and safe-adaptation-gym
+    if task_name in TASKS:
+        return TASKS[task_name.lower()]()
+    elif task_name == "keepdown":
+        return task_name
