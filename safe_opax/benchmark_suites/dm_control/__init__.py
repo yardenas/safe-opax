@@ -251,7 +251,7 @@ class CartpoleUnsupervisedWrapper:
 
                 self._task._get_reward = _get_reward
             else:
-                self._task = self._reward_fn
+                self._task._get_reward = self._reward_fn
         return self.env.reset(seed=seed, options=options)
 
     def __getattr__(self, name):
