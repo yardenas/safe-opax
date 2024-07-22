@@ -206,6 +206,7 @@ class UnsupervisedTrainer(Trainer):
     ):
         super().__init__(config, make_env, agent, start_epoch, step, seeds)
         self.test_task_name = self.config.training.test_task_name
+        self.train_task_name = self.config.training.train_task_name
         self.test_tasks: list[Task] | None = None
 
     def __enter__(self):
@@ -213,7 +214,7 @@ class UnsupervisedTrainer(Trainer):
         self.env.reset(
             options={
                 "task": [
-                    get_task("unsupervised")
+                    get_task(self.train_task_name)
                     for _ in range(self.config.training.parallel_envs)
                 ]
             }
@@ -246,9 +247,7 @@ def get_task(task_name: str) -> Task:
     # cartpole unsupervised and safe-adaptation-gym
     if task_name in TASKS:
         return TASKS[task_name.lower()]()
-    elif task_name == "swingup":
-        return task_name
-    elif task_name == "unsupervised":
+    elif task_name == "swingup" or task_name == "keepdown":
         return task_name
     else:
         raise ValueError(f"Unknown task name: {task_name}")

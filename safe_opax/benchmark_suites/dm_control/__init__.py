@@ -233,8 +233,8 @@ class ConstraintWrapper:
 class CartpoleUnsupervisedWrapper:
     def __init__(self, env: Env):
         self.env = env
-        self.reward_mode = "upright"
-        self._reward_fn = self.env.env._task._get_reward
+        self._task = self.env.env.env.env.env._env.task
+        self._reward_fn = self._task._get_reward
 
     def step(self, action):
         observation, reward, terminal, truncated, info = self.env.step(action)
@@ -242,25 +242,19 @@ class CartpoleUnsupervisedWrapper:
 
     def reset(self, *, seed=None, options=None):
         """Resets environment and returns flattened initial state."""
-        if "task" in options:
-            assert options["task"] == "unsupervised" or options["task"] == "swingup"
-            if options["task"] == "unsupervised":
+        if options is not None and "task" in options:
+            assert options["task"] == "keepdown" or options["task"] == "swingup"
+            if options["task"] == "keepdown":
 
-                def _get_reward(self, physics, sparse):
-                    cart_in_bounds = tolerance(
-                        physics.cart_position(), self._CART_RANGE
-                    )
-                    angle_down = tolerance(physics.pole_angle_cosine(), (-1, -0.995))
+                def _get_reward(physics, sparse):
+                    cart_in_bounds = tolerance(physics.cart_position(), (-0.25, 0.25))
+                    angle_down = tolerance(physics.pole_angle_cosine(), (-1, -0.995)).prod()
                     return angle_down * cart_in_bounds
 
-                self.env.env._task._get_reward = _get_reward
+                self._task._get_reward = _get_reward
             else:
                 self.env.env._task._get_reward = self._reward_fn
-        time_step = self.env.reset()
-        if seed is not None:
-            self.seed(seed)
-        observation = self._filter_observation(time_step.observation)
-        return observation, {}
+        return self.env.reset(seed=seed, options=options)
 
     def __getattr__(self, name):
         return getattr(self.env, name)

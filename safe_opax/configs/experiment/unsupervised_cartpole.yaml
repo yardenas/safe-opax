@@ -13,6 +13,7 @@ training:
   action_repeat: 2
   safety_budget: 100
   exploration_steps: 1000000
+  train_task_name: keepdown
   test_task_name: swingup
 
 agent:
