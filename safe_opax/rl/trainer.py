@@ -219,6 +219,14 @@ class UnsupervisedTrainer(Trainer):
                 ]
             }
         )
+        if (
+            self.step >= self.config.training.exploration_steps
+            and self.test_tasks is None
+        ):
+            self.test_tasks = [
+                get_task(self.test_task_name)
+                for _ in range(self.config.training.parallel_envs)
+            ]
         return self
 
     def _run_training_epoch(
