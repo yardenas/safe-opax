@@ -296,6 +296,7 @@ ENVIRONMENTS = {
     ("dm_cartpole", "swingup"),
     ("dm_cartpole", "swingup_sparse"),
     ("dm_cartpole", "swingup_sparse_hard"),
+    ("dm_cartpole", "safe_swingup_sparse"),
     ("dm_cartpole", "safe_swingup_sparse_hard"),
     ("dm_humanoid", "stand"),
     ("dm_humanoid", "walk"),
