@@ -261,7 +261,7 @@ class CartpoleUnsupervisedWrapper:
 def make(cfg: DictConfig) -> EnvironmentFactory:
     def make_env():
         domain_name, task_cfg = get_domain_and_task(cfg)
-        if task_cfg.task in ["swingup_sparse_hard", "safe_swingup_sparse_hard"]:
+        if task_cfg.task in ["swingup_sparse_hard", "safe_swingup_sparse_hard", "safe_swingup_sparse"]:
             task = "swingup_sparse"
         else:
             task = task_cfg.task
