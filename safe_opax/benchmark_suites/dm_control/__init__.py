@@ -233,7 +233,7 @@ class ConstraintWrapper:
 class CartpoleUnsupervisedWrapper:
     def __init__(self, env: Env):
         self.env = env
-        self._task = self.env.env.env.env.env._env.task
+        self._task = self.env.env.env.env._env.task
         self._reward_fn = self._task._get_reward
 
     def reset(self, *, seed=None, options=None):
@@ -261,7 +261,11 @@ class CartpoleUnsupervisedWrapper:
 def make(cfg: DictConfig) -> EnvironmentFactory:
     def make_env():
         domain_name, task_cfg = get_domain_and_task(cfg)
-        if task_cfg.task in ["swingup_sparse_hard", "safe_swingup_sparse_hard", "safe_swingup_sparse"]:
+        if task_cfg.task in [
+            "swingup_sparse_hard",
+            "safe_swingup_sparse_hard",
+            "safe_swingup_sparse",
+        ]:
             task = "swingup_sparse"
         else:
             task = task_cfg.task
