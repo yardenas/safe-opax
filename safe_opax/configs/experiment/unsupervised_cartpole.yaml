@@ -4,7 +4,7 @@ defaults:
 
 environment:
   dm_cartpole:
-    task: safe_swingup_sparse_hard
+    task: safe_swingup_sparse
 
 training:
   trainer: unsupervised
@@ -19,7 +19,7 @@ training:
 agent:
   exploration_strategy: opax
   exploration_steps: 1000000
-  unsupervised: false
+  unsupervised: true
   actor:
     init_stddev: 0.025
   sentiment:

@@ -233,7 +233,7 @@ class ConstraintWrapper:
 class CartpoleUnsupervisedWrapper:
     def __init__(self, env: Env):
         self.env = env
-        self._task = self.env.env.env.env.env._env.task
+        self._task = self.env.env.env.env._env.task
         self._reward_fn = self._task._get_reward
 
     def reset(self, *, seed=None, options=None):
