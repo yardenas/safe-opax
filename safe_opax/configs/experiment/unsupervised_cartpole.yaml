@@ -9,7 +9,7 @@ environment:
 training:
   trainer: unsupervised
   epochs: 100
-  safe: true
+  safe: false
   action_repeat: 2
   safety_budget: 100
   exploration_steps: 1000000
