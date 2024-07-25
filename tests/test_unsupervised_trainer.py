@@ -1,6 +1,7 @@
 import pathlib
 from unittest.mock import patch
 import pytest
+from omegaconf import open_dict
 from safe_opax.rl.trainer import UnsupervisedTrainer
 from tests import DummyAgent, make_test_config
 from safe_opax import benchmark_suites
@@ -16,6 +17,9 @@ def config():
             "training.exploration_steps=100",
         ]
     )
+    with open_dict(cfg):
+        cfg.training["test_task_name"] = "go_to_goal"
+        cfg.training["train_task_name"] = "unsupervised"
     return cfg
 
 
@@ -28,7 +32,9 @@ def trainer(config):
         make_env,
         DummyAgent(dummy_env.action_space, config),
     )
-    yield trainer
+    with patch.object(trainer, "make_agent") as mock:
+        mock.return_value = DummyAgent(dummy_env.action_space, config)
+        yield trainer
     assert trainer.state_writer is not None
     pathlib.Path(f"{trainer.state_writer.log_dir}/state.pkl").unlink()
 

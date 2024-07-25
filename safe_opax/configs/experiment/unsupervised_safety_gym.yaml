@@ -9,6 +9,7 @@ training:
   action_repeat: 2
   episodes_per_epoch: 5
   exploration_steps: 1000000
+  train_task_name: unsupervised
   test_task_name: go_to_goal
 
 environment:

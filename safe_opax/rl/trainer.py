@@ -206,6 +206,7 @@ class UnsupervisedTrainer(Trainer):
     ):
         super().__init__(config, make_env, agent, start_epoch, step, seeds)
         self.test_task_name = self.config.training.test_task_name
+        self.train_task_name = self.config.training.train_task_name
         self.test_tasks: list[Task] | None = None
 
     def __enter__(self):
@@ -213,11 +214,20 @@ class UnsupervisedTrainer(Trainer):
         self.env.reset(
             options={
                 "task": [
-                    TASKS["unsupervised"]()
+                    get_task(self.train_task_name)
                     for _ in range(self.config.training.parallel_envs)
                 ]
             }
         )
+        if (
+            self.step >= self.config.training.exploration_steps
+            and self.test_tasks is None
+        ):
+            self.test_tasks = [
+                get_task(self.test_task_name)
+                for _ in range(self.config.training.parallel_envs)
+            ]
+            self.env.reset(options={"task": self.test_tasks})
         return self
 
     def _run_training_epoch(
@@ -230,12 +240,20 @@ class UnsupervisedTrainer(Trainer):
         ):
             _LOG.info(f"Exploration complete. Changing to task {self.test_task_name}")
             self.test_tasks = [
-                TASKS[self.test_task_name.lower()]()
+                get_task(self.test_task_name)
                 for _ in range(self.config.training.parallel_envs)
             ]
             assert self.env is not None
             self.env.reset(options={"task": self.test_tasks})
-            assert self.agent is not None
-            new_agent = self.make_agent()
-            self.agent.replay_buffer = new_agent.replay_buffer
         return outs
+
+
+def get_task(task_name: str) -> Task:
+    # Handles the interface difference between
+    # cartpole unsupervised and safe-adaptation-gym
+    if task_name in TASKS:
+        return TASKS[task_name.lower()]()
+    elif task_name == "swingup" or task_name == "keepdown":
+        return task_name
+    else:
+        raise ValueError(f"Unknown task name: {task_name}")

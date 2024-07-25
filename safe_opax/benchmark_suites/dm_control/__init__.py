@@ -230,10 +230,42 @@ class ConstraintWrapper:
         return getattr(self.env, name)
 
 
+class CartpoleUnsupervisedWrapper:
+    def __init__(self, env: Env):
+        self.env = env
+        self._task = self.env.env.env.env.env._env.task
+        self._reward_fn = self._task._get_reward
+
+    def reset(self, *, seed=None, options=None):
+        """Resets environment and returns flattened initial state."""
+        if options is not None and "task" in options:
+            assert options["task"] == "keepdown" or options["task"] == "swingup"
+            if options["task"] == "keepdown":
+
+                def _get_reward(physics, sparse):
+                    cart_in_bounds = tolerance(physics.cart_position(), (-0.25, 0.25))
+                    angle_down = tolerance(
+                        physics.pole_angle_cosine(), (-1, -0.995)
+                    ).prod()
+                    return angle_down * cart_in_bounds
+
+                self._task._get_reward = _get_reward
+            else:
+                self._task._get_reward = self._reward_fn
+        return self.env.reset(seed=seed, options=options)
+
+    def __getattr__(self, name):
+        return getattr(self.env, name)
+
+
 def make(cfg: DictConfig) -> EnvironmentFactory:
     def make_env():
         domain_name, task_cfg = get_domain_and_task(cfg)
-        if task_cfg.task in ["swingup_sparse_hard", "safe_swingup_sparse_hard"]:
+        if task_cfg.task in [
+            "swingup_sparse_hard",
+            "safe_swingup_sparse_hard",
+            "safe_swingup_sparse",
+        ]:
             task = "swingup_sparse"
         else:
             task = task_cfg.task
@@ -256,6 +288,8 @@ def make(cfg: DictConfig) -> EnvironmentFactory:
             from gymnasium.wrappers.flatten_observation import FlattenObservation
 
             env = FlattenObservation(env)
+        if cfg.training.trainer == "unsupervised":
+            env = CartpoleUnsupervisedWrapper(env)
         return env
 
     return make_env
@@ -266,6 +300,7 @@ ENVIRONMENTS = {
     ("dm_cartpole", "swingup"),
     ("dm_cartpole", "swingup_sparse"),
     ("dm_cartpole", "swingup_sparse_hard"),
+    ("dm_cartpole", "safe_swingup_sparse"),
     ("dm_cartpole", "safe_swingup_sparse_hard"),
     ("dm_humanoid", "stand"),
     ("dm_humanoid", "walk"),
