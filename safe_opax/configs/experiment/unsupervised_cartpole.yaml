@@ -4,7 +4,7 @@ defaults:
 
 environment:
   dm_cartpole:
-    task: safe_swingup_sparse
+    task: safe_swingup_sparse_hard
 
 training:
   trainer: unsupervised
