@@ -19,6 +19,7 @@ def config():
     )
     with open_dict(cfg):
         cfg.training["test_task_name"] = "go_to_goal"
+        cfg.training["train_task_name"] = "unsupervised"
     return cfg
 
 
