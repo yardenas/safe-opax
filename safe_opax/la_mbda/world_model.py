@@ -251,8 +251,11 @@ def variational_step(
     free_nats: float = 0.0,
     kl_mix: float = 0.8,
     with_reward: bool = True,
+    no_dymamics: bool = False,
 ) -> tuple[tuple[WorldModel, OptState], tuple[jax.Array, TrainingResults]]:
-    def loss_fn(model):
+    def loss_fn(model, static_part=None):
+        if static_part is not None:
+            model = eqx.combine(model, static_part)
         infer_fn = lambda features, actions: model(features, actions, key)
         inference_result: InferenceResult = eqx.filter_vmap(infer_fn)(features, actions)
         batch_ndim = 2
@@ -287,9 +290,24 @@ def variational_step(
         )
         return reconstruction_loss + beta * kl_loss, aux
 
-    (loss, rest), model_grads = eqx.filter_value_and_grad(loss_fn, has_aux=True)(model)
+    if no_dymamics:
+        diff_model, static_model = partition_dynamics_rewards(model)
+        (loss, rest), model_grads = eqx.filter_value_and_grad(loss_fn, has_aux=True)(
+            diff_model, static_model
+        )
+    else:
+        (loss, rest), model_grads = eqx.filter_value_and_grad(loss_fn, has_aux=True)(
+            model
+        )
     new_model, new_opt_state = learner.grad_step(model, model_grads, opt_state)
     return (new_model, new_opt_state), (loss, rest)
+
+
+def partition_dynamics_rewards(model: WorldModel) -> tuple[WorldModel, WorldModel]:
+    filter_spec = jax.tree_map(lambda _: False, model)
+    filter_spec = eqx.tree_at(lambda tree: tree.reward_cost_decoder, filter_spec, True)
+    diff_model, static_model = eqx.partition(model, filter_spec)
+    return diff_model, static_model
 
 
 # https://github.com/danijar/dreamerv2/blob/259e3faa0e01099533e29b0efafdf240adeda4b5/common/nets.py#L130
