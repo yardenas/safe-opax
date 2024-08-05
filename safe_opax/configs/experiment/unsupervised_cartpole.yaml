@@ -20,6 +20,7 @@ agent:
   exploration_strategy: opax
   exploration_steps: 1000000
   unsupervised: true
+  learn_model_steps: 1000000
   actor:
     init_stddev: 0.025
   sentiment:
