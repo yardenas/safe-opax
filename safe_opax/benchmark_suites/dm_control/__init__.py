@@ -268,7 +268,10 @@ def make(cfg: DictConfig) -> EnvironmentFactory:
         ]:
             task = "swingup_sparse"
         else:
-            task = task_cfg.task
+            if "safe" in task_cfg.task:
+                task = task_cfg.task.replace("safe_", "")
+            else:
+                task = task_cfg.task
         env = DMCWrapper(domain_name, task)
         if "safe" in task_cfg.task:
             env = ConstraintWrapper(env, task_cfg.slider_position_bound)
