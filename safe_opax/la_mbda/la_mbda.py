@@ -11,6 +11,7 @@ from safe_opax.common.learner import Learner
 from safe_opax.la_mbda import rssm
 from safe_opax.la_mbda.exploration import make_exploration
 from safe_opax.la_mbda.make_actor_critic import make_actor_critic
+from safe_opax.la_mbda.multi_reward import MultiRewardBridge
 from safe_opax.la_mbda.replay_buffer import ReplayBuffer
 from safe_opax.la_mbda.sentiment import make_sentiment
 from safe_opax.la_mbda.world_model import WorldModel, evaluate_model, variational_step
@@ -60,6 +61,7 @@ class LaMBDA:
         config: DictConfig,
     ):
         self.config = config
+        num_rewards = 2 if self.config.agent.unsupervised else 1
         self.replay_buffer = ReplayBuffer(
             observation_shape=observation_space.shape,
             action_shape=action_space.shape,
@@ -68,6 +70,7 @@ class LaMBDA:
             sequence_length=config.agent.replay_buffer.sequence_length,
             batch_size=config.agent.replay_buffer.batch_size,
             capacity=config.agent.replay_buffer.capacity,
+            num_rewards=num_rewards,
         )
         self.prng = PRNGSequence(config.training.seed)
         action_dim = int(np.prod(action_space.shape))
@@ -78,6 +81,7 @@ class LaMBDA:
             key=next(self.prng),
             ensemble_size=config.agent.sentiment.ensemble_size,
             initialization_scale=config.agent.sentiment.model_initialization_scale,
+            num_rewards=num_rewards,
             **config.agent.model,
         )
         self.model_learner = Learner(self.model, config.agent.model_optimizer)
@@ -176,17 +180,23 @@ class LaMBDA:
                 )
                 outs.update(exploration_outs)
             else:
+                if self.config.agent.unsupervised:
+                    if self.learn_model():
+                        index = 0
+                    else:
+                        index = -1
+                else:
+                    index = -1
                 outs = self.actor_critic.update(
-                    self.model, initial_states, next(self.prng)
+                    MultiRewardBridge(self.model, index),
+                    initial_states,
+                    next(self.prng),
                 )
             for k, v in outs.items():
                 self.metrics_monitor[k] = v
 
     def update_model(self, batch: TrajectoryData) -> jax.Array:
         features, actions = _prepare_features(batch)
-        learn_reward = not self.should_explore() or (
-            self.should_explore() and not self.config.agent.unsupervised
-        )
         no_dynamics = self.config.agent.unsupervised and not self.learn_model()
         (self.model, self.model_learner.state), (loss, rest) = variational_step(
             features,
@@ -198,8 +208,7 @@ class LaMBDA:
             self.config.agent.beta,
             self.config.agent.free_nats,
             self.config.agent.kl_mix,
-            learn_reward,
-            no_dynamics,
+            no_dymamics=no_dynamics,
         )
         self.metrics_monitor["agent/model/loss"] = float(loss.mean())
         self.metrics_monitor["agent/model/reconstruction"] = float(

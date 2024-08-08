@@ -16,6 +16,7 @@ class ReplayBuffer:
         capacity: int,
         batch_size: int,
         sequence_length: int,
+        num_rewards: int,
     ):
         self.episode_id = 0
         self.dtype = np.float32
@@ -37,10 +38,7 @@ class ReplayBuffer:
             dtype=self.dtype,
         )
         self.reward = np.zeros(
-            (
-                capacity,
-                max_length,
-            ),
+            (capacity, max_length, num_rewards),
             dtype=self.dtype,
         )
         self.cost = np.zeros(
