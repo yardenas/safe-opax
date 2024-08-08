@@ -108,6 +108,12 @@ class LaMBDA:
         self.should_explore = Until(
             config.agent.exploration_steps, environment_steps_per_agent_step
         )
+        learn_model_steps = (
+            config.agent.learn_model_steps
+            if config.agent.learn_model_steps is not None
+            else float("inf")
+        )
+        self.learn_model = Until(learn_model_steps, environment_steps_per_agent_step)
         self.metrics_monitor = MetricsMonitor()
 
     def __call__(
@@ -123,6 +129,7 @@ class LaMBDA:
             else self.actor_critic.actor.act
         )
         self.should_explore.tick()
+        self.learn_model.tick()
         actions, self.state = policy(
             policy_fn,
             self.model,
@@ -180,6 +187,7 @@ class LaMBDA:
         learn_reward = not self.should_explore() or (
             self.should_explore() and not self.config.agent.unsupervised
         )
+        no_dynamics = self.config.agent.unsupervised and not self.learn_model()
         (self.model, self.model_learner.state), (loss, rest) = variational_step(
             features,
             actions,
@@ -191,6 +199,7 @@ class LaMBDA:
             self.config.agent.free_nats,
             self.config.agent.kl_mix,
             learn_reward,
+            no_dynamics,
         )
         self.metrics_monitor["agent/model/loss"] = float(loss.mean())
         self.metrics_monitor["agent/model/reconstruction"] = float(

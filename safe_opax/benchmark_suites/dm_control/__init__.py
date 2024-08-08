@@ -233,7 +233,7 @@ class ConstraintWrapper:
 class CartpoleUnsupervisedWrapper:
     def __init__(self, env: Env):
         self.env = env
-        self._task = self.env.env.env.env.env._env.task
+        self._task = self.env.env.env.env._env.task
         self._reward_fn = self._task._get_reward
 
     def reset(self, *, seed=None, options=None):
@@ -268,7 +268,10 @@ def make(cfg: DictConfig) -> EnvironmentFactory:
         ]:
             task = "swingup_sparse"
         else:
-            task = task_cfg.task
+            if "safe" in task_cfg.task:
+                task = task_cfg.task.replace("safe_", "")
+            else:
+                task = task_cfg.task
         env = DMCWrapper(domain_name, task)
         if "safe" in task_cfg.task:
             env = ConstraintWrapper(env, task_cfg.slider_position_bound)
@@ -300,6 +303,7 @@ ENVIRONMENTS = {
     ("dm_cartpole", "swingup"),
     ("dm_cartpole", "swingup_sparse"),
     ("dm_cartpole", "swingup_sparse_hard"),
+    ("dm_cartpole", "safe_swingup"),
     ("dm_cartpole", "safe_swingup_sparse"),
     ("dm_cartpole", "safe_swingup_sparse_hard"),
     ("dm_humanoid", "stand"),

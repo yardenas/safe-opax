@@ -52,6 +52,7 @@ safety_slack: 0.
 evaluate_model: false
 exploration_strategy: uniform
 exploration_steps: 5000
+learn_model_steps: null
 exploration_reward_scale: 10.0
 unsupervised: false
 reward_scale: 1.
