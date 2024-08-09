@@ -197,7 +197,7 @@ class LaMBDA:
 
     def update_model(self, batch: TrajectoryData) -> jax.Array:
         features, actions = _prepare_features(batch)
-        no_dynamics = self.config.agent.unsupervised and not self.learn_model()
+        inference_only = self.config.agent.unsupervised and not self.learn_model()
         (self.model, self.model_learner.state), (loss, rest) = variational_step(
             features,
             actions,
@@ -208,7 +208,7 @@ class LaMBDA:
             self.config.agent.beta,
             self.config.agent.free_nats,
             self.config.agent.kl_mix,
-            no_dymamics=no_dynamics,
+            inference_only=inference_only,
         )
         self.metrics_monitor["agent/model/loss"] = float(loss.mean())
         self.metrics_monitor["agent/model/reconstruction"] = float(

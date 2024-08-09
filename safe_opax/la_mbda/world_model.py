@@ -257,7 +257,7 @@ def variational_step(
     free_nats: float = 0.0,
     kl_mix: float = 0.8,
     with_reward: bool = True,
-    no_dymamics: bool = False,
+    inference_only: bool = False,
 ) -> tuple[tuple[WorldModel, OptState], tuple[jax.Array, TrainingResults]]:
     def loss_fn(model, static_part=None):
         if static_part is not None:
@@ -296,15 +296,9 @@ def variational_step(
         )
         return reconstruction_loss + beta * kl_loss, aux
 
-    if no_dymamics:
-        diff_model, static_model = partition_dynamics_rewards(model)
-        (loss, rest), model_grads = eqx.filter_value_and_grad(loss_fn, has_aux=True)(
-            diff_model, static_model
-        )
-    else:
-        (loss, rest), model_grads = eqx.filter_value_and_grad(loss_fn, has_aux=True)(
-            model
-        )
+    (loss, rest), model_grads = eqx.filter_value_and_grad(loss_fn, has_aux=True)(model)
+    if inference_only:
+        return (model, opt_state), (loss, rest)
     new_model, new_opt_state = learner.grad_step(model, model_grads, opt_state)
     return (new_model, new_opt_state), (loss, rest)
 
