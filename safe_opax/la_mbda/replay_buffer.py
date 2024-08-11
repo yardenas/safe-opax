@@ -59,6 +59,14 @@ class ReplayBuffer:
         # Discard data if batch size overflows capacity.
         end = min(self.episode_id + batch_size, capacity)
         episode_slice = slice(self.episode_id, end)
+        if trajectory.reward.ndim == 2:
+            trajectory = TrajectoryData(
+                trajectory.observation,
+                trajectory.next_observation,
+                trajectory.action,
+                trajectory.reward[..., None],
+                trajectory.cost,
+            )
         for data, val in zip(
             (self.action, self.reward, self.cost),
             (trajectory.action, trajectory.reward, trajectory.cost),

@@ -171,7 +171,9 @@ class LaMBDA:
             if self.should_explore():
                 if not self.config.agent.unsupervised:
                     outs = self.actor_critic.update(
-                        self.model, initial_states, next(self.prng)
+                        MultiRewardBridge(self.model, 0),
+                        initial_states,
+                        next(self.prng),
                     )
                 else:
                     outs = {}
@@ -233,12 +235,11 @@ class LaMBDA:
 
 @jax.jit
 def _prepare_features(batch: TrajectoryData) -> tuple[rssm.Features, jax.Array]:
-    reward = batch.reward[..., None]
-    terminals = jnp.zeros_like(reward)
+    terminals = jnp.zeros_like(batch.reward)
     features = rssm.Features(
         jnp.asarray(preprocess(batch.next_observation)),
-        jnp.asarray(reward),
-        jnp.asarray(batch.cost[..., None]),
+        jnp.asarray(batch.reward),
+        jnp.asarray(batch.cost),
         jnp.asarray(terminals),
     )
     actions = jnp.asarray(batch.action)
