@@ -4,7 +4,7 @@ defaults:
 
 environment:
   dm_cartpole:
-    task: safe_swingup_sparse_hard
+    task: safe_swingup
 
 training:
   epochs: 100
