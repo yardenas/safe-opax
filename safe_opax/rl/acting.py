@@ -50,7 +50,7 @@ def interact(
                 ), "No support for environments with different ending conditions"
                 np_trajectory = trajectory.as_numpy()
                 step += (
-                    int(np.prod(np_trajectory.reward.shape[:-1]))
+                    int(np.prod(np_trajectory.cost.shape))
                     * environment.action_repeat
                 )
                 if train:
