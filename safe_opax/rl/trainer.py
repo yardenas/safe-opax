@@ -246,8 +246,6 @@ class UnsupervisedTrainer(Trainer):
             assert self.env is not None
             self.env.reset(options={"task": self.test_tasks})
             assert self.agent is not None
-            new_agent = self.make_agent()
-            self.agent.replay_buffer = new_agent.replay_buffer
         if self.step > self.config.training.exploration_steps:
             outs[0].reward_index = 1
         return outs
