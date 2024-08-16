@@ -11,7 +11,6 @@ from safe_opax.rl.trajectory import Trajectory
 class EpochSummary:
     _data: list[list[Trajectory]] = field(default_factory=list)
     cost_boundary: float = 25.0
-    reward_index: int = 0
 
     @property
     def empty(self):
@@ -30,7 +29,7 @@ class EpochSummary:
         stacked_rewards = np.stack(rewards)
         stacked_costs = np.stack(costs)
         return (
-            _objective(stacked_rewards, self.reward_index),
+            _objective(stacked_rewards),
             _objective(stacked_costs),
             _feasibility(stacked_costs, self.cost_boundary),
         )
@@ -51,8 +50,13 @@ class EpochSummary:
         self._data.append(samples)
 
 
-def _objective(rewards: npt.NDArray[Any], index: int = 0) -> float:
-    return float(rewards.sum(2)[..., index].mean())
+def _objective(rewards: npt.NDArray[Any]) -> float:
+    if rewards.ndim == 3:
+        return float(rewards.sum(2).mean())
+    elif rewards.ndim == 4:
+        return rewards.sum(2).mean((0, 1))
+    else:
+        raise ValueError(f"Expected 3 or 4 dimensions, got {rewards.ndim} dimensions")
 
 
 def _feasibility(costs: npt.NDArray[Any], boundary: float) -> float:
