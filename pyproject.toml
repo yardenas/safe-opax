@@ -27,8 +27,8 @@ moviepy = "^1.0.3"
 safe-adaptation-gym = { git = "https://git@github.com/lasgroup/safe-adaptation-gym" }
 jmp = { git = "https://github.com/deepmind/jmp" }
 tensorboard = "^2.16.2"
-torch = {version = "^2.4.0+cpu", source = "pytorch_cpu"}
-torchvision = {version = "^0.19.0+cpu", source = "pytorch_cpu"}
+torch = { version = "^2.4.0+cpu", source = "pytorch_cpu" }
+torchvision = { version = "^0.19.0+cpu", source = "pytorch_cpu" }
 
 
 [[tool.poetry.source]]
@@ -101,4 +101,8 @@ disallow_untyped_defs = false
 disallow_subclassing_any = false
 disallow_untyped_calls = false
 strict_optional = true
-exclude = ["safe_opax/benchmark_suites/humanoid_bench"]
+exclude = "safe_opax/benchmark_suites/humanoid_bench"
+
+[[tool.mypy.overrides]]
+module = ["safe_opax.benchmark_suites.humanoid_bench.*"]
+ignore_errors = true

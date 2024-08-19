@@ -1,4 +1,3 @@
-exclude: "safe_opax/benchmark_suites/humanoid_bench/.*"
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
@@ -28,3 +27,4 @@ repos:
         additional_dependencies:
           - "numpy"
           - "types-tabulate"
+        exclude: "safe_opax/benchmark_suites/humanoid_bench/.*"
