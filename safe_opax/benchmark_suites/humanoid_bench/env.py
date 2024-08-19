@@ -10,7 +10,7 @@ from dm_control.mujoco import index
 from dm_control.mujoco.engine import NamedIndexStructs
 from dm_control.utils import rewards
 
-from humanoid_bench.dmc_wrapper import MjDataWrapper, MjModelWrapper
+from .dmc_wrapper import MjDataWrapper, MjModelWrapper
 
 from .wrappers import (
     SingleReachWrapper,
