@@ -14,9 +14,10 @@ training:
 
 environment:
   safe_adaptation_gym:
-    robot_name: doggo
+    robot_name: point
 
 agent:
   exploration_strategy: opax
   exploration_steps: 1000000
   unsupervised: true
+  learn_model_steps: 1000000
