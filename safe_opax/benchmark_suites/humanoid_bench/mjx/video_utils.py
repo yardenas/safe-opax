@@ -1,6 +1,5 @@
 from glob import glob
 
-import natsort
 import numpy as np
 from moviepy.editor import VideoFileClip
 from safe_opax.benchmark_suites.humanoid_bench.mjx.visualization_utils import make_grid, save_numpy_as_video, save_numpy_as_gif
@@ -61,11 +60,3 @@ def make_grid_video(video_list, ncol, output_name='./output.mp4', speedup=1, **k
         grid_frame = make_grid(videos[:, t], ncol=ncol, padding=5)
         grid_frames.append(grid_frame)
     save_numpy_as_video(np.array(grid_frames), output_name, **kwargs)
-
-
-if __name__ == '__main__':
-    # make_grid_video(glob('./data/debug/*.mp4')[:25], 5)
-    video_dir = './data/local/0908_visual_bc/0908_visual_bc_2022_09_08_09_36_00_0001/eval_200/valid/videos/'
-    video_list = natsort.natsorted(glob(video_dir + '*.mp4'))
-    output_name = video_dir + 'grid.mp4'
-    make_grid_video(video_list, len(video_list) // 2, output_name)
