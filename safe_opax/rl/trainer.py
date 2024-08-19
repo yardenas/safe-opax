@@ -5,6 +5,7 @@ from typing import Optional
 
 import cloudpickle
 from omegaconf import DictConfig
+import numpy as np
 
 from safe_opax import benchmark_suites
 from safe_opax.la_mbda.la_mbda import LaMBDA
@@ -124,8 +125,13 @@ class Trainer:
                 self.config.training.episodes_per_epoch
             )
             objective, cost_return, feasibilty = summary.metrics
-            metrics = {
-                "train/objective": objective,
+            if isinstance(objective, np.ndarray):
+                metrics = {
+                    f"train/objective_{i}": val for i, val in enumerate(objective)
+                }
+            else:
+                metrics = {"train/objective": objective}
+            metrics |= {
                 "train/cost_return": cost_return,
                 "train/feasibility": feasibilty,
                 "train/fps": steps / wall_time,
@@ -246,8 +252,6 @@ class UnsupervisedTrainer(Trainer):
             assert self.env is not None
             self.env.reset(options={"task": self.test_tasks})
             assert self.agent is not None
-            new_agent = self.make_agent()
-            self.agent.replay_buffer = new_agent.replay_buffer
         return outs
 
 

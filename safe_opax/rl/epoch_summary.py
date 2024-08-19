@@ -51,7 +51,12 @@ class EpochSummary:
 
 
 def _objective(rewards: npt.NDArray[Any]) -> float:
-    return float(rewards.sum(2).mean())
+    if rewards.ndim == 3:
+        return float(rewards.sum(2).mean())
+    elif rewards.ndim == 4:
+        return rewards.sum(2).mean((0, 1))
+    else:
+        raise ValueError(f"Expected 3 or 4 dimensions, got {rewards.ndim} dimensions")
 
 
 def _feasibility(costs: npt.NDArray[Any], boundary: float) -> float:

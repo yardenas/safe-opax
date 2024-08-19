@@ -118,6 +118,7 @@ class WorldModel(eqx.Module):
         hidden_size: int,
         ensemble_size: int,
         initialization_scale: float,
+        num_rewards: int,
         *,
         key,
     ):
@@ -140,10 +141,15 @@ class WorldModel(eqx.Module):
         self.encoder = Encoder(key=encoder_key)
         state_dim = stochastic_size + deterministic_size
         self.image_decoder = ImageDecoder(state_dim, image_shape, key=image_decoder_key)
-        # 1 + 1 = cost + reward
+        # num_rewards + 1 = cost + reward
         # width = 400, layers = 2
         self.reward_cost_decoder = eqx.nn.MLP(
-            state_dim, 1 + 1, 400, 3, key=reward_cost_decoder_key, activation=jnn.elu
+            state_dim,
+            num_rewards + 1,
+            400,
+            3,
+            key=reward_cost_decoder_key,
+            activation=jnn.elu,
         )
 
     def __call__(
@@ -224,7 +230,7 @@ class WorldModel(eqx.Module):
         out = nest_vmap(self.reward_cost_decoder, 2)(ensemble_trajectories.flatten())
         # Ensemble axis before time axis.
         out, priors = _ensemble_first((out, priors))
-        reward, cost = out[..., 0], out[..., -1]
+        reward, cost = out[..., :-1], out[..., -1]
         out = Prediction(trajectory.flatten(), reward, cost)
         return out, priors
 
@@ -251,7 +257,7 @@ def variational_step(
     free_nats: float = 0.0,
     kl_mix: float = 0.8,
     with_reward: bool = True,
-    no_dymamics: bool = False,
+    inference_only: bool = False,
 ) -> tuple[tuple[WorldModel, OptState], tuple[jax.Array, TrainingResults]]:
     def loss_fn(model, static_part=None):
         if static_part is not None:
@@ -269,13 +275,13 @@ def variational_step(
         if not with_reward:
             reward = jnp.zeros_like(features.reward)
             _, pred_cost = jnp.split(inference_result.reward_cost, 2, -1)
-            reward_cost = jnp.concatenate([reward, pred_cost], -1)
+            reward_cost = jnp.concatenate([reward, pred_cost[..., None]], -1)
         else:
             reward = features.reward
             reward_cost = inference_result.reward_cost
         reward_cost_logprobs = logprobs(
             reward_cost,
-            jnp.concatenate([reward, features.cost], -1),
+            jnp.concatenate([reward, features.cost[..., None]], -1),
         )
         image_logprobs = logprobs(inference_result.image, features.observation)
         reconstruction_loss = -reward_cost_logprobs - image_logprobs
@@ -290,15 +296,9 @@ def variational_step(
         )
         return reconstruction_loss + beta * kl_loss, aux
 
-    if no_dymamics:
-        diff_model, static_model = partition_dynamics_rewards(model)
-        (loss, rest), model_grads = eqx.filter_value_and_grad(loss_fn, has_aux=True)(
-            diff_model, static_model
-        )
-    else:
-        (loss, rest), model_grads = eqx.filter_value_and_grad(loss_fn, has_aux=True)(
-            model
-        )
+    (loss, rest), model_grads = eqx.filter_value_and_grad(loss_fn, has_aux=True)(model)
+    if inference_only:
+        return (model, opt_state), (loss, rest)
     new_model, new_opt_state = learner.grad_step(model, model_grads, opt_state)
     return (new_model, new_opt_state), (loss, rest)
 

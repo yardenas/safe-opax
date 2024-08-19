@@ -236,23 +236,17 @@ class CartpoleUnsupervisedWrapper:
         self._task = self.env.env.env.env._env.task
         self._reward_fn = self._task._get_reward
 
-    def reset(self, *, seed=None, options=None):
-        """Resets environment and returns flattened initial state."""
-        if options is not None and "task" in options:
-            assert options["task"] == "keepdown" or options["task"] == "swingup"
-            if options["task"] == "keepdown":
+        def _get_reward(physics):
+            angle_down = tolerance(physics.pole_angle_cosine(), (-1, -0.995)).prod()
+            return angle_down
 
-                def _get_reward(physics, sparse):
-                    cart_in_bounds = tolerance(physics.cart_position(), (-0.25, 0.25))
-                    angle_down = tolerance(
-                        physics.pole_angle_cosine(), (-1, -0.995)
-                    ).prod()
-                    return angle_down * cart_in_bounds
+        self._get_reward = _get_reward
 
-                self._task._get_reward = _get_reward
-            else:
-                self._task._get_reward = self._reward_fn
-        return self.env.reset(seed=seed, options=options)
+    def step(self, action):
+        observation, reward, terminal, truncated, info = self.env.step(action)
+        down_reward = self._get_reward(self.env.physics)
+        reward = np.stack([down_reward, reward])
+        return observation, reward, terminal, truncated, info
 
     def __getattr__(self, name):
         return getattr(self.env, name)
