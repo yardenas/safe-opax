@@ -37,15 +37,11 @@ def make(cfg: DictConfig) -> EnvironmentFactory:
             env = ImageObservation(
                 env,
                 task_cfg.image_observation.image_size,
-                task_cfg.image_observation.image_format,
-                render_kwargs={
-                    "camera_id": 0
-                }
+                task_cfg.image_observation.image_format
             )
         else:
             from gymnasium.wrappers.flatten_observation import FlattenObservation
 
             env = FlattenObservation(env)
         return env
-
     return make_env

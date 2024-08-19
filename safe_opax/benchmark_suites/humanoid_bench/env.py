@@ -8,7 +8,6 @@ from gymnasium.envs.mujoco import MujocoEnv
 from gymnasium.spaces import Box
 from dm_control.mujoco import index
 from dm_control.mujoco.engine import NamedIndexStructs
-from dm_control.utils import rewards
 
 from .dmc_wrapper import MjDataWrapper, MjModelWrapper
 
