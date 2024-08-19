@@ -1,7 +1,7 @@
 defaults:
   - _self_
   - agent: la_mbda
-  - environment: safe_adaptation_gym
+  - environment: humanoid
 
 hydra:
   run:
