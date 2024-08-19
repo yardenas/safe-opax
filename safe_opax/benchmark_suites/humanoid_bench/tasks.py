@@ -1,8 +1,4 @@
 import numpy as np
-import gymnasium as gym
-from gymnasium.spaces import Box
-from dm_control.utils import rewards
-import mujoco
 
 class Task:
     qpos0_robot = {}
@@ -21,8 +17,6 @@ class Task:
 
         if env is None:
             return
-
-        self._env.viewer = self._env.mujoco_renderer._get_viewer(self._env.render_mode)
 
     @property
     def observation_space(self):
@@ -68,6 +62,4 @@ class Task:
         return obs, reward, terminated, False, info
 
     def render(self):
-        return self._env.mujoco_renderer.render(
-            self._env.render_mode, self._env.camera_id, self._env.camera_name
-        )
+        return self._env.physics.render(camera_id=self._env.camera_name)

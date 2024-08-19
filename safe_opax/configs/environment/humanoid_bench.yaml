@@ -1,6 +1,6 @@
 humanoid_bench:
   task: pole
   image_observation:
-    enabled: false
+    enabled: true
     image_size: [64, 64]
     image_format: "channels_first"

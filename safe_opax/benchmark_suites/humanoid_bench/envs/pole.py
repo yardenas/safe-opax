@@ -1,8 +1,4 @@
-import os
-
 import numpy as np
-import mujoco
-import gymnasium as gym
 from gymnasium.spaces import Box
 from dm_control.utils import rewards
 
