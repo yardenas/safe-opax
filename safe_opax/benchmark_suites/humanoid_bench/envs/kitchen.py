@@ -1,7 +1,7 @@
 import numpy as np
 from gymnasium.spaces import Box
 
-from humanoid_bench.tasks import Task
+from safe_opax.benchmark_suites.humanoid_bench.tasks import Task
 
 OBS_ELEMENT_INDICES = {
     "bottom burner": np.array([2, 3]),

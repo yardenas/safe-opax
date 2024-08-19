@@ -1,4 +1,4 @@
-from humanoid_bench.mjx.envs.base import Humanoid
+from safe_opax.benchmark_suites.humanoid_bench.mjx.envs.base import Humanoid
 from jax import numpy as jp
 import jax
 from brax.envs.base import State

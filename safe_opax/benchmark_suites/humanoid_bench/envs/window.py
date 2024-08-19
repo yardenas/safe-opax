@@ -3,7 +3,7 @@ import gymnasium as gym
 from gymnasium.spaces import Box
 from dm_control.utils import rewards
 
-from humanoid_bench.tasks import Task
+from safe_opax.benchmark_suites.humanoid_bench.tasks import Task
 
 _STAND_HEIGHT = 1.65
 

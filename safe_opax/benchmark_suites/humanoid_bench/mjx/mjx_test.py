@@ -3,7 +3,7 @@ import mujoco.viewer
 import numpy as np
 import time
 from .flax_to_torch import TorchModel, TorchPolicy
-from humanoid_bench.mjx.envs.cpu_env import HumanoidNumpyEnv
+from safe_opax.benchmark_suites.humanoid_bench.mjx.envs.cpu_env import HumanoidNumpyEnv
 import tqdm
 import cv2
 from .video_utils import save_numpy_as_video, make_grid_video_from_numpy

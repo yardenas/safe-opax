@@ -3,7 +3,7 @@ import gymnasium as gym
 from gymnasium.spaces import Box
 from dm_control.utils import rewards
 
-from humanoid_bench.tasks import Task
+from safe_opax.benchmark_suites.humanoid_bench.tasks import Task
 
 # Height of head above which stand reward is 1.
 _STAND_HEIGHT = 1.65

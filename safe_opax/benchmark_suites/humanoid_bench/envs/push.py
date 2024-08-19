@@ -5,8 +5,8 @@ import mujoco
 import gymnasium as gym
 from gymnasium.spaces import Box
 
-from humanoid_bench.tasks import Task
-from humanoid_bench.mjx.flax_to_torch import TorchModel, TorchPolicy
+from safe_opax.benchmark_suites.humanoid_bench.tasks import Task
+from safe_opax.benchmark_suites.humanoid_bench.mjx.flax_to_torch import TorchModel, TorchPolicy
 
 
 class Push(Task):

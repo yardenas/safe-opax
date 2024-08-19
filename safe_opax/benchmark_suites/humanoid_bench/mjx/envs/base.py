@@ -3,7 +3,7 @@ import mujoco
 from jax import numpy as jp
 
 from brax.envs.base import Env, MjxEnv, State
-from humanoid_bench.mjx.envs.utils import perturbed_pipeline_step
+from safe_opax.benchmark_suites.humanoid_bench.mjx.envs.utils import perturbed_pipeline_step
 
 class Humanoid(MjxEnv):
 

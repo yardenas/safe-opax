@@ -3,7 +3,7 @@ from glob import glob
 import natsort
 import numpy as np
 from moviepy.editor import VideoFileClip
-from humanoid_bench.mjx.visualization_utils import make_grid, save_numpy_as_video, save_numpy_as_gif
+from safe_opax.benchmark_suites.humanoid_bench.mjx.visualization_utils import make_grid, save_numpy_as_video, save_numpy_as_gif
 
 
 def video_pad_time(videos):

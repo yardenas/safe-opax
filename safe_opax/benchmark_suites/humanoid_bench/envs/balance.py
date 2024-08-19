@@ -5,7 +5,7 @@ from dm_control.utils import rewards
 
 _STAND_HEIGHT = 1.65
 
-from humanoid_bench.tasks import Task
+from safe_opax.benchmark_suites.humanoid_bench.tasks import Task
 
 
 class BalanceBase(Task):

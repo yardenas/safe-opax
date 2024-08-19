@@ -4,7 +4,7 @@ import mujoco
 
 from .mjx.flax_to_torch import TorchModel, TorchPolicy
 from .tasks import Task
-# from humanoid_bench.env import HumanoidEnv
+# from safe_opax.benchmark_suites.humanoid_bench.env import HumanoidEnv
 
 def get_body_idxs(model):
     # Filter out hand and wrist joints

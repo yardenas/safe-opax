@@ -16,8 +16,8 @@ from wrappers import (
     ClipAction,
 )
 from brax import envs
-from humanoid_bench.mjx.envs.reach_continual import HumanoidReachContinual
-from humanoid_bench.mjx.envs.reach_continual_two_hands import HumanoidReachContinualTwoHands
+from safe_opax.benchmark_suites.humanoid_bench.mjx.envs.reach_continual import HumanoidReachContinual
+from safe_opax.benchmark_suites.humanoid_bench.mjx.envs.reach_continual_two_hands import HumanoidReachContinualTwoHands
 
 from flax_to_torch import flax_to_torch, TorchModel, TorchPolicy
 
