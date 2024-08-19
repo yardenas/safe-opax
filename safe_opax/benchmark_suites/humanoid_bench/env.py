@@ -1,13 +1,13 @@
 import os
 
 import numpy as np
-from dm_control import mujoco
+import mujoco
 import gymnasium as gym
 from gymnasium.envs import register
+from gymnasium.envs.mujoco import MujocoEnv
 from gymnasium.spaces import Box
 from dm_control.mujoco import index
 from dm_control.mujoco.engine import NamedIndexStructs
-from gymnasium.utils import seeding
 
 from .dmc_wrapper import MjDataWrapper, MjModelWrapper
 
@@ -96,7 +96,7 @@ TASKS = {
 }
 
 
-class HumanoidEnv:
+class HumanoidEnv(MujocoEnv, gym.utils.EzPickle):
     metadata = {
         "render_modes": ["human", "rgb_array", "depth_array"],
         "render_fps": 50,
@@ -114,36 +114,47 @@ class HumanoidEnv:
         **kwargs,
     ):
         assert robot and control and task, f"{robot} {control} {task}"
+        gym.utils.EzPickle.__init__(self, metadata=self.metadata)
+
         asset_path = os.path.join(os.path.dirname(__file__), "assets")
         model_path = f"envs/{robot}_{control}_{task}.xml"
         model_path = os.path.join(asset_path, model_path)
 
         self.robot = ROBOTS[robot](self)
         task_info = TASKS[task](self.robot, None, **kwargs)
-        self.camera_name = task_info.camera_name
+
         self.obs_wrapper = kwargs.get("obs_wrapper", None)
         if self.obs_wrapper is not None:
             self.obs_wrapper = kwargs.get("obs_wrapper", "False").lower() == "true"
         else:
             self.obs_wrapper = False
+
         self.blocked_hands = kwargs.get("blocked_hands", None)
         if self.blocked_hands is not None:
             self.blocked_hands = kwargs.get("blocked_hands", "False").lower() == "true"
         else:
             self.blocked_hands = False
-        self.physics = mujoco.Physics.from_xml_path(model_path)
-        self.data = self.physics.data.ptr
-        self.model = self.physics.model.ptr
-        bounds = self.model.actuator_ctrlrange.copy().astype(np.float32)
-        low, high = bounds.T
-        dummy = Box(low=low, high=high, dtype=np.float32)
-        self.action_high = dummy.high
-        self.action_low = dummy.low
-        self.action_space = Box(
-            low=-1, high=1, shape=dummy.shape, dtype=np.float32
+
+        MujocoEnv.__init__(
+            self,
+            model_path,
+            frame_skip=task_info.frame_skip,
+            observation_space=task_info.observation_space,
+            default_camera_config=DEFAULT_CAMERA_CONFIG,
+            render_mode=render_mode,
+            width=width,
+            height=height,
+            camera_name=task_info.camera_name,
         )
+
+        self.action_high = self.action_space.high
+        self.action_low = self.action_space.low
+        self.action_space = Box(
+            low=-1, high=1, shape=self.action_space.shape, dtype=np.float32
+        )
+
         self.task = TASKS[task](self.robot, self, **kwargs)
-        self.observation_space = self.task.observation_space
+
         if self.blocked_hands:
             self.task = BlockedHandsLocoWrapper(self.task, **kwargs)
 
@@ -166,6 +177,7 @@ class HumanoidEnv:
             else:
                 raise ValueError(f"Unknown policy_type: {kwargs['policy_type']}")
 
+
         if self.obs_wrapper:
             # Note that observation wrapper is not compatible with hierarchical policy
             self.task = ObservationWrapper(self.task, **kwargs)
@@ -179,6 +191,7 @@ class HumanoidEnv:
         self.randomness = randomness
         if isinstance(self.task, (BookshelfHard, BookshelfSimple, Kitchen, Cube)):
             self.randomness = 0
+
         # Set up named indexing.
         data = MjDataWrapper(self.data)
         model = MjModelWrapper(self.model)
@@ -187,8 +200,7 @@ class HumanoidEnv:
             model=index.struct_indexer(model, "mjmodel", axis_indexers),
             data=index.struct_indexer(data, "mjdata", axis_indexers),
         )
-        self._np_random = None
-        self.render_mode = "rgb_array"
+
         assert self.robot.dof + self.task.dof == len(data.qpos), (
             self.robot.dof,
             self.task.dof,
@@ -215,42 +227,10 @@ class HumanoidEnv:
 
     def seed(self, seed=None):
         np.random.seed(seed)
-        self._np_random, seed = seeding.np_random(seed)
 
     def render(self):
         return self.task.render()
 
-    @property
-    def unwrapped(self):
-        return self
-
-    def reset(
-        self,
-        *,
-        seed = None,
-        options = None,
-    ):
-        mujoco.mj_resetData(self.physics.model.ptr, self.physics.data.ptr)
-        self.model = self.physics.model.ptr
-        self.data = self.physics.data.ptr
-        ob = self.reset_model()
-        if seed is not None:
-            self.seed(seed)
-        info = {}
-        return ob, info
-
-    def set_state(self, qpos, qvel):
-        self.data.qpos[:] = np.copy(qpos)
-        self.data.qvel[:] = np.copy(qvel)
-        if self.model.na == 0:
-            self.data.act[:] = None
-        mujoco.mj_forward(self.model, self.data)
-
-    @property
-    def np_random(self):
-        if self._np_random is None:
-            self.seed()
-        return self._np_random
 
 if __name__ == "__main__":
     register(
