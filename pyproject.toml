@@ -8,7 +8,9 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.10,<3.12"
 equinox = "^0.11.1"
-jaxlib = {url = "https://storage.googleapis.com/jax-releases/cuda11/jaxlib-0.4.23+cuda11.cudnn86-cp310-cp310-manylinux2014_x86_64.whl", extras = ["cuda11_pip"]}
+jaxlib = { url = "https://storage.googleapis.com/jax-releases/cuda11/jaxlib-0.4.23+cuda11.cudnn86-cp310-cp310-manylinux2014_x86_64.whl", extras = [
+    "cuda11_pip",
+] }
 optax = "^0.1.7"
 hydra-core = "^1.3.2"
 jax = "^0.4.23"
@@ -22,14 +24,22 @@ dm-env = "^1.6"
 distrax = "^0.1.5"
 pillow = "^10.2.0"
 moviepy = "^1.0.3"
-safe-adaptation-gym = {git = "https://git@github.com/lasgroup/safe-adaptation-gym"}
-jmp = {git = "https://github.com/deepmind/jmp"}
+safe-adaptation-gym = { git = "https://git@github.com/lasgroup/safe-adaptation-gym" }
+jmp = { git = "https://github.com/deepmind/jmp" }
 tensorboard = "^2.16.2"
+torch = { version = "^2.4.0+cpu", source = "pytorch_cpu" }
+torchvision = { version = "^0.19.0+cpu", source = "pytorch_cpu" }
 
 
 [[tool.poetry.source]]
 name = "PyPI"
 priority = "primary"
+
+
+[[tool.poetry.source]]
+name = "pytorch_cpu"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.7.0"
@@ -74,6 +84,7 @@ exclude = [
     "dist",
     "node_modules",
     "venv",
+    "safe_opax/benchmark_suites/humanoid_bench",
 ]
 
 [tool.ruff.format]
@@ -90,3 +101,8 @@ disallow_untyped_defs = false
 disallow_subclassing_any = false
 disallow_untyped_calls = false
 strict_optional = true
+exclude = "safe_opax/benchmark_suites/humanoid_bench"
+
+[[tool.mypy.overrides]]
+module = ["safe_opax.benchmark_suites.humanoid_bench.*"]
+ignore_errors = true
