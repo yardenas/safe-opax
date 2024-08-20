@@ -1,3 +1,4 @@
+import os
 from omegaconf import DictConfig
 
 from safe_opax.benchmark_suites.utils import get_domain_and_task
@@ -13,7 +14,8 @@ def make(cfg: DictConfig) -> EnvironmentFactory:
 
         _, task_cfg = get_domain_and_task(cfg)
         env_name = "h1hand-pole-v0"
-        env = HumanoidEnv(robot="h1hand", control="pos", task="pole")
+        data_path = os.path.join(os.path.dirname(__file__), "data")
+        env = HumanoidEnv(robot="h1hand", control="pos", task="pole", policy_type="reach_single", policy_path=data_path + "/reach_one_hand")
         if task_cfg.image_observation.enabled:
             env = ImageObservation(
                 env,
