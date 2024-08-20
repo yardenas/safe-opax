@@ -13,7 +13,7 @@ def make(cfg: DictConfig) -> EnvironmentFactory:
 
         _, task_cfg = get_domain_and_task(cfg)
         env_name = "h1hand-pole-v0"
-        env = HumanoidEnv(robot="h1hand", control="pos", task="pole")
+        env = HumanoidEnv(robot="h1hand", control="reach", task="pole")
         if task_cfg.image_observation.enabled:
             env = ImageObservation(
                 env,
