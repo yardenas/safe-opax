@@ -208,7 +208,8 @@ class HumanoidEnv(MujocoEnv, gym.utils.EzPickle):
         )
 
     def step(self, action):
-        return self.task.step(action)
+        obs, rew, _, truncated, info = self.task.step(action)
+        return obs, rew, False, truncated, info
 
     def reset_model(self):
         mujoco.mj_resetDataKeyframe(self.model, self.data, self.keyframe)
