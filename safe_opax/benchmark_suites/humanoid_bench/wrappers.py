@@ -2,6 +2,8 @@ from gymnasium.spaces import Box, Dict
 import numpy as np
 import mujoco
 
+from safe_opax.benchmark_suites.humanoid_bench.mjx.policy import Model, Policy
+
 from .mjx.flax_to_torch import TorchModel, TorchPolicy
 from .tasks import Task
 # from safe_opax.benchmark_suites.humanoid_bench.env import HumanoidEnv
@@ -102,8 +104,8 @@ class SingleReachWrapper(BaseWrapper):
 
         self.max_delta = max_delta
 
-        reaching_model = TorchModel(55, 19)
-        self.reaching_policy = TorchPolicy(reaching_model)
+        reaching_model = Model(55, 19)
+        self.reaching_policy = Policy(reaching_model)
         self.reaching_policy.load(policy_path, mean=mean_path, var=var_path)
 
         self.body_idxs, self.body_vel_idxs = get_body_idxs(self._env.model)
