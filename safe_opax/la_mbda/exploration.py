@@ -50,6 +50,7 @@ class OpaxExploration(Exploration):
             ),
         )
         self.reward_scale = config.agent.exploration_reward_scale
+        self.epistemic_scale = config.agent.exploration_epistemic_scale
 
     def update(
         self,
@@ -57,7 +58,7 @@ class OpaxExploration(Exploration):
         initial_states: jax.Array,
         key: jax.Array,
     ) -> dict[str, float]:
-        model = OpaxBridge(model, self.reward_scale)
+        model = OpaxBridge(model, self.reward_scale, self.epistemic_scale)
         outs = self.actor_critic.update(model, initial_states, key)
         outs = {f"{_append_opax(k)}": v for k, v in outs.items()}
         return outs
@@ -76,7 +77,6 @@ class UniformExploration(Exploration):
     def __init__(self, action_dim: int):
         self.action_dim = action_dim
         self.policy = lambda _, key: jax.random.uniform(key, (self.action_dim,))
-
 
     def get_policy(self) -> Policy:
         return self.policy
