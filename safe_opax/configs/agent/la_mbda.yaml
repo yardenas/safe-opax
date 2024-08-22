@@ -54,6 +54,6 @@ exploration_strategy: uniform
 exploration_steps: 5000
 learn_model_steps: null
 exploration_reward_scale: 10.0
-exploration_epistemic_scale: 10.0
+exploration_epistemic_scale: 1.
 unsupervised: false
 reward_scale: 1.
