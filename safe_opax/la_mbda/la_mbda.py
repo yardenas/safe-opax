@@ -147,7 +147,7 @@ class LaMBDA:
         add_to_buffer(
             self.replay_buffer,
             trajectory,
-            self.config.training.scale_reward,
+            reward_scale=self.config.training.scale_reward,
         )
         self.state = jax.tree_map(lambda x: jnp.zeros_like(x), self.state)
 
