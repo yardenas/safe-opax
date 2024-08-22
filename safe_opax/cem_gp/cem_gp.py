@@ -6,11 +6,14 @@ from gymnasium.spaces import Box
 from omegaconf import DictConfig
 import gpjax as gpx
 
+from safe_opax.cem_gp.gp_model import GPModel
 from safe_opax.rl import metrics as m
 from safe_opax.cem_gp import cem
-from safe_opax.rl.trajectory import TrajectoryData
-from safe_opax.rl.types import FloatArray, RolloutFn
-from safe_opax.rl.utils import normalize
+from safe_opax.rl.epoch_summary import EpochSummary
+from safe_opax.rl.trajectory import TrajectoryData, Transition
+from safe_opax.rl.types import FloatArray, Report, RolloutFn
+from safe_opax.rl.utils import PRNGSequence, normalize
+from safe_opax.cem_gp.rewards import tolerance
 
 
 @eqx.filter_jit
@@ -19,7 +22,7 @@ def policy(
     sample: RolloutFn,
     horizon: int,
     init_guess: jax.Array,
-    key: jax.random.KeyArray,
+    key: jax.Array,
     cem_config: cem.CEMConfig,
 ):
     # vmap over batches of observations (e.g., solve cem separately for
@@ -47,6 +50,7 @@ class CEMGP:
         )
         self.config = config
         self.action_space = action_space
+        self.prng = PRNGSequence(config.training.seed)
 
     def __call__(self, observation: FloatArray, train: bool = False) -> FloatArray:
         normalized_obs = normalize(
@@ -56,7 +60,7 @@ class CEMGP:
         )
         horizon = self.config.agent.plan_horizon
         if self.model is not None:
-            init_guess = jnp.zeros((self.plan, self.action_space.shape[-1]))
+            init_guess = self.plan
             action = policy(
                 normalized_obs,
                 self.model.sample,
@@ -67,10 +71,13 @@ class CEMGP:
             )
             self.plan = np.asarray(action)
         else:
-            # TODO (yarden): make this nicer (uniform with scale as parameter)
-            return np.repeat(
-                self.action_space.sample()[None], self.config.training.parallel_envs
-            ) * self.config.agent.initial_action_scale
+            return (
+                np.tile(
+                    self.action_space.sample()[:, None],
+                    (self.config.training.parallel_envs, 1),
+                )
+                * self.config.agent.initial_action_scale
+            )
         return self.plan[:, 0]
 
     def observe(self, trajectory: TrajectoryData) -> None:
@@ -86,6 +93,20 @@ class CEMGP:
             self.data = gpx.Dataset(*new_data)
         else:
             self.data += gpx.Dataset(*new_data)
+        self.model = GPModel(
+            self.data.X,  # type: ignore
+            self.data.y,  # type: ignore
+            cartpole_reward,
+            lambda obs: cartpole_cost(
+                obs, self.config.environment.dm_cartpole.slider_position_bound
+            ),
+        )
+
+    def observe_transition(self, transition: Transition) -> None:
+        pass
+
+    def report(self, summary: EpochSummary, epoch: int, step: int) -> Report:
+        return Report({})
 
 
 def _prepare_data(trajectory: TrajectoryData, normalizer):
@@ -95,4 +116,18 @@ def _prepare_data(trajectory: TrajectoryData, normalizer):
     normalized_next_obs = normalize_fn(trajectory.next_observation)
     x = np.concatenate([normalized_obs, trajectory.action], axis=-1)
     y = normalized_next_obs
-    return x, y
+    flat = lambda x: x.reshape((-1, x.shape[-1]))
+    return flat(x), flat(y)
+
+
+def cartpole_reward(observation):
+    cart_position = observation[..., 0]
+    cart_in_bounds = tolerance(cart_position, (-0.25, 0.25))
+    pole_angle_cosine = observation[..., 1]
+    angle_in_bounds = tolerance(pole_angle_cosine, (0.995, 1)).prod()
+    return angle_in_bounds * cart_in_bounds
+
+
+def cartpole_cost(observation, slider_position_bound):
+    cart_position = observation[..., 0]
+    return jnp.where(jnp.abs(cart_position) >= slider_position_bound)

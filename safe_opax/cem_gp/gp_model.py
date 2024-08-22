@@ -28,14 +28,7 @@ class GPModel(eqx.Module):
         )
         likelihood = gpx.likelihoods.Gaussian(num_datapoints=x.shape[0])
         posterior = prior * likelihood
-        posteriors = []
-        for i in range(y.shape[-1]):
-            p, _ = gpx.fit_scipy(
-                model=posterior,
-                train_data=gpx.Dataset(x, y[:, i : i + 1]),
-                objective=lambda p, d: -gpx.objectives.conjugate_mll(p, d),
-            )
-            posteriors.append(p)
+        posteriors = compute_posteriors(x, y, posterior)
         self.posteriors = posteriors
         self.reward_fn = reward_fn
         self.cost_fn = cost_fn
@@ -100,3 +93,16 @@ def _multioutput_predict(x_train, y_train, x_test, posteriors):
 def _pytrees_stack(pytrees, axis=0):
     results = jax.tree_map(lambda *values: jnp.stack(values, axis=axis), *pytrees)
     return results
+
+
+@eqx.filter_jit
+def compute_posteriors(x, y, posterior):
+    posteriors = []
+    for i in range(y.shape[-1]):
+        p, _ = gpx.fit_scipy(
+            model=posterior,
+            train_data=gpx.Dataset(x, y[:, i : i + 1]),
+            objective=lambda p, d: -gpx.objectives.conjugate_mll(p, d),
+        )
+        posteriors.append(p)
+    return posteriors

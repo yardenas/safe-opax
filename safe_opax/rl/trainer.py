@@ -8,6 +8,7 @@ from omegaconf import DictConfig
 import numpy as np
 
 from safe_opax import benchmark_suites
+from safe_opax.cem_gp.cem_gp import CEMGP
 from safe_opax.la_mbda.la_mbda import LaMBDA
 from safe_opax.lambda_dalal.la_mbda_dalal import LaMBDADalal
 from safe_opax.rl import acting, episodic_async_env
@@ -58,7 +59,7 @@ class Trainer:
         self,
         config: DictConfig,
         make_env: EnvironmentFactory,
-        agent: LaMBDA | LaMBDADalal | None = None,
+        agent: LaMBDA | LaMBDADalal | CEMGP | None = None,
         start_epoch: int = 0,
         step: int = 0,
         seeds: PRNGSequence | None = None,
@@ -89,7 +90,7 @@ class Trainer:
             self.agent = self.make_agent()
         return self
 
-    def make_agent(self) -> LaMBDA | LaMBDADalal:
+    def make_agent(self) -> LaMBDA | LaMBDADalal | CEMGP:
         assert self.env is not None
         if self.config.agent.name == "lambda":
             agent = LaMBDA(
@@ -103,6 +104,12 @@ class Trainer:
                 self.env.action_space,
                 self.config,
             )
+        elif self.config.agent.name == "cem_gp":
+            agent = CEMGP(
+                self.env.observation_space,
+                self.env.action_space,
+                self.config,
+            )  # type: ignore
         else:
             raise NotImplementedError(f"Unknown agent type: {self.config.agent.name}")
         return agent

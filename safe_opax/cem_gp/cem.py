@@ -3,7 +3,8 @@ from typing import Callable, TypedDict
 import jax
 import jax.numpy as jnp
 
-from smbrl.types import RolloutFn
+from safe_opax.rl.types import RolloutFn
+
 
 ObjectiveFn = Callable[[jax.Array], jax.Array]
 
@@ -12,7 +13,7 @@ def make_objective(
     rollout_fn: RolloutFn,
     horizon: int,
     initial_state: jax.Array,
-    key: jax.random.KeyArray,
+    key: jax.Array,
 ) -> ObjectiveFn:
     def objective(candidates):
         sample = lambda x: rollout_fn(horizon, initial_state, key, x)
@@ -26,7 +27,7 @@ def make_objective(
 def solve(
     objective_fn: ObjectiveFn,
     initial_guess: jax.Array,
-    key: jax.random.PRNGKeyArray,
+    key: jax.Array,
     num_particles: int,
     num_iters: int,
     num_elite: int,
@@ -75,7 +76,7 @@ def policy(
     rollout_fn: RolloutFn,
     horizon: int,
     init_guess: jax.Array,
-    key: jax.random.KeyArray,
+    key: jax.Array,
     cem_config: CEMConfig,
 ) -> jax.Array:
     objective = make_objective(rollout_fn, horizon, observation, key)

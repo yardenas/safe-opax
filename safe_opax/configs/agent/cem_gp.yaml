@@ -1,2 +1,8 @@
 name: cem_gp
 initial_action_scale: 0.1
+plan_horizon: 50
+cem:
+  num_particles: 100
+  num_iters: 10
+  num_elite: 10
+  stop_cond: 0.1
