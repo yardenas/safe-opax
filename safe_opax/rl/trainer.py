@@ -213,6 +213,8 @@ class UnsupervisedTrainer(Trainer):
         super().__init__(config, make_env, agent, start_epoch, step, seeds)
         self.test_task_name = self.config.training.test_task_name
         self.train_task_name = self.config.training.train_task_name
+        # After a few iterations, we realized `test_tasks` are not useful, as we just use multiple rewards.
+        # just ignore this.
         self.test_tasks: list[Task] | None = None
 
     def __enter__(self):
@@ -233,7 +235,6 @@ class UnsupervisedTrainer(Trainer):
                 get_task(self.test_task_name)
                 for _ in range(self.config.training.parallel_envs)
             ]
-            # self.env.reset(options={"task": self.test_tasks})
         return self
 
     def _run_training_epoch(
@@ -250,7 +251,6 @@ class UnsupervisedTrainer(Trainer):
                 for _ in range(self.config.training.parallel_envs)
             ]
             assert self.env is not None
-            # self.env.reset(options={"task": self.test_tasks})
             assert self.agent is not None
         return outs
 
