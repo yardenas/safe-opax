@@ -26,3 +26,4 @@ agent:
   sentiment:
     constraint_pessimism: 50.0
   reward_index: -1
+  zero_shot_steps: 100
