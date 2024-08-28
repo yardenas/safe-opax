@@ -186,7 +186,7 @@ class LaMBDA:
                     if self.learn_model():
                         index = 0
                     else:
-                        index = -1
+                        index = self.config.agent.reward_index
                 else:
                     index = -1
                 outs = self.actor_critic.update(

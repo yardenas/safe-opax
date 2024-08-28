@@ -20,5 +20,6 @@ agent:
   exploration_steps: 1000000
   unsupervised: true
   learn_model_steps: 1000000
-  exploration_epistemic_scale: 15.0
-  exploration_reward_scale: 25.0
+  exploration_epistemic_scale: 25.0
+  exploration_reward_scale: 0.1
+  reward_index: -1

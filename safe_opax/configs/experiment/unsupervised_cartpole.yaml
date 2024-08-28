@@ -25,3 +25,4 @@ agent:
     init_stddev: 0.025
   sentiment:
     constraint_pessimism: 50.0
+  reward_index: -1
