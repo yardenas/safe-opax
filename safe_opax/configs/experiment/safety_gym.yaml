@@ -8,4 +8,5 @@ training:
   action_repeat: 2
 
 agent:
-  exploration_steps: 0
+  exploration_steps: 50000
+  exploration_strategy: opax
