@@ -32,7 +32,7 @@ class Policy:
         if self.mean is not None and self.var is not None:
             obs = (obs - self.mean) / jnp.sqrt(self.var + 1e-8)
         obs = jnp.array(obs, dtype=jnp.float32)
-        action = self.model(obs)
+        action = eqx.filter_jit(self.model)(obs)
         return action
 
     def load(self, path, mean=None, var=None):
