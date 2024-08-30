@@ -119,6 +119,7 @@ class LaMBDA:
         )
         self.learn_model = Until(learn_model_steps, environment_steps_per_agent_step)
         self.metrics_monitor = MetricsMonitor()
+        self.zero_shot = False
 
     def __call__(
         self,
@@ -156,6 +157,13 @@ class LaMBDA:
 
     def update(self):
         total_steps = self.config.agent.update_steps
+        if (
+            not self.should_explore()
+            and self.config.agent.unsupervised
+            and not self.learn_model()
+            and not self.zero_shot
+        ):
+            total_steps = self.config.agent.zero_shot_steps
         for batch in self.replay_buffer.sample(total_steps):
             batch = TrajectoryData(
                 batch.observation,
@@ -186,7 +194,8 @@ class LaMBDA:
                     if self.learn_model():
                         index = 0
                     else:
-                        index = -1
+                        self.zero_shot = True
+                        index = self.config.agent.reward_index
                 else:
                     index = -1
                 outs = self.actor_critic.update(
