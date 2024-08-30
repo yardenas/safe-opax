@@ -1,5 +1,6 @@
 import json
 import jax
+import numpy as np
 import jax.numpy as jnp
 import equinox as eqx
 
@@ -37,8 +38,8 @@ class Policy:
     def load(self, path, mean=None, var=None):
         self.model, _ = load_model(path)
         if mean is not None and var is not None:
-            self.mean = jnp.load(mean)[0]
-            self.var = jnp.load(var)[0]
+            self.mean = np.load(mean)[0]
+            self.var = np.load(var)[0]
 
     def __call__(self, obs):
         return self.step(obs)
