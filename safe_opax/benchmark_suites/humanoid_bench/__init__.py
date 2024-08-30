@@ -1,10 +1,29 @@
 import os
+from gymnasium import RewardWrapper
 from omegaconf import DictConfig
 
 from safe_opax.benchmark_suites.utils import get_domain_and_task
 from safe_opax.rl.types import EnvironmentFactory
 from safe_opax.rl.wrappers import ImageObservation
 
+class ConstraintWrapper(RewardWrapper):
+    def __init__(self, env):
+        self.env = env
+
+    def step(self, action):
+        observation, reward, terminal, truncated, info = self.env.step(action)
+        small_control = info["small_control"]
+        stand_reward = info["stand_reward"]
+        move = info["move"]
+        reward = (
+            0.5 * (small_control * stand_reward) + 0.5 * move
+        )
+        collision_discount = info["collision_discount"]
+        info["cost"] = collision_discount < 1.
+        return observation, reward, terminal, truncated, info
+
+    def __getattr__(self, name):
+        return getattr(self.env, name)
 
 
 
@@ -23,6 +42,7 @@ def make(cfg: DictConfig) -> EnvironmentFactory:
                         mean_path=reach_data_path + "/mean.npy",
                         var_path=reach_data_path + "/var.npy",
                         )
+        env = ConstraintWrapper(env)
         if task_cfg.image_observation.enabled:
             env = ImageObservation(
                 env,
