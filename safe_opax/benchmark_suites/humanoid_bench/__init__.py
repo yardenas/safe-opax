@@ -19,7 +19,7 @@ def make(cfg: DictConfig) -> EnvironmentFactory:
                         control="pos",
                         task="pole",
                         policy_type="reach_single",
-                        policy_path=reach_data_path + "/torch_model.pt",
+                        policy_path=reach_data_path + "/model.ckpt",
                         mean_path=reach_data_path + "/mean.npy",
                         var_path=reach_data_path + "/var.npy",
                         )
