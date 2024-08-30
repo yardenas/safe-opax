@@ -1,4 +1,5 @@
 from gymnasium.spaces import Box, Dict
+import jax
 import numpy as np
 import mujoco
 
@@ -104,7 +105,7 @@ class SingleReachWrapper(BaseWrapper):
 
         self.max_delta = max_delta
 
-        reaching_model = Model(55, 19)
+        reaching_model = Model(55, 19, key=jax.random.PRNGKey(0))
         self.reaching_policy = Policy(reaching_model)
         self.reaching_policy.load(policy_path, mean=mean_path, var=var_path)
 
