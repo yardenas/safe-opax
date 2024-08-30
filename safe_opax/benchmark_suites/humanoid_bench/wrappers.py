@@ -5,7 +5,6 @@ import mujoco
 
 from safe_opax.benchmark_suites.humanoid_bench.mjx.policy import Model, Policy
 
-from .mjx.flax_to_torch import TorchModel, TorchPolicy
 from .tasks import Task
 # from safe_opax.benchmark_suites.humanoid_bench.env import HumanoidEnv
 
