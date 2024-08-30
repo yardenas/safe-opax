@@ -6,6 +6,7 @@ training:
   epochs: 100
   safe: true
   action_repeat: 2
+  parallel_envs: 1
 
 agent:
   exploration_steps: 0
