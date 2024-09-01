@@ -80,9 +80,7 @@ def apply_mixed_precision(
                 if index is not None:
                     name = argspec.args[index]
                 if name in target_inputs and not _all_is_array(value):
-                    raise ValueError(
-                        f"{name} must be a pytree of eqx.Array or np.ndarray"
-                    )
+                    raise ValueError(f"{name} must be a pytree of np.ndarray")
                 if name in target_modules and not isinstance(value, eqx.Module):
                     raise ValueError(f"{name} must be an eqx.Module")
 

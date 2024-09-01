@@ -32,6 +32,7 @@ wandb:
 
 jit: true
 mixed_precision: params=float32,compute=float16,output=float32
+enable_x64: false
 
 training:
   trainer: rl

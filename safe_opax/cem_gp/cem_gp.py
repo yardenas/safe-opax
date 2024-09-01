@@ -28,9 +28,9 @@ def policy(
     # vmap over batches of observations (e.g., solve cem separately for
     # each individual environment)
     cem_per_env = jax.vmap(
-        lambda o: cem.policy(o, sample, horizon, init_guess, key, cem_config)
+        lambda o, i: cem.policy(o, sample, horizon, i, key, cem_config)
     )
-    return cem_per_env(observation)
+    return cem_per_env(observation, init_guess)
 
 
 class CEMGP:

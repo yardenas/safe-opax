@@ -24,6 +24,8 @@ def main(cfg):
         _LOG.info("Starting a new experiment.")
         trainer = start_fresh(cfg)
     with trainer, jax.disable_jit(not cfg.jit), mixed_precision(cfg.mixed_precision):
+        if cfg.enable_x64:
+            jax.config.update("jax_enable_x64", True)
         trainer.train()
     _LOG.info("Done training.")
 
