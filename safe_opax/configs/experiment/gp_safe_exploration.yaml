@@ -1,0 +1,23 @@
+# @package _global_
+defaults:
+  - override /environment: dm_cartpole
+  - override /agent: cem_gp
+
+
+enable_x64: true
+
+environment:
+  dm_cartpole:
+    image_observation:
+      enabled: false
+
+training:
+  epochs: 20
+  safe: true
+  action_repeat: 2
+  safety_budget: 100
+
+agent:
+  exploration_strategy: opax
+  exploration_steps: 1000000
+  parallel_envs: 1
