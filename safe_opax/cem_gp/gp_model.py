@@ -5,7 +5,7 @@ import gpjax as gpx
 import equinox as eqx
 from jmp import get_policy
 
-from safe_opax.common.mixed_precision import apply_dtype, apply_mixed_precision
+from safe_opax.common.mixed_precision import apply_mixed_precision
 from safe_opax.rl.types import Policy, Prediction, ShiftScale
 
 
@@ -97,21 +97,19 @@ def _pytrees_stack(pytrees, axis=0):
     return results
 
 
-@eqx.filter_jit
 @apply_mixed_precision(
     policy=get_policy("params=float32,compute=float64,output=float32"),
     target_input_names=["x", "y"],
 )
 def compute_posteriors(x, y, posterior):
-    posterior_f64 = apply_dtype(posterior, jnp.float64)
     posteriors = []
     for i in range(y.shape[-1]):
         p, _ = gpx.fit_scipy(
-            model=posterior_f64,
+            model=posterior,
             train_data=gpx.Dataset(x, y[:, i : i + 1]),
             objective=lambda p, d: -gpx.objectives.conjugate_mll(p, d),
             max_iters=1,
-            verbose=False
+            verbose=False,
         )
         posteriors.append(p)
     return posteriors

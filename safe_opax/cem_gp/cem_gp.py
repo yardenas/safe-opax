@@ -130,4 +130,4 @@ def cartpole_reward(observation):
 
 def cartpole_cost(observation, slider_position_bound):
     cart_position = observation[..., 0]
-    return jnp.where(jnp.abs(cart_position) >= slider_position_bound)
+    return jnp.where(jnp.abs(cart_position) >= slider_position_bound, 1.0, 0.0)

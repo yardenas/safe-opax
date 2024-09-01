@@ -17,7 +17,7 @@ def make_objective(
 ) -> ObjectiveFn:
     def objective(candidates):
         sample = lambda x: rollout_fn(horizon, initial_state, key, x)
-        preds = jax.vmap(sample)(candidates)
+        preds, dist = jax.vmap(sample)(candidates)
         assert preds.reward.ndim == 2
         return preds.reward.mean(axis=1)
 
