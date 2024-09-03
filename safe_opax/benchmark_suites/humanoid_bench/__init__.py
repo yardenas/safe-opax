@@ -2,6 +2,7 @@ import os
 import numpy as np
 from gymnasium import RewardWrapper
 from omegaconf import DictConfig
+from gymnasium.spaces import Box
 
 from safe_opax.benchmark_suites.utils import get_domain_and_task
 from safe_opax.rl.types import EnvironmentFactory
@@ -30,12 +31,14 @@ class ConstraintWrapper(RewardWrapper):
 class HumanoidImageObservation(ImageObservation):
     def __init__(self, env, image_size, image_format="channels_first"):
         super().__init__(env, image_size, image_format)
+        size = image_size + (6,) if image_format == "chw" else (6,) + image_size
+        self.observation_space = Box(0, 255, size, np.float32)
 
     def observation(self, observation):
         third_person = super().observation(observation)
         left = observation["image_left_eye"]
         left = self.preprocess(left)
-        return np.concatenate([third_person, left], axis=-1)
+        return np.concatenate([third_person, left], axis=0)
 
 def make(cfg: DictConfig) -> EnvironmentFactory:
     def make_env():
