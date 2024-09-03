@@ -1,4 +1,5 @@
 import os
+import numpy as np
 from gymnasium import RewardWrapper
 from omegaconf import DictConfig
 
@@ -26,6 +27,15 @@ class ConstraintWrapper(RewardWrapper):
         return getattr(self.env, name)
 
 
+class HumanoidImageObservation(ImageObservation):
+    def __init__(self, env, image_size, image_format="channels_first"):
+        super().__init__(env, image_size, image_format)
+
+    def observation(self, observation):
+        third_person = super().observation(observation)
+        left = observation["image_left_eye"]
+        left = self.preprocess(left)
+        return np.concatenate([third_person, left], axis=-1)
 
 def make(cfg: DictConfig) -> EnvironmentFactory:
     def make_env():
@@ -41,10 +51,12 @@ def make(cfg: DictConfig) -> EnvironmentFactory:
                         policy_path=reach_data_path + "/model.ckpt",
                         mean_path=reach_data_path + "/mean.npy",
                         var_path=reach_data_path + "/var.npy",
+                        sensors="image",
+                        obs_wrapper="true",
                         )
         env = ConstraintWrapper(env)
         if task_cfg.image_observation.enabled:
-            env = ImageObservation(
+            env = HumanoidImageObservation(
                 env,
                 task_cfg.image_observation.image_size,
                 task_cfg.image_observation.image_format
