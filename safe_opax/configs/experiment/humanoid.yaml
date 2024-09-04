@@ -3,7 +3,7 @@ defaults:
   - override /environment: humanoid_bench
 
 training:
-  epochs: 100
+  epochs: 1000
   safe: true
   action_repeat: 2
   parallel_envs: 1
