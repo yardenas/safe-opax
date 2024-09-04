@@ -4,7 +4,7 @@ defaults:
 
 environment:
   safe_adaptation_gym:
-    task: go_to_goal_scarce
+    task: press_buttons_scarce
 
 training:
   epochs: 100
