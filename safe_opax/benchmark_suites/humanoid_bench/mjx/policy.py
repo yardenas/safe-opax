@@ -27,12 +27,13 @@ class Policy:
         self.model = model
         self.mean = None
         self.var = None
+        self.forward = self.model
 
     def step(self, obs):
         if self.mean is not None and self.var is not None:
             obs = (obs - self.mean) / jnp.sqrt(self.var + 1e-8)
         obs = jnp.array(obs, dtype=jnp.float32)
-        action = eqx.filter_jit(self.model)(obs)
+        action = self.forward(obs)
         return action
 
     def load(self, path, mean=None, var=None):
@@ -40,6 +41,9 @@ class Policy:
         if mean is not None and var is not None:
             self.mean = np.load(mean)[0]
             self.var = np.load(var)[0]
+        with jax.default_device(jax.devices("cpu")[0]):
+            forward = eqx.filter_jit(self.model)
+            self.forward = forward
 
     def __call__(self, obs):
         return self.step(obs)
