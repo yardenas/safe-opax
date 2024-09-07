@@ -45,11 +45,11 @@ def make(cfg: DictConfig) -> EnvironmentFactory:
         from .env import HumanoidEnv
 
         _, task_cfg = get_domain_and_task(cfg)
-        env_name = "h1hand-pole-v0"
         reach_data_path = os.path.join(os.path.dirname(__file__), "data", "reach_one_hand")
-        env = HumanoidEnv(robot="h1hand",
+        robot, task = task_cfg.task.split("-")
+        env = HumanoidEnv(robot=robot,
                         control="pos",
-                        task="pole",
+                        task=task,
                         policy_type="reach_single",
                         policy_path=reach_data_path + "/model.ckpt",
                         mean_path=reach_data_path + "/mean.npy",
