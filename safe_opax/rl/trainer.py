@@ -251,6 +251,7 @@ class UnsupervisedTrainer(Trainer):
                 for _ in range(self.config.training.parallel_envs)
             ]
             assert self.env is not None
+            self.env.reset(options={"task": self.test_tasks})
             assert self.agent is not None
         return outs
 
