@@ -235,6 +235,8 @@ class UnsupervisedTrainer(Trainer):
                 get_task(self.test_task_name)
                 for _ in range(self.config.training.parallel_envs)
             ]
+            assert self.env is not None
+            self.env.reset(options={"task": self.test_tasks})
         return self
 
     def _run_training_epoch(
