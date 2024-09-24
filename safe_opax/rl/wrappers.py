@@ -44,6 +44,9 @@ class ImageObservation(ObservationWrapper):
 
     def observation(self, observation):
         image = self.env.render(**self._render_kwargs)
+        return self.preprocess(image)
+
+    def preprocess(self, image):
         image = Image.fromarray(image)
         if image.size != self.image_size:
             image = image.resize(self.image_size, Image.BILINEAR)

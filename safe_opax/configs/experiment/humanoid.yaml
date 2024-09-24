@@ -1,0 +1,12 @@
+# @package _global_
+defaults:
+  - override /environment: humanoid_bench
+
+training:
+  epochs: 1000
+  safe: true
+  action_repeat: 2
+  parallel_envs: 1
+
+agent:
+  exploration_steps: 0

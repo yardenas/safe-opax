@@ -1,6 +1,5 @@
 <mujoco model="h1">
   <compiler angle="radian" meshdir="../h1/assets" autolimits="true"/>
-
   <default>
     <default class="h1">
       <geom type="mesh"/>
@@ -12,7 +11,7 @@
         <geom group="3" mass="0" density="0"/>
       </default>
       <site size="0.001" rgba="0.5 0.5 0.5 0.3" group="4"/>
-            <default class="hip">
+      <default class="hip">
         <position forcerange="-200 200" kp="200" kv="5"/>
       </default>
       <default class="knee">
@@ -35,11 +34,9 @@
       </default>
     </default>
   </default>
-
   <asset>
     <material name="black" rgba="0.1 0.1 0.1 1"/>
     <material name="white" rgba="1 1 1 1"/>
-
     <mesh file="pelvis.stl"/>
     <mesh file="left_hip_yaw_link.stl"/>
     <mesh file="left_hip_roll_link.stl"/>
@@ -62,7 +59,6 @@
     <mesh file="right_elbow_link.stl"/>
     <mesh file="logo_link.stl"/>
   </asset>
-
   <worldbody>
     <light mode="targetbodycom" target="torso_link" pos="1 0 2.5"/>
     <body name="pelvis" pos="0 0 1.1" childclass="h1">
@@ -142,7 +138,7 @@
         <geom class="visual" mesh="torso_link"/>
         <site name="head" class="visual" size="0.01" pos="0 0 0.7" rgba="1 1 1 1"/>
         <geom class="visual" material="white" mesh="logo_link"/>
-        <site name="imu" size="0.01" pos="-0.04452 -0.01891 0.27756"/>
+        <site name="imu" size="0.01" pos="-0.04452 0. 0.27756"/>
         <body name="left_shoulder_pitch_link" pos="0.0055 0.15535 0.42999" quat="0.976296 0.216438 0 0">
           <inertial pos="0.005045 0.053657 -0.015715" quat="0.814858 0.579236 -0.0201072 -0.00936488" mass="1.033"
             diaginertia="0.00129936 0.000987113 0.000858198"/>
@@ -196,7 +192,6 @@
       </body>
     </body>
   </worldbody>
-
   <actuator>
     <position name="left_hip_yaw" joint="left_hip_yaw" ctrlrange="-0.43 0.43" class="hip" />
     <position name="left_hip_roll" joint="left_hip_roll" ctrlrange="-0.43 0.43" class="hip" />
@@ -218,7 +213,6 @@
     <position name="right_shoulder_yaw" joint="right_shoulder_yaw" ctrlrange="-4.45 1.3" class="shoulder2" />
     <position name="right_elbow" joint="right_elbow" ctrlrange="-1.25 2.61" class="elbow" />
   </actuator>
-  
   <sensor>
     <touch name="left_foot_sensor" site="left_foot"/>
     <touch name="right_foot_sensor" site="right_foot"/>

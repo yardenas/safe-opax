@@ -1,8 +1,10 @@
 from gymnasium.spaces import Box, Dict
+import jax
 import numpy as np
 import mujoco
 
-from .mjx.flax_to_torch import TorchModel, TorchPolicy
+from safe_opax.benchmark_suites.humanoid_bench.mjx.policy import Model, Policy
+
 from .tasks import Task
 # from safe_opax.benchmark_suites.humanoid_bench.env import HumanoidEnv
 
@@ -102,8 +104,8 @@ class SingleReachWrapper(BaseWrapper):
 
         self.max_delta = max_delta
 
-        reaching_model = TorchModel(55, 19)
-        self.reaching_policy = TorchPolicy(reaching_model)
+        reaching_model = Model(55, 19, key=jax.random.PRNGKey(0))
+        self.reaching_policy = Policy(reaching_model)
         self.reaching_policy.load(policy_path, mean=mean_path, var=var_path)
 
         self.body_idxs, self.body_vel_idxs = get_body_idxs(self._env.model)
@@ -115,6 +117,10 @@ class SingleReachWrapper(BaseWrapper):
             self.act_idxs = list(range(15)) + list(range(16, 20))
         else:
             self.act_idxs = list(range(19))
+
+    def reset_model(self):
+        self.last_target = np.zeros(3)
+        return super().reset_model()
 
     def get_last_target(self):
         return self.last_target
@@ -237,6 +243,12 @@ class DoubleReachBaseWrapper(BaseWrapper):
             self.act_idxs = list(range(15)) + list(range(16, 20))
         else:
             self.act_idxs = list(range(19))
+
+    def reset_model(self):
+        self.last_target_left = np.zeros(3)
+        self.last_target_right = np.zeros(3)
+        self.last_coords = np.zeros(3)
+        return super().reset_model()
 
     def unnormalize_target(self, target):
         return target * self.max_delta
