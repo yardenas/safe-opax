@@ -1,5 +1,5 @@
 humanoid_bench:
-  task: pole
+  task: h1hand-pole-v0
   image_observation:
     enabled: true
     image_size: [64, 64]

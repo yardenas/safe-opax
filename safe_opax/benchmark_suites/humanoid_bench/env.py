@@ -19,7 +19,7 @@ from .wrappers import (
     ObservationWrapper,
 )
 
-from .robots import H1, H1Hand, H1Touch, H1Strong, G1
+from .robots import H1, H1Hand, H1SimpleHand, H1Touch, H1Strong, G1
 from .envs.cube import Cube
 from .envs.bookshelf import BookshelfSimple, BookshelfHard
 from .envs.window import Window
@@ -59,7 +59,7 @@ DEFAULT_CAMERA_CONFIG = {
 }
 DEFAULT_RANDOMNESS = 0.01
 
-ROBOTS = {"h1": H1, "h1hand": H1Hand, "h1strong": H1Strong, "h1touch": H1Touch, "g1": G1}
+ROBOTS = {"h1": H1, "h1hand": H1Hand, "h1strong": H1Strong, "h1touch": H1Touch, "g1": G1, "h1simplehand": H1SimpleHand}
 TASKS = {
     "stand": Stand,
     "walk": Walk,
@@ -208,7 +208,8 @@ class HumanoidEnv(MujocoEnv, gym.utils.EzPickle):
         )
 
     def step(self, action):
-        return self.task.step(action)
+        obs, rew, _, truncated, info = self.task.step(action)
+        return obs, rew, False, truncated, info
 
     def reset_model(self):
         mujoco.mj_resetDataKeyframe(self.model, self.data, self.keyframe)

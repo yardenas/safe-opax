@@ -22,13 +22,14 @@ class Encoder(eqx.Module):
 
     def __init__(
         self,
+        image_channels: int,
         *,
         key: jax.Array,
     ):
         kernels = [4, 4, 4, 4]
         depth = 32
         keys = jax.random.split(key, len(kernels))
-        in_channels = 3
+        in_channels = image_channels
         self.cnn_layers = []
         for i, (key, kernel) in enumerate(zip(keys, kernels)):
             out_channels = 2**i * depth
@@ -80,7 +81,9 @@ class ImageDecoder(eqx.Module):
                 )
             else:
                 self.cnn_layers.append(
-                    eqx.nn.ConvTranspose2d(in_channels, 3, kernel, 2, key=key)
+                    eqx.nn.ConvTranspose2d(
+                        in_channels, output_shape[0], kernel, 2, key=key
+                    )
                 )
             in_channels = out_channels
         self.output_shape = output_shape
@@ -138,7 +141,7 @@ class WorldModel(eqx.Module):
             initialization_scale,
             key=cell_key,
         )
-        self.encoder = Encoder(key=encoder_key)
+        self.encoder = Encoder(image_channels=image_shape[0], key=encoder_key)
         state_dim = stochastic_size + deterministic_size
         self.image_decoder = ImageDecoder(state_dim, image_shape, key=image_decoder_key)
         # num_rewards + 1 = cost + reward
