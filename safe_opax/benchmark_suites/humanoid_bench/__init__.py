@@ -29,8 +29,8 @@ class ConstraintWrapper(RewardWrapper):
 
 
 class HumanoidImageObservation(ImageObservation):
-    def __init__(self, env, image_size, image_format="channels_first"):
-        super().__init__(env, image_size, image_format)
+    def __init__(self, env, image_size, image_format="channels_first", *, render_kwargs=None):
+        super().__init__(env, image_size, image_format, render_kwargs=render_kwargs)
         size = image_size + (6,) if image_format == "chw" else (6,) + image_size
         self.observation_space = Box(0, 255, size, np.float32)
 
@@ -46,7 +46,7 @@ def make(cfg: DictConfig) -> EnvironmentFactory:
 
         _, task_cfg = get_domain_and_task(cfg)
         reach_data_path = os.path.join(os.path.dirname(__file__), "data", "reach_one_hand")
-        robot, task = task_cfg.task.split("-")
+        robot, task = task_cfg.task.split("-", 1)
         env = HumanoidEnv(robot=robot,
                         control="pos",
                         task=task,
