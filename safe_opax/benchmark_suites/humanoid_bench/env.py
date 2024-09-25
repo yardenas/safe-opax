@@ -1,4 +1,5 @@
 import os
+import logging
 
 import numpy as np
 import mujoco
@@ -94,6 +95,8 @@ TASKS = {
     "insert_small": Insert,  # This is not an error
     "powerlift": Powerlift,
 }
+
+_LOG = logging.getLogger(__name__)
 
 
 class HumanoidEnv(MujocoEnv, gym.utils.EzPickle):
@@ -208,7 +211,14 @@ class HumanoidEnv(MujocoEnv, gym.utils.EzPickle):
         )
 
     def step(self, action):
-        obs, rew, _, truncated, info = self.task.step(action)
+        try:
+            obs, rew, _, truncated, info = self.task.step(action)
+        except Exception as e:
+            obs = self.reset()
+            rew = 0.
+            truncated = False
+            info = {}
+            _LOG.warning("Error in step: %s", e)
         return obs, rew, False, truncated, info
 
     def reset_model(self):
