@@ -59,10 +59,10 @@ def make(cfg: DictConfig) -> EnvironmentFactory:
                         )
         env = ConstraintWrapper(env)
         if task_cfg.image_observation.enabled:
-            env = HumanoidImageObservation(
+            env = ImageObservation(
                 env,
                 task_cfg.image_observation.image_size,
-                task_cfg.image_observation.image_format
+                task_cfg.image_observation.image_format,
             )
         else:
             from gymnasium.wrappers.flatten_observation import FlattenObservation

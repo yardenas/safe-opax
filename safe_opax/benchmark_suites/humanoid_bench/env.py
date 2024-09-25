@@ -144,7 +144,7 @@ class HumanoidEnv(MujocoEnv, gym.utils.EzPickle):
             render_mode=render_mode,
             width=width,
             height=height,
-            camera_name=task_info.camera_name,
+            camera_name="cam_maze",
         )
 
         self.action_high = self.action_space.high
