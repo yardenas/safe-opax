@@ -8,8 +8,8 @@ training:
   safe: true
   action_repeat: 2
   exploration_steps: 300000
-  train_task_name: go_to_goal_sim
-  test_task_name: go_to_goal
+  train_task_name: go_to_goal
+  test_task_name: go_to_goal_damping
 
 environment:
   safe_adaptation_gym:
