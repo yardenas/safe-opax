@@ -20,7 +20,7 @@ class ConstraintWrapper(RewardWrapper):
         reward = (
             0.5 * (small_control * stand_reward) + 0.5 * move
         )
-        collision_discount = info["collision_discount"]
+        collision_discount = info.get("collision_discount", 0.)
         info["cost"] = collision_discount < 1.
         return observation, reward, terminal, truncated, info
 
