@@ -10,3 +10,5 @@ training:
 agent:
   exploration_steps: 500000
   exploration_strategy: opax
+  sentiment:
+    constraint_pessimism: 0.001
