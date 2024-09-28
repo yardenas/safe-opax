@@ -212,7 +212,12 @@ class HumanoidEnv(MujocoEnv, gym.utils.EzPickle):
 
     def step(self, action):
         try:
-            obs, rew, _, truncated, info = self.task.step(action)
+            obs, rew, terminated, truncated, info = self.task.step(action)
+            if terminated:
+                obs = self.reset()
+                rew = 0.
+                truncated = False
+                info = {}
         except Exception as e:
             obs = self.reset()
             rew = 0.

@@ -59,7 +59,6 @@ class Task:
         obs = self.get_obs()
         reward, reward_info = self.get_reward()
         terminated, terminated_info = self.get_terminated()
-
         info = {"per_timestep_reward": reward, **reward_info, **terminated_info}
         return obs, reward, terminated, False, info
 
