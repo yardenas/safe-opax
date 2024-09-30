@@ -14,9 +14,9 @@ class ConstraintWrapper(RewardWrapper):
 
     def step(self, action):
         observation, reward, terminal, truncated, info = self.env.step(action)
-        small_control = info["small_control"]
-        stand_reward = info["stand_reward"]
-        move = info["move"]
+        small_control = info.get("small_control", 0)
+        stand_reward = info.get("stand_reward", 0)
+        move = info.get("move", 0)
         reward = (
             0.5 * (small_control * stand_reward) + 0.5 * move
         )
