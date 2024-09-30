@@ -9,4 +9,5 @@ training:
   parallel_envs: 5
 
 agent:
-  exploration_steps: 0
+  exploration_steps: 500000
+  exploration_strategy: opax
