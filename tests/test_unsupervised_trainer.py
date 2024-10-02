@@ -43,4 +43,4 @@ def test_epoch(trainer):
     with trainer as trainer:
         with patch.object(trainer.env, "reset", wraps=trainer.env.reset) as mock:
             trainer.train(1)
-    assert mock.call_count == 3
+    assert mock.call_count == 4
