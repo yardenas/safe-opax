@@ -2,13 +2,17 @@
 defaults:
   - override /environment: safe_adaptation_gym
 
+environment:
+  safe_adaptation_gym:
+    task: press_buttons_scarce
+
 training:
   epochs: 100
   safe: true
   action_repeat: 2
 
 agent:
-  exploration_steps: 500000
   exploration_strategy: opax
-  sentiment:
-    constraint_pessimism: 0.001
+  exploration_steps: 1500000
+  exploration_epistemic_scale: 25.0
+  exploration_reward_scale: 0.1

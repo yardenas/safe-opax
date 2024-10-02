@@ -1,4 +1,5 @@
 import os
+import logging
 
 import numpy as np
 import mujoco
@@ -95,6 +96,8 @@ TASKS = {
     "powerlift": Powerlift,
 }
 
+_LOG = logging.getLogger(__name__)
+
 
 class HumanoidEnv(MujocoEnv, gym.utils.EzPickle):
     metadata = {
@@ -144,7 +147,7 @@ class HumanoidEnv(MujocoEnv, gym.utils.EzPickle):
             render_mode=render_mode,
             width=width,
             height=height,
-            camera_name=task_info.camera_name,
+            camera_name="cam_maze",
         )
 
         self.action_high = self.action_space.high
@@ -208,7 +211,19 @@ class HumanoidEnv(MujocoEnv, gym.utils.EzPickle):
         )
 
     def step(self, action):
-        obs, rew, _, truncated, info = self.task.step(action)
+        try:
+            obs, rew, terminated, truncated, info = self.task.step(action)
+            if terminated:
+                obs = self.reset()
+                rew = 0.
+                truncated = False
+                info = {}
+        except Exception as e:
+            obs = self.reset()
+            rew = 0.
+            truncated = False
+            info = {}
+            _LOG.warning("Error in step: %s", e)
         return obs, rew, False, truncated, info
 
     def reset_model(self):

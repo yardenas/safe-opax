@@ -32,7 +32,7 @@ class Policy:
     def step(self, obs):
         if self.mean is not None and self.var is not None:
             obs = (obs - self.mean) / jnp.sqrt(self.var + 1e-8)
-        obs = jnp.array(obs, dtype=jnp.float32)
+        obs = jax.device_put(obs.astype(np.float32), device=jax.devices("cpu")[0])
         action = self.forward(obs)
         return action
 
