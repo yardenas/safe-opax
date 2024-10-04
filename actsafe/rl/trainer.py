@@ -9,7 +9,6 @@ import numpy as np
 
 from actsafe import benchmark_suites
 from actsafe.la_mbda.la_mbda import LaMBDA
-from actsafe.lambda_dalal.la_mbda_dalal import LaMBDADalal
 from actsafe.rl import acting, episodic_async_env
 from actsafe.rl.epoch_summary import EpochSummary
 from actsafe.rl.logging import StateWriter, TrainingLogger
@@ -58,7 +57,7 @@ class Trainer:
         self,
         config: DictConfig,
         make_env: EnvironmentFactory,
-        agent: LaMBDA | LaMBDADalal | None = None,
+        agent: LaMBDA | None = None,
         start_epoch: int = 0,
         step: int = 0,
         seeds: PRNGSequence | None = None,
@@ -89,16 +88,10 @@ class Trainer:
             self.agent = self.make_agent()
         return self
 
-    def make_agent(self) -> LaMBDA | LaMBDADalal:
+    def make_agent(self) -> LaMBDA:
         assert self.env is not None
         if self.config.agent.name == "lambda":
             agent = LaMBDA(
-                self.env.observation_space,
-                self.env.action_space,
-                self.config,
-            )
-        elif self.config.agent.name == "lambda_dalal":
-            agent = LaMBDADalal(
                 self.env.observation_space,
                 self.env.action_space,
                 self.config,
@@ -205,7 +198,7 @@ class UnsupervisedTrainer(Trainer):
         self,
         config: DictConfig,
         make_env: EnvironmentFactory,
-        agent: LaMBDA | LaMBDADalal | None = None,
+        agent: LaMBDA | None = None,
         start_epoch: int = 0,
         step: int = 0,
         seeds: PRNGSequence | None = None,
