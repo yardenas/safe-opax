@@ -1,7 +1,7 @@
 ---
 layout: ../layouts/Layout.astro
-title: Academic Project Page Template
-description: Simple project page template for your research paper, built with Astro and Tailwind CSS
+title: "ActSafe: Active Exploration with Safety Constraints for Reinforcement Learning"
+description: How to explore dynamic environments safely?
 favicon: /favicon.svg
 thumbnail: /screenshot.png
 ---
@@ -21,7 +21,7 @@ import SmallCaps from "../components/SmallCaps.astro";
 import Splat from "../components/Splat.tsx"
 
 import CodeBlock from "../components/CodeBlock.astro";
-export const components = {pre: CodeBlock}
+export const components = { pre: CodeBlock }
 
 import outside from "../assets/outside.mp4";
 import transformer from "../assets/transformer.webp";
@@ -30,46 +30,49 @@ import transformer from "../assets/transformer.webp";
   title={frontmatter.title}
   authors={[
     {
-      name: "Roman Hauksson",
-      url: "https://roman.technology",
-      institution: "Independent",
-      notes: ["*", "†"],
+      name: "Yarden As",
+      url: "https://yas.pub",
+      institution: "ETH Zurich",
+      notes: ["*"],
     },
     {
-      name: "Author Two",
-      institution: "Institution Two",
-      notes: ["*", "†"],
+      name: "Bhavya Sukhija",
+      url: "https://sukhijab.github.io/",
+      institution: "ETH Zurich",
+      notes: ["*"],
     },
     {
-      name: "Author Three",
-      institution: "Institution Three",
-      notes: ["†"],
+      name: "Lenart Treven",
+      url: "https://lenarttreven.github.io/",
+      institution: "ETH Zurich",
     },
     {
-      name: "Author Four",
-      institution: "Institution Four",
+      name: "Carmelo Sferrazza",
+      url: "https://sferrazza.cc/",
+      institution: "UC Berkeley",
+    },
+    {
+      name: "Stelian Coros",
+      url: "https://crl.ethz.ch/people/coros/index.html",
+      institution: "ETH Zurich",
+    },
+    {
+      name: "Andreas Krause",
+      url: "https://las.inf.ethz.ch/krausea",
+      institution: "ETH Zurich",
     },
   ]}
-  conference="Conference Name"
+  conference="Preprint"
   notes={[
     {
       symbol: "*",
-      text: "author note one",
-    },
-    {
-      symbol: "†",
-      text: "author note two",
+      text: "Equal Contribution",
     },
   ]}
   links={[
     {
-      name: "Paper",
-      url: "",
-      icon: "fa-solid:file-pdf",
-    },
-    {
       name: "Code",
-      url: "https://github.com/RomanHauksson/academic-project-astro-template",
+      url: "https://github.com/yardenas/actsafe",
       icon: "mdi:github",
     },
     {
@@ -84,44 +87,4 @@ import transformer from "../assets/transformer.webp";
 
 ## Abstract
 
-This is a live demo for a template you can use to create a simple project page for your research paper. See the code for the template and instructions on how to use it yourself [here](https://github.com/RomanHauksson/academic-project-astro-template). It's made with the [Astro web framework](https://astro.build/) and styled with [Tailwind CSS](https://tailwindcss.com/). You write the content in [MDX](https://mdxjs.com/), which enables markdown formatting like **bold** and _italics_ as well as custom components like <SmallCaps>small caps.</SmallCaps>
-
-## Another section, with a figure
-
-Use the figure component to display images, videos, equations, or any other element, with an optional caption.
-
-<Figure
-    caption="Diagram of the transformer deep learning architecture."
-  >
-    <Image src={transformer} alt="alt text" />
-</Figure>
-
-## Two columns
-
-Use the two columns component to display two columns of content. In this example, the first column contains a figure with a YouTube video and the second column contains a figure with a custom [React](https://react.dev/) component. By default, they display side by side, but if the screen is narrow enough (for example, on mobile), they're arranged vertically.
-
-<TwoColumns>
-  <Figure slot="left" caption="Take a look at this YouTube video.">
-    <YouTubeVideo videoId="wjZofJX0v4M" />
-  </Figure>
-  <Figure slot="right" caption="Now look at this Gaussian Splat, rendered with a React component.">
-    <Splat client:idle />
-  </Figure>
-</TwoColumns>
-
-## LaTeX
-
-You can also add LaTeX formulas, rendered during the build process using [KaTeX](https://katex.org/) so they're quick to load for visitors of your project page. You can write them inline, like this: <LaTeX inline formula="a^2 + b^2 = c^2" />. Or, you can write them as a block:
-
-<LaTeX formula="\int_a^b f(x) dx" />
-
-## BibTeX citation
-
-```
-@misc{roman2024academic,
-  author = "{Roman Hauksson}",
-  title = "Academic Project Page Template",
-  year = "2024",
-  howpublished = "\url{https://research-template.roman.technology}",
-}
-```
+Reinforcement learning (RL) is ubiquitous in the development of modern AI systems. However, state-of-the-art RL agents require extensive, and potentially unsafe, interactions with their environments to learn effectively. These limitations confine RL agents to simulated environments, hindering their ability to learn directly in real-world settings. In this work, we present ActSafe, a novel model-based RL algorithm for safe and efficient exploration. ActSafe learns a well-calibrated probabilistic model of the system and plans optimistically w.r.t. the epistemic uncertainty about the unknown dynamics, while enforcing pessimism w.r.t. the safety constraints. Under regularity assumptions on the constraints and dynamics, we show that ActSafe guarantees safety during learning while also obtaining a near-optimal policy in finite time. In addition, we propose a practical variant of ActSafe that builds on latest model-based RL advancements and enables safe exploration even in high-dimensional settings such as visual control. We empirically show that ActSafe obtains state-of-the-art performance in difficult exploration tasks on standard safe deep RL benchmarks while ensuring safety during learning.
