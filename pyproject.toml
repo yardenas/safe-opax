@@ -82,7 +82,7 @@ exclude = [
     "dist",
     "node_modules",
     "venv",
-    "safe_opax/benchmark_suites/humanoid_bench",
+    "actsafe/benchmark_suites/humanoid_bench",
 ]
 
 [tool.ruff.format]
@@ -99,8 +99,8 @@ disallow_untyped_defs = false
 disallow_subclassing_any = false
 disallow_untyped_calls = false
 strict_optional = true
-exclude = "safe_opax/benchmark_suites/humanoid_bench"
+exclude = "actsafe/benchmark_suites/humanoid_bench"
 
 [[tool.mypy.overrides]]
-module = ["safe_opax.benchmark_suites.humanoid_bench.*"]
+module = ["actsafe.benchmark_suites.humanoid_bench.*"]
 ignore_errors = true

@@ -27,4 +27,4 @@ repos:
         additional_dependencies:
           - "numpy"
           - "types-tabulate"
-        exclude: "safe_opax/benchmark_suites/humanoid_bench/.*"
+        exclude: "actsafe/benchmark_suites/humanoid_bench/.*"

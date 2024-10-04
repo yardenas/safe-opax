@@ -1,7 +1,7 @@
 from hydra import compose, initialize
 import numpy as np
 
-from safe_opax.rl.types import Report
+from actsafe.rl.types import Report
 
 
 class DummyAgent:
@@ -27,7 +27,7 @@ class DummyAgent:
 def make_test_config(additional_overrides=None):
     if additional_overrides is None:
         additional_overrides = []
-    with initialize(version_base=None, config_path="../safe_opax/configs"):
+    with initialize(version_base=None, config_path="../actsafe/configs"):
         cfg = compose(
             config_name="config",
             overrides=[

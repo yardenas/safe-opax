@@ -2,8 +2,8 @@ import pathlib
 import time
 import pytest
 from tests import DummyAgent, make_test_config
-from safe_opax.rl.trainer import Trainer
-from safe_opax import benchmark_suites
+from actsafe.rl.trainer import Trainer
+from actsafe import benchmark_suites
 
 
 @pytest.fixture

@@ -4,13 +4,13 @@ import hydra
 from omegaconf import OmegaConf
 import jax
 
-from safe_opax.common.mixed_precision import mixed_precision
-from safe_opax.rl.trainer import get_state_path, load_state, should_resume, start_fresh
+from actsafe.common.mixed_precision import mixed_precision
+from actsafe.rl.trainer import get_state_path, load_state, should_resume, start_fresh
 
 _LOG = logging.getLogger(__name__)
 
 
-@hydra.main(version_base=None, config_path="safe_opax/configs", config_name="config")
+@hydra.main(version_base=None, config_path="actsafe/configs", config_name="config")
 def main(cfg):
     _LOG.info(
         f"Setting up experiment with the following configuration: "

@@ -2,9 +2,9 @@ import pathlib
 from unittest.mock import patch
 import pytest
 from omegaconf import open_dict
-from safe_opax.rl.trainer import UnsupervisedTrainer
+from actsafe.rl.trainer import UnsupervisedTrainer
 from tests import DummyAgent, make_test_config
-from safe_opax import benchmark_suites
+from actsafe import benchmark_suites
 
 
 @pytest.fixture
