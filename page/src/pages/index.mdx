@@ -1,0 +1,127 @@
+---
+layout: ../layouts/Layout.astro
+title: Academic Project Page Template
+description: Simple project page template for your research paper, built with Astro and Tailwind CSS
+favicon: /favicon.svg
+thumbnail: /screenshot.png
+---
+
+import { Image } from "astro:assets";
+
+import Layout from "../layouts/Layout.astro";
+
+import Header from "../components/Header.astro";
+import TwoColumns from "../components/TwoColumns.astro";
+import Video from "../components/Video.astro";
+import YouTubeVideo from "../components/YouTubeVideo.astro";
+import PDF from "../components/PDF.astro";
+import Figure from "../components/Figure.astro";
+import LaTeX from "../components/LaTeX.astro";
+import SmallCaps from "../components/SmallCaps.astro";
+import Splat from "../components/Splat.tsx"
+
+import CodeBlock from "../components/CodeBlock.astro";
+export const components = {pre: CodeBlock}
+
+import outside from "../assets/outside.mp4";
+import transformer from "../assets/transformer.webp";
+
+<Header
+  title={frontmatter.title}
+  authors={[
+    {
+      name: "Roman Hauksson",
+      url: "https://roman.technology",
+      institution: "Independent",
+      notes: ["*", "†"],
+    },
+    {
+      name: "Author Two",
+      institution: "Institution Two",
+      notes: ["*", "†"],
+    },
+    {
+      name: "Author Three",
+      institution: "Institution Three",
+      notes: ["†"],
+    },
+    {
+      name: "Author Four",
+      institution: "Institution Four",
+    },
+  ]}
+  conference="Conference Name"
+  notes={[
+    {
+      symbol: "*",
+      text: "author note one",
+    },
+    {
+      symbol: "†",
+      text: "author note two",
+    },
+  ]}
+  links={[
+    {
+      name: "Paper",
+      url: "",
+      icon: "fa-solid:file-pdf",
+    },
+    {
+      name: "Code",
+      url: "https://github.com/RomanHauksson/academic-project-astro-template",
+      icon: "mdi:github",
+    },
+    {
+      name: "arXiv",
+      url: "",
+      icon: "academicons:arxiv",
+    },
+  ]}
+  />
+
+<Video source={outside} />
+
+## Abstract
+
+This is a live demo for a template you can use to create a simple project page for your research paper. See the code for the template and instructions on how to use it yourself [here](https://github.com/RomanHauksson/academic-project-astro-template). It's made with the [Astro web framework](https://astro.build/) and styled with [Tailwind CSS](https://tailwindcss.com/). You write the content in [MDX](https://mdxjs.com/), which enables markdown formatting like **bold** and _italics_ as well as custom components like <SmallCaps>small caps.</SmallCaps>
+
+## Another section, with a figure
+
+Use the figure component to display images, videos, equations, or any other element, with an optional caption.
+
+<Figure
+    caption="Diagram of the transformer deep learning architecture."
+  >
+    <Image src={transformer} alt="alt text" />
+</Figure>
+
+## Two columns
+
+Use the two columns component to display two columns of content. In this example, the first column contains a figure with a YouTube video and the second column contains a figure with a custom [React](https://react.dev/) component. By default, they display side by side, but if the screen is narrow enough (for example, on mobile), they're arranged vertically.
+
+<TwoColumns>
+  <Figure slot="left" caption="Take a look at this YouTube video.">
+    <YouTubeVideo videoId="wjZofJX0v4M" />
+  </Figure>
+  <Figure slot="right" caption="Now look at this Gaussian Splat, rendered with a React component.">
+    <Splat client:idle />
+  </Figure>
+</TwoColumns>
+
+## LaTeX
+
+You can also add LaTeX formulas, rendered during the build process using [KaTeX](https://katex.org/) so they're quick to load for visitors of your project page. You can write them inline, like this: <LaTeX inline formula="a^2 + b^2 = c^2" />. Or, you can write them as a block:
+
+<LaTeX formula="\int_a^b f(x) dx" />
+
+## BibTeX citation
+
+```
+@misc{roman2024academic,
+  author = "{Roman Hauksson}",
+  title = "Academic Project Page Template",
+  year = "2024",
+  howpublished = "\url{https://research-template.roman.technology}",
+}
+```

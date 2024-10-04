@@ -1,0 +1,17 @@
+---
+interface Props {
+  source: string;
+}
+
+const { source } = Astro.props;
+---
+
+<video
+  class="rounded-lg w-full h-auto aspect-video"
+  autoplay
+  controls
+  muted
+  loop
+>
+  <source src={source} type="video/mp4" />
+</video>

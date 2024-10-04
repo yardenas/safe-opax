@@ -1,0 +1,115 @@
+---
+interface Props {
+  frontmatter: {
+    title: string;
+    description?: string;
+    favicon: string;
+    thumbnail?: string;
+  };
+}
+
+const { title, description, favicon, thumbnail } = Astro.props.frontmatter;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    {description && <meta name="description" content={description} />}
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+
+    <link rel="icon" type="image/svg+xml" href={favicon} />
+
+    <meta property="og:title" content={title} />
+    {description && <meta property="og:description" content={description} />}
+    <meta property="og:type" content="website" />
+    {thumbnail && <meta property="og:image" content={thumbnail} />}
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.css"
+      integrity="sha384-WsHMgfkABRyG494OmuiNmkAOk8nhO1qE+Y6wns6v+EoNoTNxrWxYpl5ZYWFOLPCM"
+      crossorigin="anonymous"
+    />
+
+    <title>{title}</title>
+  </head>
+  <body class="p-6 pt-12 flex flex-col gap-4 items-center max-w-[50rem] m-auto">
+    <slot />
+    <footer class="m-auto">
+      <p class="text-zinc-500 text-sm">
+        This page was built using <a
+          href="https://github.com/RomanHauksson/academic-project-astro-template"
+          >Roman Hauksson's academic project page template</a
+        >, which was adapted from <a
+          href="https://github.com/eliahuhorwitz/Academic-project-page-template"
+          >Eliahu Horwitz's template</a
+        >, which was adapted from <a href="https://nerfies.github.io/"
+          >Keunhong Park's project page for <i>Nerfies</i></a
+        >. It is licensed under a <a
+          href="http://creativecommons.org/licenses/by-sa/4.0/"
+          >Creative Commons Attribution-ShareAlike 4.0 International License</a
+        >.
+      </p>
+    </footer>
+  </body>
+</html>
+
+<style is:global>
+  body {
+    font-family: "Noto Sans", sans-serif;
+    @apply text-zinc-900 bg-zinc-50;
+  }
+  a {
+    @apply text-blue-500 hover:underline;
+  }
+  p {
+    @apply text-lg w-full;
+  }
+  h1 {
+    @apply text-5xl text-center font-medium;
+  }
+  h2 {
+    @apply w-full text-3xl font-bold mt-4;
+  }
+</style>
+
+<!-- <script>
+  function copyCode(button: HTMLElement) {
+    const codeBlock = button.closest("pre");
+    if (!codeBlock) {
+      return;
+    }
+    const codeContent = codeBlock.querySelector("code")?.innerText;
+    if (!codeContent) {
+      return;
+    }
+    const successIcon = codeBlock.querySelector(
+      ".copy-code-successful"
+    ) as HTMLElement;
+    if (!successIcon) {
+      console.error("Failed to find success icon.");
+      return;
+    }
+    navigator.clipboard.writeText(codeContent).catch((err) => {
+      console.error("Failed to copy code: ", err);
+    });
+    button.style.display = "none";
+    successIcon.style.display = "inline";
+    setTimeout(() => {
+      button.style.display = "inline";
+      successIcon.style.display = "none";
+    }, 1000);
+  }
+
+  document.querySelectorAll(".copy-code").forEach((button) => {
+    button.addEventListener("click", () => copyCode(button as HTMLElement));
+  });
+</script> -->
