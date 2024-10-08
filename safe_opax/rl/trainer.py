@@ -171,7 +171,6 @@ class Trainer:
     def from_pickle(cls, config: DictConfig, state_path: str) -> "Trainer":
         with open(state_path, "rb") as f:
             make_env, seeds, agent, epoch, step = cloudpickle.load(f).values()
-        assert agent.config == config, "Loaded different hyperparameters."
         _LOG.info(f"Resuming from step {step}")
         return cls(
             config=agent.config,
