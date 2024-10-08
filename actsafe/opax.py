@@ -1,6 +1,6 @@
 import jax
 import jax.numpy as jnp
-from actsafe.la_mbda.rssm import ShiftScale
+from actsafe.actsafe.rssm import ShiftScale
 from actsafe.rl.types import Prediction
 
 _EPS = 1e-5

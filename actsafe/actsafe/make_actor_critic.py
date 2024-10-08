@@ -1,10 +1,10 @@
 import logging
 import numpy as np
-from actsafe.la_mbda.augmented_lagrangian import AugmentedLagrangianPenalizer
-from actsafe.la_mbda.dummy_penalizer import DummyPenalizer
-from actsafe.la_mbda.lbsgd import LBSGDPenalizer
-from actsafe.la_mbda.safe_actor_critic import SafeModelBasedActorCritic
-from actsafe.la_mbda.sentiment import bayes
+from actsafe.actsafe.augmented_lagrangian import AugmentedLagrangianPenalizer
+from actsafe.actsafe.dummy_penalizer import DummyPenalizer
+from actsafe.actsafe.lbsgd import LBSGDPenalizer
+from actsafe.actsafe.safe_actor_critic import SafeModelBasedActorCritic
+from actsafe.actsafe.sentiment import bayes
 
 
 _LOG = logging.getLogger(__name__)

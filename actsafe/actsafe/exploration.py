@@ -1,9 +1,9 @@
 import jax
 from omegaconf import DictConfig
 
-from actsafe.la_mbda.opax_bridge import OpaxBridge
-from actsafe.la_mbda.make_actor_critic import make_actor_critic
-from actsafe.la_mbda.sentiment import identity, make_sentiment
+from actsafe.actsafe.opax_bridge import OpaxBridge
+from actsafe.actsafe.make_actor_critic import make_actor_critic
+from actsafe.actsafe.sentiment import identity, make_sentiment
 from actsafe.rl.types import Model, Policy
 
 

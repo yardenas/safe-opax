@@ -9,9 +9,9 @@ import distrax as trx
 
 from actsafe.common.learner import Learner
 from actsafe.common.mixed_precision import apply_mixed_precision
-from actsafe.la_mbda.rssm import ShiftScale
-from actsafe.la_mbda.sentiment import Sentiment
-from actsafe.la_mbda.actor_critic import ContinuousActor, Critic, actor_entropy
+from actsafe.actsafe.rssm import ShiftScale
+from actsafe.actsafe.sentiment import Sentiment
+from actsafe.actsafe.actor_critic import ContinuousActor, Critic, actor_entropy
 from actsafe.opax import normalized_epistemic_uncertainty
 from actsafe.rl.types import Model, RolloutFn
 from actsafe.rl.utils import nest_vmap

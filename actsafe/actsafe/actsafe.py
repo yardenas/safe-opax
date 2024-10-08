@@ -8,13 +8,13 @@ from gymnasium.spaces import Box
 from omegaconf import DictConfig
 
 from actsafe.common.learner import Learner
-from actsafe.la_mbda import rssm
-from actsafe.la_mbda.exploration import make_exploration
-from actsafe.la_mbda.make_actor_critic import make_actor_critic
-from actsafe.la_mbda.multi_reward import MultiRewardBridge
-from actsafe.la_mbda.replay_buffer import ReplayBuffer
-from actsafe.la_mbda.sentiment import make_sentiment
-from actsafe.la_mbda.world_model import WorldModel, evaluate_model, variational_step
+from actsafe.actsafe import rssm
+from actsafe.actsafe.exploration import UniformExploration, make_exploration
+from actsafe.actsafe.make_actor_critic import make_actor_critic
+from actsafe.actsafe.multi_reward import MultiRewardBridge
+from actsafe.actsafe.replay_buffer import ReplayBuffer
+from actsafe.actsafe.sentiment import make_sentiment
+from actsafe.actsafe.world_model import WorldModel, evaluate_model, variational_step
 from actsafe.rl.epoch_summary import EpochSummary
 from actsafe.rl.metrics import MetricsMonitor
 from actsafe.rl.trajectory import TrajectoryData, Transition
@@ -53,7 +53,7 @@ class AgentState(NamedTuple):
         return self
 
 
-class LaMBDA:
+class ActSafe:
     def __init__(
         self,
         observation_space: Box,
@@ -99,6 +99,7 @@ class LaMBDA:
             action_dim,
             next(self.prng),
         )
+        self.offline = UniformExploration(action_dim)
         self.state = AgentState.init(
             config.training.parallel_envs, self.model.cell, action_dim
         )
@@ -111,6 +112,9 @@ class LaMBDA:
         )
         self.should_explore = Until(
             config.agent.exploration_steps, environment_steps_per_agent_step
+        )
+        self.should_collect_offline = Until(
+            config.agent.offline_steps, environment_steps_per_agent_step
         )
         learn_model_steps = (
             config.agent.learn_model_steps
@@ -128,12 +132,16 @@ class LaMBDA:
     ) -> FloatArray:
         if train and self.should_train() and not self.replay_buffer.empty:
             self.update()
-        policy_fn = (
-            self.exploration.get_policy()
-            if self.should_explore()
-            else self.actor_critic.actor.act
-        )
+        if self.should_collect_offline():
+            policy_fn = self.offline.get_policy()
+        else:
+            policy_fn = (
+                self.exploration.get_policy()
+                if self.should_explore()
+                else self.actor_critic.actor.act
+            )
         self.should_explore.tick()
+        self.should_collect_offline.tick()
         self.learn_model.tick()
         actions, self.state = policy(
             policy_fn,

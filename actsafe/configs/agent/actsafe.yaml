@@ -1,7 +1,7 @@
 defaults:
   - penalizer: lbsgd
 
-name: lambda
+name: actsafe
 replay_buffer:
   batch_size: 16
   sequence_length: 50
@@ -52,6 +52,7 @@ safety_slack: 0.
 evaluate_model: false
 exploration_strategy: uniform
 exploration_steps: 5000
+offline_steps: 200000
 learn_model_steps: null
 exploration_reward_scale: 10.0
 exploration_epistemic_scale: 1.

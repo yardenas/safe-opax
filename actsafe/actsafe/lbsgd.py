@@ -9,8 +9,8 @@ from jaxtyping import PyTree
 
 from actsafe.common.mixed_precision import apply_dtype
 from actsafe.common.pytree_utils import pytrees_unstack
-from actsafe.la_mbda.actor_critic import ContinuousActor
-from actsafe.la_mbda.safe_actor_critic import ActorEvaluation
+from actsafe.actsafe.actor_critic import ContinuousActor
+from actsafe.actsafe.safe_actor_critic import ActorEvaluation
 
 _EPS = 1e-8
 

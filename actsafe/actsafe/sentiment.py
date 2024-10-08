@@ -1,7 +1,7 @@
 from typing import Protocol
 import jax
 
-from actsafe.la_mbda.rssm import ShiftScale
+from actsafe.actsafe.rssm import ShiftScale
 from actsafe.opax import normalized_epistemic_uncertainty
 
 

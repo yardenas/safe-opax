@@ -8,9 +8,9 @@ from optax import OptState
 
 from actsafe.common.learner import Learner
 from actsafe.common.mixed_precision import apply_mixed_precision
-from actsafe.la_mbda.rssm import RSSM, Features, ShiftScale, State
+from actsafe.actsafe.rssm import RSSM, Features, ShiftScale, State
 from actsafe.rl.types import Prediction
-from actsafe.la_mbda.utils import marginalize_prediction
+from actsafe.actsafe.utils import marginalize_prediction
 from actsafe.rl.types import Policy
 from actsafe.rl.utils import nest_vmap
 

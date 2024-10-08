@@ -1,7 +1,7 @@
 import jax
 import equinox as eqx
-from actsafe.la_mbda.rssm import ShiftScale, State
-from actsafe.la_mbda.world_model import WorldModel
+from actsafe.actsafe.rssm import ShiftScale, State
+from actsafe.actsafe.world_model import WorldModel
 from actsafe.rl.types import Policy, Prediction
 
 

@@ -6,8 +6,8 @@ import jax.nn as jnn
 import jax.numpy as jnp
 from jaxtyping import PyTree
 
-from actsafe.la_mbda.actor_critic import ContinuousActor
-from actsafe.la_mbda.safe_actor_critic import ActorEvaluation
+from actsafe.actsafe.actor_critic import ContinuousActor
+from actsafe.actsafe.safe_actor_critic import ActorEvaluation
 
 
 class AugmentedLagrangianUpdate(NamedTuple):
