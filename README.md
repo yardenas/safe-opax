@@ -16,4 +16,4 @@
 
 ## Usage
 
-`python train_lambda.py --help`
+`python train_actsafe.py --help`
