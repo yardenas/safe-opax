@@ -1,7 +1,7 @@
 from hydra import compose, initialize
 import numpy as np
 
-from actsafe.rl.types import Report
+from safe_opax.rl.types import Report
 
 
 class DummyAgent:

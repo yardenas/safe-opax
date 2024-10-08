@@ -3,7 +3,7 @@ import jax.numpy as jnp
 import jax
 import equinox as eqx
 from jmp import get_policy
-from actsafe.common.mixed_precision import apply_mixed_precision
+from safe_opax.common.mixed_precision import apply_mixed_precision
 
 
 @pytest.fixture

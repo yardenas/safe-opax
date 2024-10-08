@@ -2,13 +2,13 @@ import logging
 import time
 import hydra
 
-from actsafe.rl import acting
-from actsafe.rl.trainer import load_state
+from safe_opax.rl import acting
+from safe_opax.rl.trainer import load_state
 
 _LOG = logging.getLogger(__name__)
 
 
-@hydra.main(version_base=None, config_path="actsafe/configs", config_name="evaluate")
+@hydra.main(version_base=None, config_path="safe_opax/configs", config_name="evaluate")
 def main(cfg):
     _LOG.info(f"Setting up evaluation from checkpoint: {cfg.checkpoint}")
     trainer = load_state(cfg, cfg.checkpoint)

@@ -4,8 +4,8 @@ import hydra
 from omegaconf import OmegaConf
 import jax
 
-from actsafe.common.mixed_precision import mixed_precision
-from actsafe.rl.trainer import get_state_path, load_state, should_resume, start_fresh
+from safe_opax.common.mixed_precision import mixed_precision
+from safe_opax.rl.trainer import get_state_path, load_state, should_resume, start_fresh
 
 _LOG = logging.getLogger(__name__)
 

@@ -4,7 +4,7 @@ from tests import make_test_config
 from gymnasium.wrappers.compatibility import EnvCompatibility
 
 from safe_adaptation_gym.safe_adaptation_gym import SafeAdaptationGym
-from actsafe.benchmark_suites import make
+from safe_opax.benchmark_suites import make
 
 
 @pytest.fixture
