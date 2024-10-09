@@ -89,7 +89,8 @@ class Pole(Task):
             "standing": standing,
             "upright": upright,
             "collision_discount": collision_discount,
+            "terminated": self.get_terminated()[0],
         }
 
     def get_terminated(self):
-        return self._env.data.qpos[2] < 0.5, {}
+        return self._env.data.qpos[2] < 0.3, {}

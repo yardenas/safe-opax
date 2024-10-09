@@ -21,7 +21,8 @@ class ConstraintWrapper(RewardWrapper):
             0.5 * (small_control * stand_reward) + 0.5 * move
         )
         collision_discount = info.get("collision_discount", 0.)
-        info["cost"] = collision_discount < 1.
+        terminated = info.get("terminated", False)
+        info["cost"] = collision_discount < 1. or terminated
         return observation, reward, terminal, truncated, info
 
     def __getattr__(self, name):
